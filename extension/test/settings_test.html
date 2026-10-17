@@ -1,0 +1,107 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>settings test</title><link rel="stylesheet" href="/ui/ui.css"></head>
+<body class="options"><pre id="out">running…</pre><div id="root" class="root"></div>
+<script type="module">
+// 设置页的实际保存流程（假的 chrome API；0.16 起设置页是 feed-filter/ui 打包出来的 ui/options.js）：改了就存、不合规的不落盘并退回、
+// 三档和高级里的数字联动、连续改不互相覆盖、key 的状态、本月花费、记住的句子、清空失败的提示。用 ext-static 打开 /test/settings_test.html
+const month = new Date().toLocaleDateString("sv-SE");
+const store = { ff_settings: { enabled: false, threshold: 0, m1MaxLen: 15.5, useJev: "false", cacheMB: 0 }, ff_key: "k-test", ff_or_key: "",
+  ff_health: { jev: { code: "badkey", at: 1 } }, ff_stats: { [month]: { tokens: 1e6, tx_usd: 0.01 } } };
+let slogans = [{ text: "已确认的合成口号", raw: "已确认的合成口号！！", site: "yt", source: { postId: "123", id: "456" }, createdAt: Date.now() }];
+const failures = new Map();
+let writes = 0;
+const listeners = [];
+globalThis.chrome = {
+  storage: { onChanged: { addListener: (f) => listeners.push(f), removeListener: (f) => { const i = listeners.indexOf(f); if (i >= 0) listeners.splice(i, 1); } }, local: {
+    get: async (keys) => Object.fromEntries((Array.isArray(keys) ? keys : [keys]).filter((k) => k in store).map((k) => [k, structuredClone(store[k])])),
+    set: async (value) => {
+      writes++;
+      const ch = Object.fromEntries(Object.entries(value).map(([k, v]) => [k, { oldValue: store[k], newValue: structuredClone(v) }]));
+      Object.assign(store, structuredClone(value));
+      for (const f of [...listeners]) f(ch, "local");
+    },
+  } },
+  runtime: { sendMessage: async (msg) => {
+    if (failures.has(msg.type)) { const r = failures.get(msg.type); failures.delete(msg.type); return r; }
+    if (msg.type === "sloganList") return { slogans };
+    if (msg.type === "sloganRemove") { slogans = slogans.filter((s) => s.text !== msg.text && s.source?.id !== msg.id); return { ok: true }; }
+    if (msg.type === "sloganClear") { slogans = []; return { ok: true }; }
+    if (msg.type === "cacheStats") return { bytes: 1024, count: 2 };
+    return { ok: true };
+  } },
+  i18n: { getUILanguage: () => "zh-CN" },
+};
+const out = [];
+const ok = (name, cond, extra = "") => out.push(`${cond ? "PASS" : "FAIL"} ${name} ${cond ? "" : extra}`);
+const wait = (ms = 80) => new Promise((r) => setTimeout(r, ms));
+const until = async (f, ms = 1500) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { if (f()) return true; await wait(30); } return false; };
+await import("/i18n_all.js");
+await import("/i18n.js");
+await import("/settings.js");
+await import("/ui/options.js?" + Date.now());
+await until(() => document.getElementById("fold"));
+const $ = (id) => document.getElementById(id);
+const sw = (k) => document.querySelector(`[data-switch="${k}"]`);
+const checked = (key) => [...document.querySelectorAll(`#row-${key} .seg-item`)].filter((b) => b.getAttribute("aria-checked") === "true").map((b) => b.textContent);
+const levelOff = (key) => document.querySelector(`#row-${key} .seg`).hasAttribute("data-disabled");
+const toastText = () => document.querySelector(".toast:not([data-limited]) .toast-title")?.textContent || ""; // 显示着的那一条
+// 高级里的输入框：React 受控，按真人的样子改——聚焦、换值、触发 input、失焦才存
+const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set;
+const change = async (id, v) => { const el = $(id); el.focus(); setValue.call(el, v); el.dispatchEvent(new Event("input", { bubbles: true })); el.blur(); await wait(150); };
+
+$("advTrigger").click();
+await until(() => $("threshold"));
+ok("旧的无效配置按默认值显示（三档在默认）", $("threshold").value === "0.6" && $("m1MaxLen").value === "10" && $("cacheMB").value === "50" && $("txCacheMB").value === "50" &&
+  sw("useJev").getAttribute("aria-checked") === "true" && JSON.stringify(checked("threshold")) === '["标准"]', JSON.stringify([$("threshold")?.value, checked("threshold")]));
+document.querySelectorAll("#row-threshold .seg-item")[2].click(); await wait(200);
+ok("点\"严格\"：存下 0.5，三档和高级里的数字跟着变，提示会重判", store.ff_settings.threshold === 0.5 && JSON.stringify(checked("threshold")) === '["严格"]' &&
+  $("threshold").value === "0.5" && /重判/.test(toastText()), JSON.stringify([store.ff_settings.threshold, checked("threshold"), $("threshold").value, toastText()]));
+ok("没碰的设置照旧（启用状态是关的就还是关的）", store.ff_settings.enabled === false);
+let before = writes;
+await change("threshold", "");
+ok("空值不落盘、提示、退回原来的值", writes === before && /失败/.test(toastText()) && $("threshold").value === "0.5", JSON.stringify([writes - before, toastText(), $("threshold").value]));
+await change("cacheMB", "0");
+ok("越界不落盘", writes === before && /缓存上限/.test(toastText()) && $("cacheMB").value === "50", JSON.stringify([writes - before, toastText(), $("cacheMB").value]));
+await change("m1MaxLen", "15.5");
+ok("长度上限不是整数：不落盘", writes === before && /整数/.test(toastText()), toastText());
+await change("threshold", "0.61");
+const note = document.querySelector("#row-threshold .row-note");
+ok("高级里填 0.61：存下，三档都不亮、写明是自定义", store.ff_settings.threshold === 0.61 && !checked("threshold").length && !!note && /0\.61/.test(note.textContent),
+  JSON.stringify([store.ff_settings.threshold, checked("threshold"), note && note.textContent]));
+sw("abuse").click(); await wait(200);
+ok("关掉辱骂：存下，辱骂那三档变灰不能点", store.ff_settings.abuse === false && levelOff("abuseThreshold"));
+sw("dup").click(); await change("threshold", "0.62"); await wait(200);
+ok("连着改两样不会互相覆盖", store.ff_settings.dup === false && store.ff_settings.threshold === 0.62, JSON.stringify(store.ff_settings));
+// 网站页（0.20）：只改这个网站的翻译开关——存进 sites.reddit，提示里不说重判
+location.hash = "#site=reddit";
+await until(() => $("siteTitle"));
+sw("translate").click(); await wait(200);
+ok("Reddit 页上只改翻译开关：存进 sites.reddit，提示里不说重判", store.ff_settings.sites?.reddit?.translate === false && store.ff_settings.translate !== false &&
+  !/重判/.test(toastText()) && /已保存/.test(toastText()), JSON.stringify([store.ff_settings.sites, toastText()]));
+location.hash = "#site=x";
+await until(() => $("siteTitle")?.textContent === "X");
+document.querySelector("#row-m1 .help").click();
+await until(() => document.querySelector(".help-pop"));
+const m1 = document.querySelector(".help-pop")?.textContent || "";
+ok("X 页上 M1 的说明（点问号也能打开）里写着现在的长度上限（汉字和大约多少个字母）", /10 个汉字/.test(m1) && /40 个字母/.test(m1), m1);
+document.querySelector("#row-m1 .help").click(); await wait(200);
+location.hash = "";
+await until(() => $("fold"));
+ok("key 的状态：Jev 用不了、OpenRouter 没填（没填的直接给输入框）", $("jevState").textContent === "用不了" && $("orState").textContent === "没填" && !!$("orKey") && !$("key"),
+  [$("jevState").textContent, $("orState").textContent].join("/"));
+ok("本月花费：Jev 按 token 算、翻译按实际", /Jev \$0\.042/.test($("costLine").textContent) && /翻译 \$0\.01/.test($("costLine").textContent), $("costLine").textContent);
+ok("你标记的垃圾：旁边写着几条", /1 条/.test($("sloganCount").textContent), $("sloganCount").textContent);
+$("sloganToggle").click();
+await until(() => $("slogans"));
+ok("点\"管理\"看得到原文和在哪个网站标的", $("slogans").textContent.includes("已确认的合成口号！！") && $("slogans").textContent.includes("YouTube") && !!$("clearSlogans"), $("slogans").textContent);
+failures.set("sloganRemove", { error: "模拟忘掉失败" });
+$("slogans").querySelector("button").click(); await wait(200);
+ok("忘掉失败：列表留着、提示错误", slogans.length === 1 && /模拟忘掉失败/.test(toastText()), toastText());
+$("slogans").querySelector("button").click(); await wait(250);
+ok("再点一次删掉成功；没有了\"管理\"藏起来", slogans.length === 0 && !$("sloganToggle") && /0 条/.test($("sloganCount").textContent), $("sloganCount").textContent);
+failures.set("cacheClear", { ok: false });
+$("clearMenu").click();
+await until(() => $("clearCache"));
+$("clearCache").click(); await wait(200);
+ok("清空返回 ok:false 不显示成功", /失败/.test(toastText()), toastText());
+$("out").textContent = out.join("\n"); window.__settingsTest = out;
+</script></body></html>

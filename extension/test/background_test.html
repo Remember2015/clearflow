@@ -1,0 +1,301 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>background test</title></head><body><pre id="out">running…</pre>
+<script type="module">
+// 后台 + 缓存联测：假的 chrome API 和假的 Jev 接口，看第二次同样的回复走缓存、整帖取回。用 ext-static 打开 /test/background_test.html
+// ff_settings 模拟 0.4.0 设置页存下的样子：阈值是旧默认值 0.5、没有 rev
+const store = { ff_key: "test-key", ff_settings: { cacheMB: 50, threshold: 0.5 } };
+let listener = null, fetchCalls = 0, lastBody = null;
+globalThis.chrome = {
+  storage: { onChanged: { addListener() {} }, local: {
+    get: async (k) => { const ks = k === null ? Object.keys(store) : Array.isArray(k) ? k : [k]; return Object.fromEntries(ks.filter((x) => x in store).map((x) => [x, store[x]])); },
+    set: async (o) => Object.assign(store, o), remove: async (k) => { for (const x of Array.isArray(k) ? k : [k]) delete store[x]; },
+  } },
+  runtime: { onMessage: { addListener: (f) => (listener = f) } },
+  action: { setIcon: async (o) => { (globalThis.__icons ||= []).push(o); } },
+};
+let jevStatus = 200; // 设成 401 模拟 key 无效
+globalThis.fetch = async (url, init) => {
+  fetchCalls++;
+  if (jevStatus !== 200) return new Response(JSON.stringify({ error: "unauthorized" }), { status: jevStatus, headers: { "content-type": "application/json" } });
+  const body = JSON.parse(init.body);
+  lastBody = body;
+  const answers = {};
+  for (const k of Object.keys(body.questions)) answers[k] = { noul: k.endsWith("__disguised") ? 0.8 : k.endsWith("__marked") ? 0.77 : 0.1 };
+  return new Response(JSON.stringify({ model: "fake", answers, usage: { input_tokens: 100 } }), { status: 200, headers: { "content-type": "application/json" } });
+};
+const bg = await import("/background.js");
+const call = (msg) => new Promise((res) => listener(msg, {}, res));
+const callFrom = (url, msg) => new Promise((res) => listener(msg, { url }, res)); // 某个网站的页面发来的（后台按网址认是哪个网站）
+const out = [];
+const ok = (name, cond, extra = "") => out.push(`${cond ? "PASS" : "FAIL"} ${name} ${extra}`);
+const s0 = await call({ type: "settings" });
+ok("旧默认阈值 0.5 迁移到 0.6", s0.settings.threshold === 0.6 && store.ff_settings.rev === 4, JSON.stringify(store.ff_settings));
+store.ff_settings = { threshold: 0.5, rev: 2 };
+await bg.migrateSettings();
+ok("rev 2 以后自己设的 0.5 不动", store.ff_settings.threshold === 0.5);
+store.ff_settings = { threshold: 0.55 };
+await bg.migrateSettings();
+ok("旧版里自己调过的阈值不动", store.ff_settings.threshold === 0.55 && store.ff_settings.rev === 4);
+// 0.15.3（rev 3）：M1 的长度改按汉字当量算、默认 15 → 10：存着的 15 是旧默认值，换掉；自己调过的不动
+store.ff_settings = { m1MaxLen: 15, threshold: 0.5, rev: 2 };
+await bg.migrateSettings();
+ok("rev 2 存着的 M1 15 换成 10，阈值 0.5 不动", store.ff_settings.m1MaxLen === 10 && store.ff_settings.threshold === 0.5 && store.ff_settings.rev === 4, JSON.stringify(store.ff_settings));
+store.ff_settings = { m1MaxLen: 20, rev: 2 };
+await bg.migrateSettings();
+ok("自己调过的 M1 长度不动", store.ff_settings.m1MaxLen === 20 && store.ff_settings.rev === 4);
+// 0.20（rev 4）：总开关（暂停、翻译增强）换成每个网站的开关：关着的折进每个网站，总开关打开（界面上没有了）。
+// 以前暂停时 X 照样改进翻译、别的网站不翻；翻译增强关着时哪儿都不翻
+store.ff_settings = { enabled: false, threshold: 0.7, rev: 3 };
+await bg.migrateSettings();
+let m = store.ff_settings;
+ok("rev 3 暂停着：每个网站都关收起，X 以外的也关翻译，总开关打开", m.rev === 4 && m.enabled === true && m.threshold === 0.7 &&
+  ["x", "reddit", "yt", "xhs", "hn"].every((k) => m.sites[k]?.fold === false) && m.sites.x.translate === undefined &&
+  ["reddit", "yt", "xhs", "hn"].every((k) => m.sites[k].translate === false), JSON.stringify(m));
+store.ff_settings = { translate: false, rev: 3 };
+await bg.migrateSettings();
+m = store.ff_settings;
+ok("rev 3 翻译增强关着：每个网站都关翻译，收起照常", m.translate === true && ["x", "reddit", "yt", "xhs", "hn"].every((k) => m.sites[k]?.translate === false && m.sites[k].fold === undefined), JSON.stringify(m));
+store.ff_settings = { threshold: 0.5, rev: 3 };
+await bg.migrateSettings();
+ok("rev 3 两个都开着：不多存网站的设置", JSON.stringify(store.ff_settings.sites) === "{}" && store.ff_settings.rev === 4, JSON.stringify(store.ff_settings));
+store.ff_settings = { cacheMB: 50, rev: 2 };
+await call({ type: "cacheClear" });
+const replies = [{ id: "1900000000000000001", text: "a" }, { id: "1900000000000000002", text: "b" }];
+const author = { name: "Qwen Developers", handle: "@QwenDevs" };
+let r = await call({ type: "jev", postId: "P9", post: "p", author, replies });
+ok("首次调 Jev", fetchCalls === 1 && r.scores["1900000000000000001"].disguised === 0.8, `fetch=${fetchCalls}`);
+ok("请求里带原帖作者", lastBody.state.post_author && lastBody.state.post_author.handle === "@QwenDevs", JSON.stringify(lastBody.state.post_author));
+await new Promise((res) => setTimeout(res, 300)); // putMany 是异步写的
+r = await call({ type: "jev", postId: "P9", post: "p", author, replies });
+ok("第二次走缓存", fetchCalls === 1 && Object.keys(r.scores).length === 2, `fetch=${fetchCalls}`);
+const allReplies = [...replies, { id: "1900000000000000003", text: "c" }];
+r = await call({ type: "jev", postId: "P9", post: "p", author, replies: allReplies });
+ok("只对没缓存的那条调 Jev", fetchCalls === 2 && Object.keys(r.scores).length === 3, `fetch=${fetchCalls}`);
+await new Promise((res) => setTimeout(res, 300));
+r = await call({ type: "cachedForPost", postId: "P9" });
+ok("缺上下文不再盲取整帖旧分数", Object.keys(r.scores).length === 0);
+r = await call({ type: "cachedForPost", postId: "P9", post: "p", author, replies: allReplies });
+ok("上下文匹配时批量取回", Object.keys(r.scores).length === 3);
+const st = await call({ type: "cacheStats" });
+ok("缓存统计", st.count === 3 && st.bytes > 0, JSON.stringify(st));
+ok("旧版 ff_cache 键已删", !("ff_cache" in store));
+ok("统计里记了缓存命中", (Object.values(store.ff_stats || {})[0] || {}).cache_hits >= 4, JSON.stringify(store.ff_stats));
+// 0.3 以前缓存的只有三问（没有 abuse）、0.4 的没有 sexual：都应当算没命中、补问一次并覆盖
+const cache = await import("/cache.js");
+await cache.putMany([{ id: "1900000000000000009", post: "P8", scores: { benefit: 0.2, disguised: 0.2, promo_mention: 0.2 } }], 50 * 1024 * 1024);
+const before = fetchCalls;
+r = await call({ type: "jev", postId: "P8", post: "p", replies: [{ id: "1900000000000000009", text: "x" }] });
+ok("没有原帖作者时不带 post_author", !("post_author" in lastBody.state));
+ok("旧缓存缺辱骂分会补问", fetchCalls === before + 1 && typeof r.scores["1900000000000000009"].abuse === "number", `fetch +${fetchCalls - before}`);
+await cache.putMany([{ id: "1900000000000000010", post: "P7", scores: { benefit: 0.2, disguised: 0.2, promo_mention: 0.2, abuse: 0.1 } }], 50 * 1024 * 1024);
+const before2 = fetchCalls;
+r = await call({ type: "jev", postId: "P7", post: "p", replies: [{ id: "1900000000000000010", text: "y" }] });
+ok("0.4 的缓存缺色情分会补问", fetchCalls === before2 + 1 && typeof r.scores["1900000000000000010"].sexual === "number", `fetch +${fetchCalls - before2}`);
+ok("请求里有色情这一问", Object.keys(lastBody.questions).some((k) => k.endsWith("__sexual")));
+r = await call({ type: "cachedForPost", postId: "P8", post: "p", replies: [{ id: "1900000000000000009", text: "x" }] });
+await new Promise((res) => setTimeout(res, 300));
+r = await call({ type: "cachedForPost", postId: "P8", post: "p", replies: [{ id: "1900000000000000009", text: "x" }] });
+ok("补问后整帖取回带辱骂分", r.scores["1900000000000000009"] && typeof r.scores["1900000000000000009"].abuse === "number");
+await call({ type: "cacheClear" });
+
+// ---- 最近折叠的回复（弹窗"判对了吗"用）----
+const fold = (id, extra = {}) => ({ id, postId: "P1".replace("P", "9"), page: "status", handle: "@bot", name: "Bot", text: "合成的垃圾回复 " + id, kind: "jev", reason: "为第三方导流 0.9", scores: { benefit: 0.9 }, ...extra });
+store.ff_recent_folds = [{ ...fold("1800000000000000001"), at: Date.now() - 8 * 864e5 }]; // 8 天前的：下次写的时候清掉
+for (let i = 0; i < 55; i++) await call({ type: "folded", entry: fold(String(1900000000000000100n + BigInt(i))) });
+ok("最多留 50 条、过了 7 天的清掉", store.ff_recent_folds.length === 50 && !store.ff_recent_folds.some((x) => x.id === "1800000000000000001") &&
+  store.ff_recent_folds[49].id === "1900000000000000154", JSON.stringify(store.ff_recent_folds.length));
+await call({ type: "folded", entry: fold("1900000000000000110", { text: "又折了一次" }) });
+ok("同一条再折一次：不重复，挪到最新", store.ff_recent_folds.filter((x) => x.id === "1900000000000000110").length === 1 &&
+  store.ff_recent_folds[49].id === "1900000000000000110" && store.ff_recent_folds[49].text === "又折了一次");
+const bad = await Promise.all([call({ type: "folded", entry: fold("1900000000000000200", { kind: "user" }) }), call({ type: "folded", entry: fold("abc") }),
+  call({ type: "folded", entry: fold("1900000000000000201", { postId: "../x" }) })]);
+ok("你自己标的、坏 id、坏帖子 id 不记", bad.every((r) => r.ok === false) && !store.ff_recent_folds.some((x) => ["1900000000000000200", "1900000000000000201"].includes(x.id)));
+await call({ type: "folded", entry: fold("1900000000000000202", { postId: "u:prof_user", page: "profile", text: "x".repeat(900) }) });
+const pf = store.ff_recent_folds.at(-1);
+ok("用户主页上的也记，正文截到 300 字", pf.page === "profile" && pf.postId === "u:prof_user" && pf.text.length === 300);
+// Hacker News 这类站点（0.14）：id 是"站点_号"，这一页是"站点:类型:…"
+await call({ type: "folded", entry: fold("hn_9103", { postId: "hn:i:9100", kind: "abuse" }) });
+const hnBad = await Promise.all([call({ type: "folded", entry: fold("hn:9104", { postId: "hn:i:9100" }) }), call({ type: "folded", entry: fold("hn_9105", { postId: "hn:9100" }) })]);
+ok("别的站点的也记（hn_…、hn:i:…）；写法不对的不记", store.ff_recent_folds.at(-1).id === "hn_9103" && store.ff_recent_folds.at(-1).postId === "hn:i:9100" &&
+  hnBad.every((r) => r.ok === false), JSON.stringify(hnBad));
+r = await call({ type: "translateFill", id: "hn_9101", source: "Hello there", srcLang: "en", target: "zh-CN" });
+ok("别的站点的翻译请求也认（hn_…）", r.code !== "invalid_request", JSON.stringify(r).slice(0, 200));
+// YouTube（0.15）：回复的评论 id 里有点，这一页是 yt:w:<视频 id>
+await call({ type: "folded", entry: fold("yt_UgxAbC123.AAA_bb-1", { postId: "yt:w:SYNTHVID001", kind: "imp" }) });
+r = await call({ type: "translateFill", id: "yt_v_SYNTHVID001", source: "Hello there", srcLang: "en", target: "zh-Hans-CN" });
+const ytJev = await call({ type: "jev", postId: "yt:w:SYNTHVID001", post: "p", replies: [{ id: "yt_UgxAbC123.AAA_bb-1", text: "合成的回复" }] });
+ok("YouTube 的也认：回复 id 里有点、视频 yt_v_…、这一页 yt:w:…", store.ff_recent_folds.at(-1).id === "yt_UgxAbC123.AAA_bb-1" && r.code !== "invalid_request" && ytJev.code !== "invalid_request",
+  JSON.stringify([store.ff_recent_folds.at(-1), r.code, ytJev.code]));
+// 0.15.2：站点多问的问题（YouTube 的 setup）——请求里多问、分数里带上；不认识的丢掉；缓存和不多问的分开
+const beforeSetup = fetchCalls, sr = [{ id: "yt_UgxSetup1", text: "合成的回复 setup" }];
+r = await call({ type: "jev", postId: "yt:w:SYNTHVID002", post: "p", replies: sr, extra: ["setup", "bogus"] });
+const asked = Object.keys(lastBody.questions);
+ok("多问 setup：请求里带上（不认识的丢掉），分数里有 setup", fetchCalls === beforeSetup + 1 && asked.some((k) => k.endsWith("__setup")) && !asked.some((k) => k.endsWith("__bogus")) &&
+  typeof r.scores?.yt_UgxSetup1?.setup === "number", JSON.stringify([asked, r.scores]));
+await new Promise((res) => setTimeout(res, 300));
+r = await call({ type: "jev", postId: "yt:w:SYNTHVID002", post: "p", replies: sr, extra: ["setup"] });
+ok("多问 setup 的第二次走缓存", fetchCalls === beforeSetup + 1 && typeof r.scores?.yt_UgxSetup1?.setup === "number", `fetch=${fetchCalls}`);
+r = await call({ type: "jev", postId: "yt:w:SYNTHVID002", post: "p", replies: sr });
+ok("不多问的请求不拿多问的缓存（指纹分开），也不问 setup", fetchCalls === beforeSetup + 2 && !Object.keys(lastBody.questions).some((k) => k.endsWith("__setup")) &&
+  r.scores?.yt_UgxSetup1 && !("setup" in r.scores.yt_UgxSetup1), `fetch=${fetchCalls}`);
+// 0.26：你标记的垃圾当样例——"是不是同一类"并进五问的请求（不多发）、另存缓存；五问命中缓存的不为它单独问；刚标了一条时 markedCheck 一个请求问 25 条
+const YT = "https://www.youtube.com/watch?v=SYNTHVID003", XU = "https://x.com/a/status/1";
+const mk = (id, text) => ({ id, text });
+store.ff_confirmed_slogans = [{ text: "joinmyvipgrouptmeabcforsignals", raw: "Join my VIP group t.me/abc for signals", site: "yt", source: { id: "yt_UgxMarked", postId: "yt:w:V1", handle: "@spammer" }, createdAt: 1 }];
+let f0 = fetchCalls;
+r = await callFrom(YT, { type: "jev", postId: "yt:w:SYNTHVID003", post: "p", replies: [mk("yt_UgxM1", "new reply one"), mk("yt_UgxM2", "new reply two")] });
+ok("标过垃圾：同一个请求里带样例、多问 marked，分里带上", fetchCalls === f0 + 1 && lastBody.state.marked_spam?.length === 1 && lastBody.state.marked_spam[0].text === "Join my VIP group t.me/abc for signals" &&
+  Object.keys(lastBody.questions).filter((k) => k.endsWith("__marked")).length === 2 && r.scores?.yt_UgxM1?.marked === 0.77 && r.scores?.yt_UgxM1?.disguised === 0.8, JSON.stringify([fetchCalls - f0, lastBody.state.marked_spam, r.scores]));
+await new Promise((res) => setTimeout(res, 300));
+r = await callFrom(YT, { type: "jev", postId: "yt:w:SYNTHVID003", post: "p", replies: [mk("yt_UgxM1", "new reply one"), mk("yt_UgxM2", "new reply two")] });
+ok("再问：五问和 marked 都走缓存，不发请求", fetchCalls === f0 + 1 && r.scores?.yt_UgxM2?.marked === 0.77, JSON.stringify([fetchCalls - f0, r.scores]));
+r = await callFrom(XU, { type: "jev", postId: "P_x_mark", post: "p", replies: [mk("1900000000000000501", "x reply")] });
+ok("别的网站（X）上标的样例不带：请求里没有 marked_spam、分里没有 marked", fetchCalls === f0 + 2 && !lastBody.state.marked_spam && !("marked" in (r.scores?.["1900000000000000501"] || {})), JSON.stringify(lastBody.state));
+const saved = store.ff_confirmed_slogans;
+store.ff_confirmed_slogans = [];
+r = await callFrom(YT, { type: "jev", postId: "yt:w:SYNTHVID003", post: "p", replies: [mk("yt_UgxM3", "third reply")] });
+store.ff_confirmed_slogans = saved;
+await new Promise((res) => setTimeout(res, 300));
+f0 = fetchCalls;
+r = await callFrom(YT, { type: "jev", postId: "yt:w:SYNTHVID003", post: "p", replies: [mk("yt_UgxM3", "third reply")] });
+ok("五问命中缓存、marked 没有的：不为它单独发请求", fetchCalls === f0 && r.scores?.yt_UgxM3 && !("marked" in r.scores.yt_UgxM3), JSON.stringify([fetchCalls - f0, r.scores]));
+const page30 = Array.from({ length: 30 }, (_, i) => mk(`yt_UgxP${i}`, `page reply ${i}`));
+f0 = fetchCalls;
+r = await callFrom(YT, { type: "markedCheck", postId: "yt:w:SYNTHVID003", post: "p", replies: page30 });
+ok("markedCheck：30 条两个请求（25 + 5），只问 marked、带样例", fetchCalls === f0 + 2 && Object.keys(r.scores || {}).length === 30 && r.scores.yt_UgxP0 === 0.77 &&
+  Object.keys(lastBody.questions).every((k) => k.endsWith("__marked")) && lastBody.state.marked_spam?.length === 1, JSON.stringify([fetchCalls - f0, Object.keys(lastBody.questions).length]));
+await new Promise((res) => setTimeout(res, 300));
+r = await callFrom(YT, { type: "markedCheck", postId: "yt:w:SYNTHVID003", post: "p", replies: page30 });
+ok("同一页再 markedCheck：全走缓存", fetchCalls === f0 + 2 && Object.keys(r.scores || {}).length === 30, `fetch=${fetchCalls - f0}`);
+r = await callFrom(XU, { type: "markedCheck", postId: "P_x_mark", post: "p", replies: [mk("1900000000000000502", "x reply 2")] });
+ok("这个网站上没标过：markedCheck 不发请求", fetchCalls === f0 + 2 && JSON.stringify(r.scores) === "{}", JSON.stringify(r));
+store.ff_confirmed_slogans = [];
+const ex = await call({ type: "export" });
+ok("导出里有最近折叠的", Array.isArray(ex.data.ff_recent_folds) && ex.data.ff_recent_folds.length === 50);
+await call({ type: "clearLog" });
+ok("清空统计和记录也清掉最近折叠的", Array.isArray(store.ff_recent_folds) && store.ff_recent_folds.length === 0);
+
+// ---- 0.15.3：帖子本身那一问（求推荐帖 rec）——一个帖子问一次，存进缓存；帖子原文或作者变了就重问 ----
+const beforeRec = fetchCalls, recPost = "兄弟们有没有好用的机场推荐一下", recAuthor = { name: "楼主", handle: "@op_user" };
+r = await call({ type: "jevPost", postId: "P20", post: recPost, author: recAuthor });
+const recQ = lastBody.questions?.rec;
+ok("帖子那一问：问 rec，带帖子原文和作者，返回分数", fetchCalls === beforeRec + 1 && recQ?.type === "noul" && /^About the post: /.test(recQ.instructions) &&
+  lastBody.state.post === recPost && lastBody.state.post_author?.handle === "@op_user" && typeof r.scores?.rec === "number", JSON.stringify([lastBody, r]).slice(0, 300));
+await new Promise((res) => setTimeout(res, 300));
+r = await call({ type: "jevPost", postId: "P20", post: recPost, author: recAuthor });
+ok("同一个帖子再问走缓存", fetchCalls === beforeRec + 1 && typeof r.scores?.rec === "number", `fetch=${fetchCalls}`);
+r = await call({ type: "jevPost", postId: "P20", post: recPost + "（补充）", author: recAuthor });
+ok("帖子原文变了就重问", fetchCalls === beforeRec + 2, `fetch=${fetchCalls}`);
+r = await call({ type: "jevPost", postId: "P21", post: "  " });
+ok("没有帖子原文的不问", r.code === "invalid_request" && fetchCalls === beforeRec + 2);
+// ---- 出问题时给弹窗留标记 ----
+jevStatus = 401;
+r = await call({ type: "jev", postId: "P9", post: "p", replies: [{ id: "1900000000000000300", text: "health 测试" }] });
+await new Promise((res) => setTimeout(res, 50));
+ok("Jev key 无效：留下标记", r.code === "badkey" && store.ff_health?.jev?.code === "badkey", JSON.stringify([r.code, store.ff_health]));
+jevStatus = 200;
+r = await call({ type: "jev", postId: "P9", post: "p", replies: [{ id: "1900000000000000301", text: "health 测试 2" }] });
+await new Promise((res) => setTimeout(res, 50));
+ok("下次成功就清掉", r.scores && !store.ff_health?.jev, JSON.stringify(store.ff_health));
+
+// ---- 0.11 去掉首页 Feed 记录：留在存储里的键删掉 ----
+store.ff_feed_generation = 3; store["ff_feed_outbox:p:1"] = { items: [] }; store.ff_feed_session = { id: 1 };
+await bg.dropFeedData();
+ok("首页记录留下的键删掉了，别的不动", !Object.keys(store).some((k) => k.startsWith("ff_feed_")) && store.ff_key === "test-key");
+
+document.getElementById("out").textContent = out.join("\n");
+// 0.24：评测记录（"记录 Reddit 评论（评估用）"）和 Reddit 的结构探针去掉了：发 evalRecord 没人管，导出不带，升级时删掉它们留下的键
+{
+  store.ff_eval_reddit = { posts: {}, items: [{ id: "t1_old" }] }; store.ff_eval_reddit_n = 1; store.ff_dev_reddit = { post: {} };
+  const r = await call({ type: "evalRecord", post: { id: "r:t3_ev1", text: "合成的帖子" }, items: [] });
+  ok("评测记录：后台不认这个消息了", !r || !r.ok, JSON.stringify(r));
+  const ex = await call({ type: "export" });
+  ok("导出数据不带评测记录", !("ff_eval_reddit" in (ex.data || {})), JSON.stringify(Object.keys(ex.data || {})));
+  await bg.dropDevData();
+  ok("升级时删掉评测记录和探针留下的键，别的不动", !("ff_eval_reddit" in store) && !("ff_eval_reddit_n" in store) && !("ff_dev_reddit" in store) && store.ff_key === "test-key", JSON.stringify(Object.keys(store)));
+}
+// 0.16.1：工具栏图标跟浏览器的深浅色（页面报的）：深色换 dark-*，一样的不重设，浅色换回 icon-*
+{
+  await call({ type: "theme", dark: true });
+  await call({ type: "theme", dark: true });
+  await call({ type: "theme", dark: false });
+  const ic = globalThis.__icons || [];
+  ok("工具栏图标：深色换 dark-*、一样的不重设、浅色换回", ic.length === 2 && ic[0].path[16] === "icons/dark-16.png" && ic[0].path[32] === "icons/dark-32.png" &&
+    ic[1].path[16] === "icons/icon-16.png", JSON.stringify(ic));
+}
+// 0.18 看回复里的图片：开着时把回复里的图下载、缩成 JPEG 装进 assets，请求带 Danger Zone 头；关着整个去掉；不认识的网站不下载；
+// 下载失败的图不发、这条的结果不进缓存；Jev 因为图把整批拒了（400）就去掉图再问一次、结果不进缓存；没字的回复图又没读到就不问
+{
+  const png = await (async () => { const c = new OffscreenCanvas(1200, 800); const x = c.getContext("2d"); x.fillStyle = "#c33"; x.fillRect(0, 0, 1200, 800); return c.convertToBlob({ type: "image/png" }); })();
+  const seen = [], bodies = [];
+  let lastHeaders = null, reject400 = false;
+  const jevFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => {
+    if (String(url).startsWith("https://api.typesafe.ai/")) {
+      lastHeaders = init.headers;
+      const b = JSON.parse(init.body);
+      bodies.push(b);
+      if (reject400 && b.assets) { fetchCalls++; return new Response(JSON.stringify({ error_type: "api_usage_error", message: "Invalid image dimensions." }), { status: 400 }); }
+      return jevFetch(url, init);
+    }
+    seen.push(String(url));
+    if (String(url).includes("/broken")) return new Response("no", { status: 404 });
+    return new Response(png, { status: 200, headers: { "content-type": "image/png" } });
+  };
+  const ID = (n) => "19300000000000000" + String(n).padStart(2, "0");
+  const msg = (replies) => ({ type: "jev", postId: "IMG", post: "带图的帖子", author: null, replies });
+  const R1 = { id: ID(1), text: "look at this", images: ["https://pbs.twimg.com/media/A1.jpg"] };
+  const R2 = { id: ID(2), text: "", images: ["http://sns-webpic-qc.xhscdn.com/202610/a/b2"] };
+  const R3 = { id: ID(3), text: "third", images: ["https://evil.example.com/x.jpg"] };
+  store.ff_settings = { ...store.ff_settings, images: false };
+  let before = fetchCalls;
+  let r = await call(msg([R1, R3]));
+  let b = bodies.at(-1);
+  ok("看图片关着：请求里没有图、不带头、不下载图", fetchCalls === before + 1 && !b.assets && b.state.replies.every((x) => !x.images) && !(lastHeaders || {})["TypeSafe-Danger-Zone-Images"] && seen.length === 0,
+    JSON.stringify({ assets: !!b.assets, seen }));
+  store.ff_settings = { ...store.ff_settings, images: true };
+  before = fetchCalls;
+  r = await call(msg([R1, R2, R3]));
+  b = bodies.at(-1);
+  const asset = b.assets && Object.values(b.assets)[0];
+  ok("看图片开着：图下载、转成 JPEG 装进 assets，回复里写引用名，请求带 Danger Zone 头", fetchCalls === before + 1 && b.assets && Object.keys(b.assets).length === 2 &&
+    asset.type === "image" && asset.format === "jpg" && asset.data_base64.startsWith("/9j/") && lastHeaders["TypeSafe-Danger-Zone-Images"] === "true" &&
+    JSON.stringify(b.state.replies.find((x) => x.id === ID(1)).images) === JSON.stringify([`img_${ID(1)}_0`]) && b.state.replies.find((x) => x.id === ID(2)).images.length === 1,
+    JSON.stringify({ keys: b.assets && Object.keys(b.assets), replies: b.state.replies.map((x) => [x.id, x.images]), h: lastHeaders }));
+  const r3 = b.state.replies.find((x) => x.id === ID(3)); // 图不认识、去掉以后和关着时一样：走关着时的缓存，不一定在这次请求里
+  ok("不认识的网站的图不下载、不发；只有图的那条照样判", !seen.some((u) => u.includes("evil")) && (!r3 || !r3.images) && !!r.scores[ID(2)] && !!r.scores[ID(3)],
+    JSON.stringify(seen));
+  await new Promise((res) => setTimeout(res, 300));
+  before = fetchCalls;
+  r = await call(msg([R1, R2, R3]));
+  ok("同样带图再来一次：走缓存", fetchCalls === before && Object.keys(r.scores).length === 3, `fetch=${fetchCalls - before}`);
+  store.ff_settings = { ...store.ff_settings, images: false };
+  before = fetchCalls;
+  r = await call(msg([R1]));
+  ok("关掉看图片：带图的那条重问一次（只问字），不拿开着时的结果", fetchCalls === before + 1 && !bodies.at(-1).assets, `fetch=${fetchCalls - before}`);
+  store.ff_settings = { ...store.ff_settings, images: true };
+  const RB = { id: ID(4), text: "broken one", images: ["https://pbs.twimg.com/broken/1.jpg"] };
+  before = fetchCalls;
+  r = await call(msg([RB]));
+  ok("图下载失败：不发图、照样按字判", fetchCalls === before + 1 && !bodies.at(-1).assets && !!r.scores[ID(4)], JSON.stringify(bodies.at(-1).state.replies));
+  await new Promise((res) => setTimeout(res, 300));
+  r = await call(msg([RB]));
+  ok("图没读到的那次结果不进缓存（下次再试）", fetchCalls === before + 2, `fetch=${fetchCalls - before}`);
+  const RO = { id: ID(5), text: "", images: ["https://pbs.twimg.com/broken/2.jpg"] };
+  before = fetchCalls;
+  r = await call(msg([RO]));
+  ok("没字、图又没读到：不问 Jev、没有分", fetchCalls === before && !r.scores?.[ID(5)], JSON.stringify(r));
+  reject400 = true;
+  const RJ = { id: ID(6), text: "rejected image", images: ["https://pbs.twimg.com/media/J6.jpg"] };
+  before = fetchCalls;
+  r = await call(msg([RJ]));
+  ok("Jev 因为图拒了整批（400）：去掉图再问一次，照样有分", fetchCalls === before + 2 && !!r.scores[ID(6)] && !bodies.at(-1).assets, `fetch=${fetchCalls - before}`);
+  reject400 = false;
+  await new Promise((res) => setTimeout(res, 300));
+  r = await call(msg([RJ]));
+  ok("被拒那次的结果不进缓存：图好了再问时带图", fetchCalls === before + 3 && !!bodies.at(-1).assets, `fetch=${fetchCalls - before}`);
+  globalThis.fetch = jevFetch;
+  store.ff_settings = { ...store.ff_settings, images: false };
+}
+document.getElementById("out").textContent = out.join("\n");
+window.__bgTest = out;
+</script></body></html>

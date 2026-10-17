@@ -1,0 +1,283 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>background translate test</title></head><body><pre id="out">running…</pre>
+<script type="module">
+// 后台的首页翻译消息（translate / orTest / txCacheClear）联测：假的 chrome API，假的 Jev 和 OpenRouter。
+// 用 ext-static 打开 /test/background_translate_test.html，结果在 #out 和 window.__bgTxTest
+const store = { ff_key: "test-key", ff_settings: { rev: 2 } };
+const changed = [];
+globalThis.chrome = {
+  storage: { onChanged: { addListener: (f) => changed.push(f) }, local: {
+    get: async (k) => { const ks = k === null ? Object.keys(store) : Array.isArray(k) ? k : [k]; return structuredClone(Object.fromEntries(ks.filter((x) => x in store).map((x) => [x, store[x]]))); },
+    set: async (o) => { Object.assign(store, structuredClone(o)); }, remove: async (k) => { for (const x of [k].flat()) delete store[x]; },
+  } },
+  runtime: { onMessage: { addListener: (f) => (listener = f) } },
+  // 后台推给页面的（流式先译完的那几条）记在 pushed
+  tabs: { sendMessage: (tabId, msg, opts) => { pushed.push({ tabId, msg, opts, t: performance.now() }); return Promise.resolve(); } },
+};
+const pushed = [];
+let listener = null;
+// 改存储并像真浏览器一样通知后台
+const setStore = (o) => { const ch = Object.fromEntries(Object.entries(o).map(([k, v]) => [k, { oldValue: store[k], newValue: v }])); Object.assign(store, structuredClone(o)); for (const f of changed) f(ch, "local"); };
+const net = { or: [], jev: 0, live: 0, maxLive: 0, orDelay: 0, orStatus: 200 };
+globalThis.fetch = async (url, init) => {
+  net.live++; net.maxLive = Math.max(net.maxLive, net.live);
+  try {
+    const body = JSON.parse(init.body);
+    if (String(url).includes("openrouter.ai")) {
+      net.or.push(body); net.auth = init.headers?.Authorization;
+      if (net.orDelay) await new Promise((res, rej) => { const t = setTimeout(res, net.orDelay); init.signal?.addEventListener("abort", () => { clearTimeout(t); rej(init.signal.reason); }, { once: true }); });
+      if (net.orStatus !== 200) return new Response(JSON.stringify({ error: { message: "fake" } }), { status: net.orStatus });
+      // 几条拼一批的（<u1>…</u1>）：照标记一条条回；net.batchDrop = N 时少回第 N 条（只看"原文："后面的，前面的说明里也写着 <u1>…</u1>）
+      const units = [...body.messages[1].content.split(/原文（[^）]*）：\n|Original \([^)]*\):\n/).at(-1).matchAll(/<u(\d+)>([\s\S]*?)<\/u\1>/g)];
+      const outs = units.filter((u) => Number(u[1]) !== net.batchDrop).map((u) => `<u${u[1]}>改进的译文 ${u[2].slice(-6)}</u${u[1]}>`);
+      // 要流式的：一条一个事件，每个事件隔 net.unitDelay 毫秒
+      if (units.length && body.stream) {
+        const enc = new TextEncoder(), evs = [...outs.map((o) => `data: ${JSON.stringify({ model: body.model, choices: [{ index: 0, delta: { content: o + "\n" } }] })}\n\n`),
+          `data: ${JSON.stringify({ model: body.model, choices: [{ index: 0, delta: {}, finish_reason: "stop" }], usage: { cost: 0.00008 } })}\n\ndata: [DONE]\n\n`];
+        return new Response(new ReadableStream({ async pull(c) { const e = evs.shift(); if (!e) return c.close();
+          if (net.unitDelay) await new Promise((res) => setTimeout(res, net.unitDelay)); c.enqueue(enc.encode(e)); } }, { highWaterMark: 0 }),
+          { status: 200, headers: { "content-type": "text/event-stream" } });
+      }
+      if (units.length) return new Response(JSON.stringify({ model: body.model, choices: [{ message: { content: outs.join("\n") } }], usage: { cost: 0.00008, completion_tokens_details: { reasoning_tokens: 0 } } }),
+        { status: 200, headers: { "content-type": "application/json" } });
+      return new Response(JSON.stringify({ model: body.model, choices: [{ message: { content: "改进的译文 " + body.messages[1].content.slice(-6) } }],
+        usage: { cost: 0.00005, completion_tokens_details: { reasoning_tokens: 0 } } }), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    net.jev++;
+    const good = body.state.translation.startsWith("改进的译文");
+    const answers = Object.fromEntries(Object.keys(body.questions).map((k) => [k, { noul: good ? 0.9 : k === "natural" ? 0.4 : 0.8 }]));
+    return new Response(JSON.stringify({ model: "fake", answers, usage: { input_tokens: 300 } }), { status: 200, headers: { "content-type": "application/json" } });
+  } finally { net.live--; }
+};
+// 先放一个旧版（v1、没记总量）的译文缓存：插件升级以后第一次用时要把总量数出来（下面查）。
+// 同一个浏览器里先跑过别的测试页（比如 background_test 已经建了 v2）也照样从头建：先删掉
+await new Promise((res, rej) => { const q = indexedDB.deleteDatabase("ff-translate"); q.onsuccess = res; q.onerror = () => rej(q.error); q.onblocked = res; });
+await new Promise((res, rej) => {
+  const q = indexedDB.open("ff-translate", 1);
+  q.onupgradeneeded = () => q.result.createObjectStore("tx", { keyPath: "key" }).createIndex("ts", "ts");
+  q.onsuccess = () => {
+    const db = q.result, tx = db.transaction("tx", "readwrite");
+    for (const k of ["old1", "old2"]) tx.objectStore("tx").put({ key: k, result: { action: "fill", text: "旧版存下的合成译文" }, ts: Date.now() });
+    tx.oncomplete = () => { db.close(); res(); };
+    tx.onerror = () => rej(tx.error);
+  };
+  q.onerror = () => rej(q.error);
+});
+await import("/background.js");
+const call = (msg) => new Promise((res) => listener(msg, {}, res));
+const out = [];
+const ok = (name, cond, extra = "") => out.push(`${cond ? "PASS" : "FAIL"} ${name} ${cond ? "" : extra}`);
+const item = (id) => ({ type: "translate", id, source: `Not gonna lie, this is synthetic post ${id}.`, xText: `不会撒谎，这是合成帖子 ${id}。`, srcLang: "en" });
+const stats = () => store.ff_stats?.[new Date().toLocaleDateString("sv-SE")] || {};
+try {
+  const up = await (await import("/translator.js")).idbCache.stats();
+  ok("译文缓存从旧版升上来：第一次用时把总量数出来（旧的条目都在）", up.count === 2 && up.bytes > 100, JSON.stringify(up));
+  await call({ type: "txCacheClear" });
+  let r = await call({ type: "settings" });
+  ok("设置里报告没有 OpenRouter key", r.hasOrKey === false && r.settings.translate === true && r.settings.translateModel === "openai/gpt-6-luna");
+  r = await call(item("1"));
+  ok("没有 OpenRouter key：noorkey", r.code === "noorkey" && net.jev === 0, JSON.stringify(r));
+  store.ff_or_key = " sk-or-test ";
+  ok("有 key 了", (await call({ type: "settings" })).hasOrKey === true);
+  r = await call({ ...item("1"), id: "../../x" });
+  ok("帖子 id 不对：拒收", r.code === "invalid_request");
+  r = await call({ ...item("1"), source: "x".repeat(5001) });
+  ok("原文太长：拒收", r.code === "invalid_request");
+  store.ff_settings = { rev: 2, translate: false };
+  r = await call(item("1"));
+  ok("开关关着：disabled", r.code === "disabled" && net.jev === 0);
+  store.ff_settings = { rev: 2 };
+  const k = store.ff_key; delete store.ff_key;
+  ok("没有 Jev key：nokey", (await call(item("1"))).code === "nokey");
+  store.ff_key = k;
+
+  r = await call(item("1"));
+  ok("Grok 差、重译好：replace", r.action === "replace" && r.text.startsWith("改进的译文") && r.weak === "natural" && r.cached === false, JSON.stringify(r));
+  const b = net.or[0];
+  ok("请求里关掉思考、key 去掉了空格", b.reasoning?.enabled === false && b.model === "openai/gpt-6-luna" && net.jev === 2 && net.auth === "Bearer sk-or-test", JSON.stringify([b, net.auth]));
+  await new Promise((res) => setTimeout(res, 100));
+  let s = stats();
+  ok("统计：判了 1 条、重译 1 条、换上 1 条、记了花费", s.tx_judged === 1 && s.tx_retranslated === 1 && s.tx_replaced === 1 && s.tx_usd > 0 && s.tx_jev_tokens === 600, JSON.stringify(s));
+  r = await call(item("1"));
+  await new Promise((res) => setTimeout(res, 100));
+  ok("同一条第二次走缓存", r.cached === true && r.action === "replace" && net.jev === 2 && net.or.length === 1 && stats().tx_cached === 1);
+  await call({ type: "txCacheClear" });
+  r = await call(item("1"));
+  ok("清空缓存后重新判", r.cached === false && net.jev === 4);
+
+  // 同时来 20 条：最多 16 条一起做（0.19.4 以前 8 条、0.13.13 以前 4 条）
+  net.orDelay = 120; net.maxLive = 0;
+  const many = await Promise.all(Array.from({ length: 20 }, (_, i) => call(item(String(100 + i)))));
+  ok("20 条都做完", many.every((x) => x.action === "replace"), JSON.stringify(many.map((x) => x.code || x.action)));
+  ok("同时最多 16 个请求", net.maxLive <= 16 && net.maxLive >= 12, `max=${net.maxLive}`);
+
+  // 进行中改了模型：作废（cancelled），评论区那边的设置不受影响
+  net.orDelay = 2000;
+  const p = call(item("200"));
+  await new Promise((res) => setTimeout(res, 300));
+  setStore({ ff_settings: { rev: 2, translateModel: "deepseek/deepseek-v4.1-flash" } });
+  r = await p;
+  ok("改了翻译模型：进行中的作废", r.code === "cancelled" && r.retryable === true, JSON.stringify(r));
+  net.orDelay = 0;
+  r = await call(item("200"));
+  ok("按新模型重做", r.action === "replace" && net.or.at(-1).model === "deepseek/deepseek-v4.1-flash" && net.or.at(-1).reasoning.enabled === false);
+  // 换 OpenRouter key 也作废
+  net.orDelay = 2000;
+  const p2 = call(item("201"));
+  await new Promise((res) => setTimeout(res, 300));
+  setStore({ ff_or_key: "sk-or-other" });
+  ok("换了 OpenRouter key：进行中的作废", (await p2).code === "cancelled");
+  net.orDelay = 0;
+
+  // 余额不足、key 无效：报对应的码，不换后备
+  net.orStatus = 402;
+  const before = net.or.length;
+  r = await call(item("300"));
+  ok("余额不足：or_credit、不重试", r.code === "or_credit" && r.retryable === false && net.or.length === before + 1, JSON.stringify(r));
+  net.orStatus = 401;
+  r = await call(item("301"));
+  ok("key 无效：or_badkey", r.code === "or_badkey" && r.retryable === false);
+  net.orStatus = 200;
+
+  // 帖子页补翻：只要 OpenRouter key，不调 Jev
+  const fillMsg = (id, extra = {}) => ({ type: "translateFill", id, source: `And one more synthetic reply ${id}.`, srcLang: "en", ...extra });
+  const jev0 = net.jev, or0 = net.or.length;
+  const savedJev = store.ff_key; delete store.ff_key;
+  r = await call(fillMsg("400"));
+  ok("补翻：没有 Jev key 也能翻，不调 Jev", r.action === "fill" && r.text.startsWith("改进的译文") && net.jev === jev0 && net.or.length === or0 + 1, JSON.stringify(r));
+  ok("补翻：请求里不开思考", net.or.at(-1).reasoning?.enabled === false);
+  r = await call(fillMsg("400"));
+  await new Promise((res) => setTimeout(res, 100));
+  s = stats();
+  ok("补翻：第二次走缓存，统计分开记", r.cached === true && net.or.length === or0 + 1 && s.tx_fill === 1 && s.tx_fill_cached === 1, JSON.stringify(s));
+  r = await call(fillMsg("401", { truncated: true }));
+  ok("补翻：截断的告诉模型", r.action === "fill" && /截断/.test(net.or.at(-1).messages[1].content));
+  ok("补翻：参数不对拒收", (await call(fillMsg("402", { truncated: "yes" }))).code === "invalid_request" && (await call(fillMsg("x"))).code === "invalid_request");
+  const savedSt = store.ff_settings;
+  store.ff_settings = { ...savedSt, translate: false };
+  ok("补翻：开关关着 disabled", (await call(fillMsg("403"))).code === "disabled");
+  store.ff_settings = { ...savedSt, translateFill: false };
+  ok("关掉\"补翻作者自己的回复\"：X 的补翻 disabled，Reddit 的翻译（t1_ 开头）照常翻", (await call(fillMsg("408"))).code === "disabled" &&
+    (await call(fillMsg("t1_abc12"))).action === "fill");
+  ok("Reddit 的 id 格式不对：拒收", (await call(fillMsg("t1_ABC!"))).code === "invalid_request" && (await call(fillMsg("t9_abc"))).code === "invalid_request");
+  // Reddit 上很长的正文切成几块翻：每块照翻、花费都记，但只有第 0 块算一条"补翻"
+  let f0 = stats().tx_fill || 0;
+  r = await call(fillMsg("t3_part9", { part: 0, source: "First chunk of a long synthetic post." }));
+  const r1 = await call(fillMsg("t3_part9", { part: 1, source: "Second chunk of a long synthetic post." }));
+  await new Promise((res) => setTimeout(res, 100));
+  ok("切块翻：第 0 块算一条补翻，第 1 块照翻但不再算", r.action === "fill" && r1.action === "fill" && (stats().tx_fill || 0) === f0 + 1, JSON.stringify([f0, stats().tx_fill]));
+  // 带格式的（markup：告诉模型留着标记）、上一次标记弄乱了换后备模型（alt）
+  const savedMk = store.ff_settings;
+  store.ff_settings = { ...savedMk, translateModel: "openai/gpt-6-luna", translateFallback: "deepseek/deepseek-v4.1-flash" };
+  r = await call(fillMsg("t1_mk1", { markup: true, source: "<p1>Check <t1>this guide</t1> out: <x2/></p1>" }));
+  ok("带标记：提示词里告诉模型标记原样留着", r.action === "fill" && /<p1>…<\/p1> 是一段/.test(net.or.at(-1).messages[1].content) && net.or.at(-1).model === "openai/gpt-6-luna",
+    JSON.stringify(net.or.at(-1).messages[1].content.slice(0, 80)));
+  r = await call(fillMsg("t1_mk1", { markup: true, alt: true, source: "<p1>Check <t1>this guide</t1> out: <x2/></p1>" }));
+  ok("alt：这一次直接用后备模型（不走主模型的缓存）", r.action === "fill" && r.cached === false && net.or.at(-1).model === "deepseek/deepseek-v4.1-flash", JSON.stringify([r.cached, net.or.at(-1).model]));
+  ok("markup、alt 不是真假值：拒收", (await call(fillMsg("t1_mk2", { markup: "yes" }))).code === "invalid_request" && (await call(fillMsg("t1_mk2", { alt: 1 }))).code === "invalid_request");
+  store.ff_settings = { ...savedMk, translateModel: "openai/gpt-6-luna", translateFallback: "" };
+  r = await call(fillMsg("t1_mk3", { markup: true, alt: true, source: "<p1>One more <t1>synthetic</t1> case</p1>" }));
+  ok("alt 但没有另外的后备模型：照主模型翻", r.action === "fill" && net.or.at(-1).model === "openai/gpt-6-luna", JSON.stringify(net.or.at(-1).model));
+  store.ff_settings = savedMk;
+  // 缓存（0.13.6）：命中的不排队——4 个慢的翻译占着位置时，缓存里有的马上回；一次查一页的缓存（只查不翻）
+  const cq = (k, extra = {}) => fillMsg(`t1_cq${k}`, { source: `Synthetic cached reply ${k}.`, ...extra });
+  await call(cq(0));
+  net.orDelay = 1500;
+  const slow = [1, 2, 3, 4].map((k) => call(cq(k)));
+  await new Promise((res) => setTimeout(res, 60));
+  let t0 = performance.now();
+  r = await call(cq(0));
+  const waited = performance.now() - t0;
+  ok("缓存命中不排队：4 个慢的翻译占着位置时，缓存里有的马上回", r.cached === true && waited < 500, `等了 ${Math.round(waited)} ms`);
+  await Promise.all(slow);
+  net.orDelay = 0;
+  const orN = net.or.length;
+  r = await call({ type: "fillCachedBatch", items: [cq(0), cq(3), fillMsg("t1_none", { source: "Never translated before." }), { bogus: 1 }] });
+  ok("一次查一页的缓存：有的给译文、没有的和不对的给 null，一个翻译请求都不发", r.results?.[0]?.cached === true && r.results[1]?.cached === true && r.results[2] === null &&
+    r.results[3] === null && net.or.length === orN, JSON.stringify([r.results?.map((x) => x && x.cached), net.or.length - orN]));
+  ok("一次查缓存：items 不对拒收", (await call({ type: "fillCachedBatch", items: "x" })).code === "invalid_request" &&
+    (await call({ type: "fillCachedBatch", items: Array(101).fill(cq(0)) })).code === "invalid_request");
+  ok("切块翻：块号不对拒收", (await call(fillMsg("t3_part9", { part: -1 }))).code === "invalid_request" && (await call(fillMsg("t3_part9", { part: "1" }))).code === "invalid_request" &&
+    (await call(fillMsg("t3_part9", { part: 1.5 }))).code === "invalid_request");
+  // 几条一起翻（0.19.4，translateFillBatch）：一个请求、按标记拆开，每条照单条进缓存；缓存里有的不再翻，只剩一条没命中的照单条翻
+  const bt = (k, extra = {}) => fillMsg(`t1_bt${k}`, { source: `Synthetic short title number ${k}.`, ...extra });
+  const batchOf = (...xs) => ({ type: "translateFillBatch", items: xs.map(({ type, ...x }) => x) });
+  const orB = net.or.length, fB = stats().tx_fill || 0;
+  r = await call(batchOf(bt(1), bt(2), bt(3)));
+  await new Promise((res) => setTimeout(res, 100));
+  ok("几条一起翻：一个请求，拆开每条都有译文，补翻按条数记", net.or.length === orB + 1 && /<u3>/.test(net.or.at(-1).messages[1].content) &&
+    r.results?.length === 3 && r.results.every((x) => x.action === "fill" && x.cached === false && x.text.startsWith("改进的译文")) && (stats().tx_fill || 0) === fB + 3,
+    JSON.stringify([net.or.length - orB, r.results, (stats().tx_fill || 0) - fB]));
+  r = await call(bt(2));
+  ok("几条一起翻：以后单条问也命中缓存", r.cached === true && net.or.length === orB + 1, JSON.stringify(r));
+  r = await call(batchOf(bt(1), bt(4)));
+  ok("一批里有缓存里的：只翻没命中的，只剩一条照单条翻（不带 <u1>）", r.results?.[0]?.cached === true && r.results[1]?.action === "fill" && net.or.length === orB + 2 &&
+    !/<u1>/.test(net.or.at(-1).messages[1].content), JSON.stringify(r.results));
+  net.batchDrop = 2;
+  r = await call(batchOf(bt(5), bt(6), bt(7)));
+  net.batchDrop = 0;
+  ok("模型少回了一条：那一条 batch_miss（页面那头单独再发），别的照常", r.results?.[0]?.action === "fill" && r.results[1]?.code === "batch_miss" && r.results[1].retryable === true &&
+    r.results[2]?.action === "fill", JSON.stringify(r.results));
+  r = await call(batchOf(bt(8), fillMsg("409")));
+  ok("一批里有关掉了的（X 的补翻关着）：那一条 disabled，别的照翻", r.results?.[1]?.code === "disabled" && r.results[0]?.action === "fill", JSON.stringify(r.results));
+  // 流式：带 rid、是页面发来的（sender.tab）——哪条先译完先推给那个页面（按 documentId，页面换了就推不到），比整批回来早；最后返回的照样全有
+  const callFrom = (msg, sender) => new Promise((res) => listener(msg, sender, res));
+  const tab = { tab: { id: 7 }, frameId: 0, documentId: "doc-A" };
+  net.unitDelay = 120; pushed.length = 0;
+  const tStart = performance.now();
+  r = await callFrom({ ...batchOf(bt(30), bt(31), bt(32)), rid: "pg1:1" }, tab);
+  const tEnd = performance.now();
+  net.unitDelay = 0;
+  ok("流式：先译完的一条条推给发来的页面（txPart、rid、第几条、按 documentId），最后返回的也全有", pushed.length === 3 &&
+    pushed.every((x, k) => x.tabId === 7 && x.opts?.documentId === "doc-A" && x.msg.type === "txPart" && x.msg.rid === "pg1:1" && x.msg.k === k && x.msg.result?.text?.startsWith("改进的译文")) &&
+    net.or.at(-1).stream === true && r.results?.length === 3 && r.results.every((x) => x.action === "fill" && x.cost > 0),
+    JSON.stringify([pushed.map((x) => [x.tabId, x.opts, x.msg]), r.results]));
+  ok("流式：第一条比整批回来早（每条隔 120 毫秒）", pushed[0] && tEnd - pushed[0].t > 250, `第一条 ${Math.round(pushed[0]?.t - tStart)} ms，整批 ${Math.round(tEnd - tStart)} ms`);
+  pushed.length = 0;
+  r = await callFrom(batchOf(bt(33), bt(34)), tab);
+  const r2 = await callFrom({ ...batchOf(bt(35), bt(36)), rid: "pg1:2" }, {});
+  ok("没带 rid、不是页面发来的：不推、不要流式，照整批回", pushed.length === 0 && r.results.every((x) => x.action === "fill") && r2.results.every((x) => x.action === "fill") &&
+    !net.or.at(-1).stream, JSON.stringify([pushed.length, net.or.at(-1).stream]));
+  const badBatches = await Promise.all([batchOf(bt(9)), batchOf(...Array.from({ length: 9 }, (_, k) => bt(20 + k))), batchOf(bt(10), bt(11, { alt: true })),
+    batchOf(bt(12), bt(13, { target: "ja" })), batchOf(bt(14, { source: "x".repeat(3001) }), bt(15, { source: "y".repeat(3000) })),
+    batchOf(bt(16), { id: "t1_bad!", source: "x" }), { type: "translateFillBatch", items: "x" }, { ...batchOf(bt(17), bt(18)), rid: "has space" }].map(call));
+  ok("几条一起翻：不对的拒收（只有 1 条、超过 8 条、有换后备模型的、目标语言不一样、合计超过 6000 字、有一条不对、items 不是数组、rid 不对）",
+    badBatches.every((x) => x.code === "invalid_request"), JSON.stringify(badBatches.map((x) => x.code)));
+  store.ff_settings = savedSt;
+  const savedOr = store.ff_or_key; delete store.ff_or_key;
+  ok("补翻：没有 OpenRouter key：noorkey", (await call(fillMsg("404"))).code === "noorkey");
+  store.ff_or_key = savedOr; store.ff_key = savedJev;
+
+  // 目标语言：页面那头传 X 的界面语言过来；别的语言用英文模板提示词，乱写的代码拒收
+  r = await call({ ...fillMsg("405"), target: "ja" });
+  ok("目标语言日语：提示词是英文模板、翻成 Japanese", r.action === "fill" && /into Japanese/.test(net.or.at(-1).messages[0].content), JSON.stringify(net.or.at(-1).messages[0]));
+  ok("目标语言代码乱写：拒收", (await call({ ...fillMsg("406"), target: "not a lang!" })).code === "invalid_request" &&
+    (await call({ ...item("407"), target: "<b>" })).code === "invalid_request");
+
+  // 设置页"测一下"：用输入框里的 key（没保存的），返回模型、耗时、思考 token
+  r = await call({ type: "orTest", key: " sk-or-typed " });
+  ok("测 key：成功、0 思考 token", r.ok === true && r.reasoningTokens === 0 && typeof r.secs === "number" && r.model === "deepseek/deepseek-v4.1-flash", JSON.stringify(r));
+  net.orStatus = 401;
+  r = await call({ type: "orTest", key: "sk-or-bad" });
+  ok("测 key：无效时报错", r.ok === false && /key 无效/.test(r.error), JSON.stringify(r));
+  net.orStatus = 200;
+  ok("测 key：空 key 不发请求", (await call({ type: "orTest", key: "  " })).ok === false);
+
+  // 译文缓存按占的地方算（0.13.7，和过滤结果的分开）：超过上限删最久没用的、删到九成；总量记得对；设置页一起报两边
+  r = await call({ type: "cacheStats" });
+  ok("设置页的缓存用量：过滤结果和译文分开报", Number.isFinite(r.bytes) && Number.isFinite(r.count) && Number.isFinite(r.tx?.bytes) && r.tx.count > 0, JSON.stringify(r));
+  const { idbCache } = await import("/translator.js");
+  await idbCache.clear();
+  for (let i = 0; i < 20; i++) await idbCache.put(`k${i}`, { action: "fill", text: "x".repeat(400) }, 5000);
+  const cs = await idbCache.stats();
+  ok("译文缓存超过上限：最久没用的先删，删到上限九成以内，最新的还在", cs.bytes <= 5000 && cs.count > 3 && cs.count < 20 && !!(await idbCache.get("k19")) && !(await idbCache.get("k0")), JSON.stringify(cs));
+  await idbCache.put("k19", { action: "fill", text: "short" }, 5000);
+  const cs2 = await idbCache.stats();
+  ok("同一条再写：总量按新的大小算（不重复计）", cs2.count === cs.count && cs2.bytes < cs.bytes, JSON.stringify([cs, cs2]));
+  await idbCache.clear();
+  ok("清空以后总量归零", JSON.stringify(await idbCache.stats()) === JSON.stringify({ bytes: 0, count: 0 }));
+} catch (e) {
+  out.push(`FAIL 运行出错 ${e.stack}`);
+}
+document.getElementById("out").textContent = out.join("\n");
+window.__bgTxTest = out;
+</script></body></html>

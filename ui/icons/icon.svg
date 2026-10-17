@@ -1,0 +1,7 @@
+<!-- 插件图标（48、128 像素用）：Chrome 主色的圆角方块，里面一个评论气泡、气泡里一个漏斗（"过滤评论"）。
+     BADGE / GLYPH 由 render.mjs 换成浅色或深色的颜色 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="30" fill="BADGE"/>
+  <path d="M38 28H90A12 12 0 0 1 102 40V78A12 12 0 0 1 90 90H58L40 104V90H38A12 12 0 0 1 26 78V40A12 12 0 0 1 38 28Z" fill="GLYPH"/>
+  <path d="M42 42H86L70 61V78L58 72V61Z" fill="BADGE" stroke="BADGE" stroke-width="4" stroke-linejoin="round"/>
+</svg>

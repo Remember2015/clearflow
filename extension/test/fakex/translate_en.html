@@ -1,0 +1,28 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>fake x english</title>
+<style>body{font:15px/1.5 -apple-system,sans-serif;max-width:600px;margin:20px auto} [data-testid=User-Name]{white-space:pre;font-weight:600} [data-testid=tweetText]{white-space:pre-wrap} .x-tr:empty{display:none}</style>
+</head><body><main><div data-testid="primaryColumn"><section role="region"><div aria-label="Timeline"></div></section></div></main><script>
+const EN_ART = {"5001": "<div data-testid=\"cellInnerDiv\"><div><article data-testid=\"tweet\" data-fid=\"5001\"><div data-testid=\"User-Name\"><a href=\"/ja_user\">ja_user</a>\n<a href=\"/ja_user\">@ja_user</a></div><a href=\"/ja_user/status/5001\"><time datetime=\"2026-10-11T01:00:00.000Z\">1h</time></a><div class=\"x-tr\"></div><div data-testid=\"tweetText\" dir=\"auto\"></div></article></div></div>", "5002": "<div data-testid=\"cellInnerDiv\"><div><article data-testid=\"tweet\" data-fid=\"5002\"><div data-testid=\"User-Name\"><a href=\"/zh_user\">zh_user</a>\n<a href=\"/zh_user\">@zh_user</a></div><a href=\"/zh_user/status/5002\"><time datetime=\"2026-10-11T01:00:00.000Z\">1h</time></a><div class=\"x-tr\"></div><div data-testid=\"tweetText\" dir=\"auto\"></div></article></div></div>", "5101": "<div data-testid=\"cellInnerDiv\"><div><article data-testid=\"tweet\" data-fid=\"5101\"><div data-testid=\"User-Name\"><a href=\"/en_op\">en_op</a>\n<a href=\"/en_op\">@en_op</a></div><a href=\"/en_op/status/5101\"><time datetime=\"2026-10-11T01:00:00.000Z\">1h</time></a><div class=\"x-tr\"></div><div data-testid=\"tweetText\" dir=\"auto\"></div></article></div></div>", "5102": "<div data-testid=\"cellInnerDiv\"><div><article data-testid=\"tweet\" data-fid=\"5102\"><div data-testid=\"User-Name\"><a href=\"/en_op\">en_op</a>\n<a href=\"/en_op\">@en_op</a></div><a href=\"/en_op/status/5102\"><time datetime=\"2026-10-11T01:00:00.000Z\">1h</time></a><div class=\"x-tr\"></div><div data-testid=\"tweetText\" dir=\"auto\"></div></article></div></div>", "5103": "<div data-testid=\"cellInnerDiv\"><div><article data-testid=\"tweet\" data-fid=\"5103\"><div data-testid=\"User-Name\"><a href=\"/en_op\">en_op</a>\n<a href=\"/en_op\">@en_op</a></div><a href=\"/en_op/status/5103\"><time datetime=\"2026-10-11T01:00:00.000Z\">1h</time></a><div class=\"x-tr\"></div><div data-testid=\"tweetText\" dir=\"auto\"></div></article></div></div>"};
+const EN = {"5001": {"who": "@ja_user", "lang": "ja", "orig": "今日はいい天気ですね。みんなで散歩に行こう！", "tr": "Today is good weather isn't it. Let us go walking with everyone!", "xtr": true}, "5002": {"who": "@zh_user", "lang": "zh", "orig": "今天发布了新版本，欢迎大家试用。", "tr": "We released a new version today, everyone is welcome to try it.", "xtr": true}, "5101": {"who": "@en_op", "lang": "es", "orig": "Hoy lanzamos tres cosas nuevas.", "tr": "Today we launched three new things.", "xtr": true}, "5102": {"who": "@en_op", "lang": "es", "orig": "Y una cosa más: el plan viejo sigue funcionando hasta el año que viene."}, "5103": {"who": "@en_op", "lang": "en", "orig": "Thanks everyone for the feedback!"}};
+const status = new URLSearchParams(location.search).has("status");
+const ids = status ? ["5101", "5102", "5103"] : ["5001", "5002"];
+document.querySelector('[aria-label="Timeline"]').innerHTML = ids.map((k) => EN_ART[k]).join("");
+function fill(a, mode) {
+  const d = EN[a.dataset.fid], tt = a.querySelector('[data-testid="tweetText"]'), row = a.querySelector(".x-tr");
+  if (!d.xtr) { tt.setAttribute("lang", d.lang); tt.textContent = d.orig; row.innerHTML = ""; return; }
+  tt.setAttribute("lang", mode === "tr" ? "en" : d.lang);
+  tt.textContent = mode === "tr" ? d.tr : d.orig;
+  row.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12"><path d="M12 2l3 7h7l-6 4 2 7-6-4-6 4 2-7-6-4h7z"/></svg><span>Translated from another language</span>' +
+    (mode === "tr" ? '<button type="button" aria-label="Show original">Show original</button>'
+      : '<button type="button" aria-label="Show translation">Show translation</button><button type="button" aria-label="About auto-translation">About</button>');
+  a.dataset.mode = mode;
+}
+document.querySelectorAll("article[data-fid]").forEach((a) => fill(a, "tr"));
+document.addEventListener("click", (e) => {
+  const b = e.target.closest(".x-tr button");
+  if (!b) return;
+  const a = b.closest("article");
+  queueMicrotask(() => fill(a, a.dataset.mode === "tr" ? "orig" : "tr"));
+});
+history.replaceState({}, "", status ? "/en_op/status/5101" : "/home");
+const sc = document.createElement("script"); sc.src = "/inject_bundle.js"; document.body.appendChild(sc);
+</script></body></html>

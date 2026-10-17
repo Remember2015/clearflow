@@ -1,0 +1,95 @@
+// 第三方许可声明（0.24，开源、上架前补的）：打包时 legalComments 是 none（产物里不留许可注释），MIT / Apache-2.0 又要求副本里带上
+// 版权和许可全文，所以每次打包按 esbuild 的 metafile 列出真正打进产物的 npm 包，连同它们的 LICENSE 原文写进
+// <插件目录>/THIRD_PARTY_NOTICES.txt；再加上不是装的包、是拷进来的东西：shadcn/ui 的组件、Lucide 的图标路径、Simple Icons 的 logo
+// 图形、Tailwind CSS 生成的样式。build.mjs 调它。
+import fs from "node:fs";
+import path from "node:path";
+
+const LICENSE_FILES = ["LICENSE", "LICENSE.md", "LICENSE.txt", "license", "license.md", "LICENCE", "LICENCE.md"];
+
+// node_modules/<包> 或 node_modules/@scope/<包>（取最里面那一层，嵌套的依赖也算）
+function packageRoot(file) {
+  const m = file.match(/^(.*node_modules\/(?:@[^/]+\/)?[^/]+)\//);
+  return m ? m[1] : null;
+}
+function readPkg(dir) {
+  const pkg = JSON.parse(fs.readFileSync(path.join(dir, "package.json"), "utf8"));
+  const lic = LICENSE_FILES.map((f) => path.join(dir, f)).find((f) => fs.existsSync(f));
+  return { name: pkg.name, version: pkg.version, license: typeof pkg.license === "string" ? pkg.license : pkg.license?.type || "UNKNOWN",
+    homepage: pkg.homepage || (typeof pkg.repository === "string" ? pkg.repository : pkg.repository?.url) || "", text: lic ? fs.readFileSync(lic, "utf8").trim() : null };
+}
+
+// 拷进来的（不在 node_modules 里，许可原文写在这里）
+const MIT = (holder) => `MIT License
+
+Copyright (c) ${holder}
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.`;
+const VENDORED = [
+  { name: "shadcn/ui components (base-maia style)", where: "ui/src/components/ui (bundled into ui/*.js)", license: "MIT", homepage: "https://ui.shadcn.com",
+    text: MIT("2023 shadcn") },
+  { name: "Lucide icon paths", where: "foldbar.js, ui/src/lib.jsx", license: "ISC", homepage: "https://lucide.dev",
+    text: `ISC License
+
+Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2022 as part of Feather (MIT). All other copyright (c) for Lucide are held by Lucide Contributors 2022.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.` },
+  { name: "Simple Icons (site logo shapes for X, Reddit, YouTube, Xiaohongshu; Hacker News uses the Y Combinator \"Y\")", where: "ui/src/logos.js", license: "CC0-1.0",
+    homepage: "https://simpleicons.org",
+    text: "The SVG shapes are released under CC0 1.0 Universal (public domain dedication).\n" +
+      "The logos themselves are trademarks of their respective owners. ClearFlow is not affiliated with, endorsed by or sponsored by\n" +
+      "X Corp., Reddit, Inc., Google LLC / YouTube, Xingin (Xiaohongshu / RedNote) or Y Combinator; the logos are used only to name the site a setting applies to." },
+];
+
+// metafile：esbuild 的 metafile；tailwindDir：装着 tailwindcss 的 node_modules 目录（它生成的 ui.css 里有它的 preflight）
+export function writeNotices(metafile, outFile, nodeModules) {
+  const roots = new Set();
+  for (const f of Object.keys(metafile.inputs)) { const r = packageRoot(f); if (r) roots.add(r); }
+  const pkgs = new Map();
+  for (const r of roots) { const p = readPkg(path.resolve(path.dirname(nodeModules), r)); pkgs.set(`${p.name}@${p.version}`, p); }
+  const tw = path.join(nodeModules, "tailwindcss");
+  if (fs.existsSync(tw)) { const p = readPkg(tw); p.where = "ui/ui.css (generated)"; pkgs.set(`${p.name}@${p.version}`, p); }
+  const list = [...pkgs.values()].sort((a, b) => a.name.localeCompare(b.name));
+  const missing = list.filter((p) => !p.text);
+  // 包里没带 LICENSE 文件的，照 package.json 写的许可证给一份标准 MIT 文本（只认 MIT；别的许可证缺原文就报错，不悄悄漏掉）
+  for (const p of missing) {
+    if (p.license !== "MIT") throw new Error(`${p.name}@${p.version}（${p.license}）没有许可证原文，THIRD_PARTY_NOTICES 写不全`);
+    p.text = `(No LICENSE file in the package; package.json says MIT.)\n\n${MIT(`${p.name} authors`)}`;
+  }
+  const sep = "\n\n" + "-".repeat(78) + "\n\n";
+  const head = "ClearFlow (清流) bundles or includes the following third-party software and assets.\n" +
+    "ClearFlow itself is released under the MIT License (see LICENSE in https://github.com/remember2015/clearflow).\n" +
+    "This file is generated by ui/notices.mjs during `npm run build`; do not edit it by hand.";
+  const body = [
+    ...list.map((p) => `${p.name} ${p.version} — ${p.license}${p.homepage ? `\n${p.homepage.replace(/^git\+/, "")}` : ""}${p.where ? `\nUsed in: ${p.where}` : ""}\n\n${p.text}`),
+    ...VENDORED.map((v) => `${v.name} — ${v.license}\n${v.homepage}\nUsed in: ${v.where}\n\n${v.text}`),
+  ];
+  fs.writeFileSync(outFile, [head, ...body].join(sep) + "\n");
+  return { packages: list.length, vendored: VENDORED.length };
+}

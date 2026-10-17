@@ -1,0 +1,81 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>fake x translate</title>
+<style>body{font:15px/1.5 -apple-system,sans-serif;max-width:600px;margin:20px auto;background:#fff;color:#0f1419} article{border-bottom:1px solid #eee;padding:10px 16px;display:flow-root} [data-testid=User-Name]{white-space:pre;font-weight:600} [data-testid=tweetText]{white-space:pre-wrap;font-size:15px;line-height:20px} .x-tr{color:#536471;font-size:13px} .x-tr button{border:0;background:none;color:#1d9bf0;padding:0 4px;cursor:pointer}</style>
+</head><body><main><div data-testid="primaryColumn"><section role="region"><div aria-label="时间线：你的主页时间线"><div data-testid="cellInnerDiv"><div><article data-testid="tweet" data-fid="1001">
+  <div data-testid="User-Name">user 1001
+@user1001</div><a href="/user1001/status/1001"><time datetime="2026-10-10T01:49:00.000Z">11分钟</time></a>
+  <div class="x-tr"></div><div data-testid="tweetText" dir="auto"></div>
+  <div role="group" aria-label="1 回复、2 喜欢"></div></article></div></div><div data-testid="cellInnerDiv"><div><article data-testid="tweet" data-fid="1002">
+  <div data-testid="User-Name">user 1002
+@user1002</div><a href="/user1002/status/1002"><time datetime="2026-10-10T01:48:00.000Z">12分钟</time></a>
+  <div class="x-tr"></div><div data-testid="tweetText" dir="auto"></div>
+  <div role="group" aria-label="1 回复、2 喜欢"></div></article></div></div><div data-testid="cellInnerDiv"><div><article data-testid="tweet" data-fid="1003">
+  <div data-testid="User-Name">user 1003
+@user1003</div><a href="/user1003/status/1003"><time datetime="2026-10-10T01:47:00.000Z">13分钟</time></a>
+  <div class="x-tr"></div><div data-testid="tweetText" dir="auto"></div><button data-testid="tweet-text-show-more-link" type="button">显示更多</button>
+  <div role="group" aria-label="1 回复、2 喜欢"></div></article></div></div><div data-testid="cellInnerDiv"><div><article data-testid="tweet" data-fid="1004">
+  <div data-testid="User-Name">user 1004
+@user1004</div><div data-testid="placementTracking">推荐</div>
+  <div class="x-tr"></div><div data-testid="tweetText" dir="auto"></div>
+  <div role="group" aria-label="1 回复、2 喜欢"></div></article></div></div><div data-testid="cellInnerDiv"><div><article data-testid="tweet"><div data-testid="User-Name">中文用户
+@zh_user</div><a href="/zh_user/status/1005"><time datetime="2026-10-10T01:00:00.000Z">1小时</time></a><div data-testid="tweetText" lang="zh" dir="auto">今天的晚饭吃得真开心</div></article></div></div><div data-testid="cellInnerDiv"><div><article data-testid="tweet" data-fid="1006">
+  <div data-testid="User-Name">user 1006
+@user1006</div><a href="/user1006/status/1006"><time datetime="2026-10-10T01:44:00.000Z">16分钟</time></a>
+  <div class="x-tr"></div><div data-testid="tweetText" dir="auto"></div>
+  <div role="group" aria-label="1 回复、2 喜欢"></div></article></div></div><div data-testid="cellInnerDiv"><div><article data-testid="tweet" data-fid="1008">
+  <div data-testid="User-Name">user 1008
+@user1008</div><a href="/user1008/status/1008"><time datetime="2026-10-10T01:42:00.000Z">18分钟</time></a>
+  <div class="x-tr"></div><div data-testid="tweetText" dir="auto"></div>
+  <div role="group" aria-label="1 回复、2 喜欢"></div></article></div></div><div data-testid="cellInnerDiv"><div><article data-testid="tweet" data-fid="1012">
+  <div data-testid="User-Name">user 1012
+@user1012</div><a href="/user1012/status/1012"><time datetime="2026-10-10T01:38:00.000Z">22分钟</time></a>
+  <div class="x-tr"></div><div data-testid="tweetText" dir="auto"></div><button data-testid="tweet-text-show-more-link" type="button">显示更多</button>
+  <div role="group" aria-label="1 回复、2 喜欢"></div></article></div></div></div></section></div></main><script>
+const TX = {"1001": {"orig": "Why is it so hard to hire good people? Because the good ones are not for hire!", "tr": "为什么雇佣好人这么难？因为好人不是雇佣兵！"}, "1002": {"orig": "Shipping the new release today. Huge thanks to everyone who tested the beta.", "tr": "今天发布新版本。非常感谢所有参与 beta 测试的朋友。"}, "1003": {"orig": "This is a long post about our roadmap. First, we will rebuild the editor from", "tr": "这是一篇关于我们路线图的长文。首先，我们会从头重写编", "full_orig": "This is a long post about our roadmap. First, we will rebuild the editor from scratch. Second, sync gets 10x faster.", "full_tr": "这是一篇关于我们路线图的长文。首先，我们会从头重写编辑器。其次，同步快十倍。", "more": true, "fiber": true}, "1004": {"orig": "Try our product today.", "tr": "今天就试试我们的产品。", "ad": true}, "1006": {"orig": "Big update from <a href=\"/openai_test\">@openai_test</a> <img alt=\"🎉\" draggable=\"false\" src=\"data:image/gif;base64,R0lGODlhAQABAAAAACw=\" style=\"width:1.2em;height:1.2em\">\nRead more: <a href=\"https://t.co/fakelink1\" target=\"_blank\" rel=\"noopener noreferrer nofollow\"><span style=\"font-size:0\">https://</span>example.com/launch-n<span style=\"font-size:0\">otes</span><span aria-hidden=\"true\">…</span></a> <a href=\"/hashtag/AI?src=hashtag_click\">#AI</a> <a href=\"/search?q=%24NVDA&amp;src=cashtag_click\">$NVDA</a>", "tr": "来自 <a href=\"/openai_test\">@openai_test</a> 的大更新 <img alt=\"🎉\" draggable=\"false\" src=\"data:image/gif;base64,R0lGODlhAQABAAAAACw=\" style=\"width:1.2em;height:1.2em\">\n阅读更多：<a href=\"https://t.co/fakelink1\" target=\"_blank\" rel=\"noopener noreferrer nofollow\"><span style=\"font-size:0\">https://</span>example.com/launch-n<span style=\"font-size:0\">otes</span><span aria-hidden=\"true\">…</span></a> <a href=\"/hashtag/AI?src=hashtag_click\">#AI</a> <a href=\"/search?q=%24NVDA&amp;src=cashtag_click\">$NVDA</a>"}, "1008": {"orig": "Not gonna lie, this update is a game changer.", "tr": "不会撒谎，这个更新是一个游戏改变者。", "slow": true}, "1012": {"orig": "Another long synthetic post. It keeps going for a while so that X only shows the", "tr": "又一篇合成的长帖。它会写很长，所以 X 只显示", "full_orig": "Another long synthetic post. It keeps going for a while so that X only shows the first part of it in the feed.", "full_tr": "又一篇合成的长帖。它会写很长，所以 X 在信息流里只显示前一部分。", "more": true}};
+// mode: "tr" 显示译文 / "orig" 显示原文。同一个 tweetText 元素换内容（React 复用元素），按钮行一起换
+function fill(a, mode) {
+  const d = TX[a.dataset.fid], tt = a.querySelector('[data-testid="tweetText"]'), row = a.querySelector(".x-tr");
+  const full = d.expanded && d.full_tr;
+  tt.setAttribute("lang", mode === "tr" ? "zh" : "en");
+  tt.innerHTML = mode === "tr" ? (full ? d.full_tr : d.tr) : (full ? d.full_orig : d.orig);
+  row.innerHTML = '<svg data-testid="grok" width="12" height="12"></svg><span>翻译自 英语</span>' + (mode === "tr"
+    ? '<button type="button" aria-label="显示原文">显示原文</button>'
+    : '<button type="button" aria-label="显示翻译">显示翻译</button><button type="button" aria-label="关于自动翻译">关于自动翻译</button>');
+  a.dataset.mode = mode;
+}
+document.querySelectorAll("article[data-fid]").forEach((a) => fill(a, "tr"));
+// ?far=N：第 2 条帖子后面插一段 N 像素高的空白（测视野外先处理的范围）；?start=bottom：一打开就滚到底（测视野上面的也先处理）
+{
+  const qq = new URLSearchParams(location.search), far = Number(qq.get("far")) || 0;
+  if (far) { const cells = document.querySelectorAll('[data-testid="cellInnerDiv"]'); const sp = document.createElement("div"); sp.style.height = far + "px"; sp.className = "x-spacer"; cells[1]?.after(sp); }
+  if (qq.get("start") === "bottom") { const pad = document.createElement("div"); pad.style.height = "600px"; document.body.append(pad); window.scrollTo(0, document.body.scrollHeight); }
+}
+// 仿 React 交给帖子组件的数据：完整原文、完整译文、页面上那一截（和真 X 一样，那截就是 preview_translation）
+document.querySelectorAll("article[data-fid]").forEach((a) => {
+  const d = TX[a.dataset.fid];
+  if (!d.fiber) return;
+  // 全文末尾一条作者贴的链接（页面上显示）+ 一条转发别人帖子视频的 t.co（页面上显示成视频、不显示字，X 的译文里也没有）
+  const lnk = { url: "https://t.co/fakelnk03", display_url: "example.com/roadmap", expanded_url: "https://example.com/roadmap" };
+  const vid = { url: "https://t.co/fakevid03", display_url: "x.com/someone/stat…", expanded_url: "https://x.com/someone/status/1/video/1" };
+  const tweet = { id_str: a.dataset.fid, lang: "en", note_tweet: { text: d.full_orig + " " + lnk.url + " " + vid.url, entity_set: { urls: [lnk, vid] } },
+    entities: { media: [{ url: vid.url, display_url: "pic.x.com/fakevid03", expanded_url: vid.expanded_url, type: "video" }] },
+    grok_translated_post: { translation: d.full_tr + " " + lnk.url, preview_translation: d.tr, source_language: "en", destination_language: "zh", entities: { urls: [lnk] } } };
+  a["__reactFiber$fake"] = { memoizedProps: {}, return: { memoizedProps: { tweet }, return: null } };
+});
+document.addEventListener("click", (e) => {
+  const m = e.target.closest('[data-testid="tweet-text-show-more-link"]');
+  if (m) { window.__moreClicks = (window.__moreClicks || 0) + 1; const a = m.closest("article"); queueMicrotask(() => window.__expand(a.dataset.fid)); return; }
+  const b = e.target.closest('button[aria-label="显示原文"], button[aria-label="显示翻译"]');
+  if (!b) return;
+  const a = b.closest("article"), mode = b.getAttribute("aria-label") === "显示原文" ? "orig" : "tr";
+  if (TX[a.dataset.fid].slow) setTimeout(() => fill(a, mode), 60); else queueMicrotask(() => fill(a, mode));
+});
+window.__expand = (id) => {
+  const a = document.querySelector(`article[data-fid="${id}"]`);
+  TX[id].expanded = true;
+  a.querySelector('[data-testid="tweet-text-show-more-link"]').remove();
+  fill(a, a.dataset.mode);
+};
+// ?path=/某人：同样这些帖子当成用户主页上的（测翻译在用户主页上也改进）
+history.replaceState({}, "", new URLSearchParams(location.search).get("path") || "/home");
+const sc = document.createElement("script"); sc.src = "/inject_bundle.js"; document.body.appendChild(sc);
+</script></body></html>

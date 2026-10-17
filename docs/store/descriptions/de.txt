@@ -1,0 +1,14 @@
+ClearFlow sorgt dafür, dass Kommentarbereiche auf X, Reddit, YouTube, Xiaohongshu (RedNote) und Hacker News wieder übersichtlich sind.
+
+• Entfernt störende Antworten wie Spam und Lead-Generierungs-Bots, Beleidigungen und sexuelle Inhalte und erklärt, warum eine Antwort ausgeblendet wurde. Klicke darauf, um sie trotzdem zu sehen, oder markiere sie, wenn sie fälschlicherweise ausgeblendet wurde.
+• Blendet inhaltsleere Antworten wie „nice“, „+1“ oder „following“ aus. Eine Zeile oben in den Kommentaren zeigt an, wie du sie wieder einblendest.
+• Fasst mehrere ausgeblendete Antworten zu einer Zeile zusammen. Wenn ein Thread voller störender Inhalte ist, wird alles hinter einer Zusammenfassungszeile verborgen.
+• Lernt aus deinen Markierungen: Blende eine Spam-Antwort selbst aus, werden auch ähnliche Antworten verborgen – selbst wenn sie anders formuliert sind, von anderen Konten stammen oder dasselbe Schema verfolgen. Du kannst die Änderung jederzeit rückgängig machen.
+• Übersetzt fremdsprachige Beiträge und Kommentare direkt an Ort und Stelle in deine Sprache. Du kannst jederzeit zum Original zurückschalten. Auf X ersetzt ClearFlow die automatische Übersetzung von X nur, wenn die neue Übersetzung eindeutig besser ist.
+• Schalte die Funktionen für jede Website einzeln ein oder aus und wähle Bereinigung und Übersetzung separat aus.
+
+ClearFlow nutzt zwei Dienste, für die du dich anmelden musst und nutzungsabhängig bezahlst: TypeSafe (bewertet Antworten) und OpenRouter (Übersetzung). Dafür benötigst du jeweils einen eigenen API-Schlüssel. Eine Einrichtungsseite hilft dir bei der Eingabe; in den Einstellungen siehst du deine Ausgaben. Ohne Schlüssel werden nur die integrierten lokalen Regeln angewendet.
+
+Datenschutz: Kommentare und Beiträge, die du auf unterstützten Websites ansiehst, werden zur Bewertung oder Übersetzung an diese beiden Dienste gesendet (gegebenenfalls zusammen mit den zuletzt von dir markierten Spam-Antworten als Beispiele). An uns wird nichts gesendet. Es gibt weder Analysen noch Tracking. Schlüssel und Verlauf bleiben in deinem Browser. Open Source (MIT): https://github.com/remember2015/clearflow
+
+ClearFlow ist nicht mit X, Reddit, YouTube, Xiaohongshu oder Y Combinator verbunden.

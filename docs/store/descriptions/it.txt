@@ -1,0 +1,14 @@
+ClearFlow rende di nuovo leggibili le sezioni dei commenti su X, Reddit, YouTube, Xiaohongshu (RedNote) e Hacker News.
+
+• Nasconde le risposte indesiderate — spam e bot per la generazione di contatti, abusi e contenuti sessuali — e spiega perché ciascuna è stata nascosta. Fai clic per vederla comunque; segnalala se è stata nascosta per errore.
+• Nasconde le risposte prive di contenuto, come «nice», «+1» o «following», mostrando una riga in cima ai commenti per ripristinarle.
+• Raggruppa le sequenze di risposte nascoste in un’unica riga; quando una discussione è piena di contenuti indesiderati, li raccoglie dietro una sola riga di riepilogo.
+• Impara da ciò che segnali: nascondi manualmente una risposta di spam e verranno nascoste anche quelle dello stesso tipo — riscritte, da altri account, ma con lo stesso schema. Puoi annullare l’operazione in qualsiasi momento.
+• Traduce post e commenti in altre lingue nella tua lingua, direttamente nella pagina, con un’opzione per tornare all’originale. Su X sostituisce la traduzione automatica di X solo quando la nuova traduzione è chiaramente migliore.
+• Puoi attivarlo o disattivarlo per ogni sito e scegliere separatamente se usare la pulizia e la traduzione.
+
+ClearFlow usa due servizi a cui ti iscrivi e che paghi in base all’utilizzo, con le tue chiavi API: TypeSafe (per valutare le risposte) e OpenRouter (per la traduzione). Una pagina di configurazione ti aiuta a inserirle; nelle impostazioni puoi vedere quanto hai speso. Senza chiavi, funzionano solo le regole locali integrate.
+
+Privacy: i commenti e i post che visualizzi sui siti supportati vengono inviati a questi due servizi per essere valutati o tradotti (insieme alle risposte di spam che hai segnalato più di recente, se ne hai segnalate). A noi non viene inviato nulla e non ci sono strumenti di analisi o tracciamento. Le chiavi e la cronologia restano nel tuo browser. Open source (MIT): https://github.com/remember2015/clearflow
+
+ClearFlow non è affiliato con X, Reddit, YouTube, Xiaohongshu o Y Combinator.

@@ -1,0 +1,31 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>fake x net</title>
+<style>body{font:15px/1.5 -apple-system,sans-serif;max-width:600px;margin:20px auto;background:#fff;color:#0f1419} article{border-bottom:1px solid #eee;padding:10px 16px;display:flow-root} [data-testid=User-Name]{white-space:pre;font-weight:600} [data-testid=tweetText]{white-space:pre-wrap;font-size:15px;line-height:20px} .x-tr{color:#536471;font-size:13px} .x-tr button{border:0;background:none;color:#1d9bf0;padding:0 4px;cursor:pointer}</style>
+</head><body><main><div data-testid="primaryColumn"><section role="region"><div aria-label="时间线：你的主页时间线" id="tl"></div></section></div></main><script>
+const NET = {"5001": {"orig": "Netflix just raised prices again, and honestly I'm done.", "tr": "网飞又涨价了，说真的我受够了。"}, "5002": {"orig": "This is a long post about our hiring plans. We are opening ten new roles across", "tr": "这是一篇关于我们招聘计划的长文。我们会在", "full_orig": "This is a long post about our hiring plans. We are opening ten new roles across design and engineering, all remote.", "full_tr": "这是一篇关于我们招聘计划的长文。我们会在设计和工程方向开放十个新岗位，全部远程。", "more": true}, "5003": {"orig": "This update is a nice change.", "tr": "这个更新真不错。", "api_tr": "这次更新是个很好的改变。"}, "5004": {"orig": "Great point about caching", "tr": "关于缓存说得很好", "reply_to": "someone"}}, CELLS = "<div data-testid=\"cellInnerDiv\"><div><article data-testid=\"tweet\" data-fid=\"5001\">\n  <div data-testid=\"User-Name\">user 5001\n@user5001</div><a href=\"/user5001/status/5001\"><time datetime=\"2026-10-07T07:09:00.000Z\">4011分钟</time></a>\n  <div class=\"x-tr\"></div><div data-testid=\"tweetText\" dir=\"auto\"></div>\n  <div role=\"group\" aria-label=\"1 回复、2 喜欢\"></div></article></div></div><div data-testid=\"cellInnerDiv\"><div><article data-testid=\"tweet\" data-fid=\"5002\">\n  <div data-testid=\"User-Name\">user 5002\n@user5002</div><a href=\"/user5002/status/5002\"><time datetime=\"2026-10-07T07:08:00.000Z\">4012分钟</time></a>\n  <div class=\"x-tr\"></div><div data-testid=\"tweetText\" dir=\"auto\"></div><button data-testid=\"tweet-text-show-more-link\" type=\"button\">显示更多</button>\n  <div role=\"group\" aria-label=\"1 回复、2 喜欢\"></div></article></div></div><div data-testid=\"cellInnerDiv\"><div><article data-testid=\"tweet\" data-fid=\"5003\">\n  <div data-testid=\"User-Name\">user 5003\n@user5003</div><a href=\"/user5003/status/5003\"><time datetime=\"2026-10-07T07:07:00.000Z\">4013分钟</time></a>\n  <div class=\"x-tr\"></div><div data-testid=\"tweetText\" dir=\"auto\"></div>\n  <div role=\"group\" aria-label=\"1 回复、2 喜欢\"></div></article></div></div><div data-testid=\"cellInnerDiv\"><div><article data-testid=\"tweet\" data-fid=\"5004\">\n  <div data-testid=\"User-Name\">user 5004\n@user5004</div><a href=\"/user5004/status/5004\"><time datetime=\"2026-10-07T07:06:00.000Z\">4014分钟</time></a>\n  <div class=\"x-tr\"></div><div data-testid=\"tweetText\" dir=\"auto\"></div>\n  <div role=\"group\" aria-label=\"1 回复、2 喜欢\"></div></article></div></div>";
+window.__toggles = {}; window.__moreClicks = 0;
+function fill(a, mode) {
+  const d = NET[a.dataset.fid], tt = a.querySelector('[data-testid="tweetText"]'), row = a.querySelector(".x-tr");
+  tt.setAttribute("lang", mode === "tr" ? "zh" : "en");
+  tt.textContent = mode === "tr" ? d.tr : d.orig;
+  row.innerHTML = '<svg width="12" height="12"></svg><span>翻译自 英语</span>' + (mode === "tr"
+    ? '<button type="button" aria-label="显示原文">显示原文</button>'
+    : '<button type="button" aria-label="显示翻译">显示翻译</button><button type="button" aria-label="关于自动翻译">关于自动翻译</button>');
+}
+document.addEventListener("click", (e) => {
+  if (e.target.closest('[data-testid="tweet-text-show-more-link"]')) { window.__moreClicks++; return; }
+  const b = e.target.closest(".x-tr button");
+  if (!b) return;
+  const a = b.closest("article"); window.__toggles[a.dataset.fid] = (window.__toggles[a.dataset.fid] || 0) + 1;
+  queueMicrotask(() => fill(a, b.getAttribute("aria-label") === "显示原文" ? "orig" : "tr"));
+}, true);
+history.replaceState({}, "", "/home");
+// 先装好插件（测试包，里面有 pagedata.js），再像 X 一样请求时间线接口，拿到了才画帖子
+const sc = document.createElement("script"); sc.src = "/inject_bundle.js";
+sc.onload = () => {
+  const x = new XMLHttpRequest();
+  x.open("GET", "/i/api/graphql/fake/HomeTimeline"); // X 用 POST；本地静态服务器只收 GET，旁听不看方法
+  x.onload = () => { document.getElementById("tl").innerHTML = CELLS; document.querySelectorAll("article[data-fid]").forEach((a) => fill(a, "tr")); window.__rendered = true; };
+  x.send();
+};
+document.body.appendChild(sc);
+</script></body></html>

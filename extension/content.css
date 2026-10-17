@@ -1,0 +1,250 @@
+/* 折叠条：一行胶囊。左边类别标签，中间原因、分数、账号，右边图标按钮；整条可点（展开 / 收起）。
+   高 36、两端半圆；圆形按钮 28 + 上下各 4 = 36、标签 22 高离左边 7，两端和胶囊的弧同心 */
+.ff-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  margin: 4px 16px;
+  padding: 0 4px 0 7px;
+  border-radius: 18px;
+  background: rgba(15, 20, 25, 0.05);
+  color: inherit;
+  font: 13px/18px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  cursor: pointer;
+  transition: background-color 120ms ease-out;
+}
+.ff-bar:hover { background: rgba(15, 20, 25, 0.08); }
+/* Reddit：评论的折叠条放在正文那一格里（左边已经有缩进线），帖子卡片的放在卡片上面，都不用再留左右边距 */
+.ff-bar.ff-reddit { margin: 4px 0; }
+/* Hacker News：折叠条放在评论正文那一格的位置（作者那一行下面），不留左右边距；HN 的表格很窄，最多和正文一样宽 */
+.ff-bar.ff-hn { margin: 4px 0; max-width: 640px; }
+/* YouTube：折叠条放在评论正文的位置（作者那一行下面） */
+.ff-bar.ff-yt { margin: 6px 0; max-width: 640px; font-size: 13px; }
+/* 小红书：折叠条放在评论正文的位置（作者那一行下面、时间赞回复那一行上面） */
+.ff-bar.ff-xhs { margin: 4px 0; max-width: 560px; font-size: 13px; }
+/* Reddit 的译文都在原位置换（见 rtranslate.js）。标题上面那一行说明：帖子列表的卡片上盖着一层透明链接（点卡片哪里都进帖子），
+   说明这一行让点击穿过去、和点卡片一样，只有"看原文"按钮浮在上面 */
+.ff-rtx-note.ff-tx-note { margin: -6px 0 2px; pointer-events: none; } /* 往上靠：上面版块、时间那一行本来就留着空（用户嫌离上面太远） */
+/* 评论、正文上面的说明（带格式翻的那种是这一格的第一个孩子；纯文字翻的在译文块里）：贴着上面 */
+.ff-rtx-bnote.ff-tx-note, .ff-rtx .ff-tx-note { margin: -2px 0 2px; }
+.ff-rtx-note .ff-tx-toggle { position: relative; z-index: 1; pointer-events: auto; }
+/* 搜索的"媒体"那一栏是瀑布流（Reddit 量好每格的高度排的，变高了会压住下面那格）：说明不另占一行，放在版块那一行的最右边，
+   只露图标和"看原文"（"翻译自英语"留给读屏、鼠标提示里也有），一列不到 300 像素也放得下；还放不下才折到下一行 */
+.ff-rtx-mrow { display: flex; flex-wrap: wrap; align-items: center; column-gap: 8px; }
+.ff-rtx-mrow > .ff-rtx-note.ff-tx-note { margin: 0; margin-inline-start: auto; }
+.ff-rtx-mrow > .ff-rtx-note .ff-tx-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.ff-rtx-mrow > .ff-rtx-note .ff-tx-toggle::before { content: none; }
+/* 列表里一行一个的标题（Hacker News）：说明不另占一行，标题后面一个 ✦ 按钮，鼠标停上去写着"翻译自英语"，点它看原文 */
+.ff-tx-inote { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; margin: -4px 0 -4px 2px; padding: 0;
+  border: 0; border-radius: 10px; background: none; color: rgb(83, 100, 113); vertical-align: middle; cursor: pointer; transition: background-color 120ms ease-out; }
+.ff-tx-inote:hover { background: rgba(127, 127, 127, 0.15); }
+.ff-tx-inote:focus-visible { outline: 2px solid rgb(29, 155, 240); outline-offset: 1px; }
+.ff-tx-inote svg { width: 13px; height: 13px; fill: currentColor; }
+.ff-dark .ff-tx-inote { color: rgb(139, 152, 165); }
+/* YouTube：评论的翻译说明放在作者那一行后面（不进正文那一格，免得 YouTube 的"展开"以为内容变长了）；评论折起来时不显示 */
+.ff-tx-note.ff-yt-hnote { display: inline-flex; align-self: baseline; margin: 0; margin-inline-start: 8px; font-size: 12px; line-height: 18px; pointer-events: auto; }
+ytd-comment-view-model:has(.ff-bar) .ff-yt-hnote { display: none; }
+/* 小红书：评论的翻译说明放在作者那一行（名字、"作者"标签）后面；评论折起来时不显示 */
+.ff-tx-note.ff-xhs-hnote { display: inline-flex; margin: 0; margin-inline-start: 8px; font-size: 12px; line-height: 18px; pointer-events: auto; }
+.comment-item:has(> .comment-inner-container .ff-bar) .ff-xhs-hnote { display: none; }
+/* 小红书：笔记标题上面那一行说明（Reddit 的往上靠 6px，这里上面是吸顶的作者栏，会被盖住） */
+#noteContainer .note-content > .ff-rtx-note.ff-tx-note { margin: 8px 0 -4px; pointer-events: auto; }
+/* YouTube：简介上面那一行说明，和上面的观看次数隔开 */
+ytd-watch-metadata .ff-rtx-note.ff-tx-note { margin: 6px 0 2px; }
+/* 放在标题最前面的（YouTube）：和后面的字留一点空 */
+.ff-tx-inote.ff-tx-inote-before { margin: -4px 4px -4px 0; }
+.ff-rtx .ff-tx-text, .ff-rtx-body .ff-tx-text, .ff-rtx-preview .ff-tx-text { white-space: pre-wrap; }
+/* 长正文切块翻：还没翻到的那几块先照原文、淡一点；说明后面"· 翻译中…" */
+.ff-rtx-pending { opacity: 0.5; }
+.ff-tx-busy::before { content: "· "; }
+/* 帖子列表卡片里的摘要译文：照抄了 Reddit 的 .md 就跟它的行数（窄屏 3 行、宽屏 6 行）；没抄到才最多 4 行 */
+.ff-rtx-preview .ff-tx-text.ff-rtx-clamp { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
+.ff-tag {
+  flex: none;
+  padding: 3px 8px;
+  border-radius: 11px;
+  background: rgba(244, 33, 46, 0.12);
+  color: rgb(196, 22, 72);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+}
+.ff-tag-abuse { background: rgba(255, 122, 0, 0.14); color: rgb(160, 70, 0); }
+.ff-tag-sexual { background: rgba(120, 86, 255, 0.13); color: rgb(98, 62, 206); }
+.ff-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ff-score, .ff-who { margin-inline-start: 6px; opacity: 0.6; }
+.ff-who::before { content: "· "; } /* 和原因隔开：M1 的原因里本身也带一个 @ 账号 */
+.ff-score { font-variant-numeric: tabular-nums; }
+/* 合起来的一串（0.22.1）：几个类别标签挨着，条数后面淡一点写出现最多的原因 */
+.ff-group-why { margin-inline-start: 6px; opacity: 0.6; }
+.ff-group-why::before { content: "· "; }
+.ff-sp { flex: 1; }
+/* 只有图标的按钮：平时是淡色的线条图标，悬停照 X 自己的操作按钮变蓝、加浅蓝圆底 */
+.ff-icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+  transition-property: color, background-color, opacity, transform;
+  transition-duration: 120ms;
+  transition-timing-function: ease-out;
+}
+.ff-icon:hover { opacity: 1; color: rgb(29, 155, 240); background: rgba(29, 155, 240, 0.1); }
+.ff-icon:active { transform: scale(0.96); }
+.ff-icon:focus-visible { opacity: 1; outline: 2px solid rgb(29, 155, 240); outline-offset: 1px; }
+.ff-icon svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+/* "判对了吗？"：图标前那句话，交代这两个大拇指是在评价插件的判断 */
+.ff-ask { flex: none; margin-inline-end: -4px; font-size: 12px; opacity: 0.6; white-space: nowrap; }
+/* 已选（你标过的 👍）、已记住这句话：图形填实变蓝，漏斗去掉加号 */
+.ff-icon.ff-on { opacity: 1; color: rgb(29, 155, 240); }
+.ff-icon.ff-on .ff-shape { fill: currentColor; }
+.ff-icon.ff-on .ff-plus { display: none; }
+/* X 的深色主题（暗蓝 / 纯黑）：content.js 按页面底色给 <html> 加 ff-dark */
+.ff-dark .ff-bar { background: rgba(255, 255, 255, 0.07); }
+.ff-dark .ff-bar:hover { background: rgba(255, 255, 255, 0.1); }
+.ff-dark .ff-tag { background: rgba(249, 24, 128, 0.18); color: rgb(255, 128, 166); }
+.ff-dark .ff-tag-abuse { background: rgba(255, 173, 31, 0.16); color: rgb(255, 190, 92); }
+.ff-dark .ff-tag-sexual { background: rgba(160, 130, 255, 0.2); color: rgb(196, 178, 255); }
+.ff-dark .ff-banner { background: rgba(255, 173, 31, 0.12); }
+/* 评论上的"清理掉这条"漏斗（0.26）：鼠标移到这条评论上才看得见（键盘移过来、没有悬停的触屏也看得见） */
+.ff-mark { width: 24px; height: 24px; margin-inline-start: 6px; vertical-align: middle; opacity: 0; }
+.ff-mark svg { width: 16px; height: 16px; }
+[data-ff-mark-host]:hover .ff-mark, .ff-mark:focus-visible { opacity: 0.6; }
+[data-ff-mark-host] .ff-mark:hover { opacity: 1; }
+@media (hover: none) { .ff-mark { opacity: 0.6; } }
+/* 标记以后的提示：页面底部居中一条小条，6 秒后自己消失 */
+.ff-toast {
+  position: fixed; inset-inline: 0; bottom: 24px; margin: 0 auto; width: max-content; max-width: calc(100vw - 32px); z-index: 2147483000;
+  display: flex; align-items: center; gap: 14px; padding: 10px 16px; border-radius: 8px;
+  background: rgb(15, 20, 25); color: #fff; font: 14px/1.4 -apple-system, "Segoe UI", Roboto, "PingFang SC", sans-serif;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2); opacity: 0; transform: translateY(8px); pointer-events: none;
+  transition-property: opacity, transform; transition-duration: 150ms; transition-timing-function: ease-out;
+}
+.ff-toast-on { opacity: 1; transform: none; pointer-events: auto; }
+.ff-toast-act { flex: none; padding: 0; border: 0; background: none; color: rgb(120, 190, 255); font: inherit; font-weight: 600; cursor: pointer; }
+.ff-toast-act:hover { text-decoration: underline; }
+.ff-dark .ff-toast { background: #fff; color: rgb(15, 20, 25); }
+.ff-dark .ff-toast-act { color: rgb(29, 155, 240); }
+@media (prefers-reduced-motion: reduce) {
+  .ff-bar, .ff-icon, .ff-toast { transition: none; }
+  .ff-icon:active { transform: none; }
+}
+.ff-btn {
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: rgb(29, 155, 240);
+  font: inherit;
+  cursor: pointer;
+}
+.ff-btn:hover { text-decoration: underline; }
+.ff-btn:focus-visible { outline: 2px solid rgb(29, 155, 240); outline-offset: 2px; border-radius: 4px; }
+.ff-banner {
+  margin: 8px 16px 12px;
+  padding: 9px 14px;
+  border-radius: 16px;
+  background: rgba(255, 173, 31, 0.14);
+  color: inherit;
+  font: 14px/20px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+/* 「赞」「mark」这类回复（0.22）：整条藏起来，评论区最上面一行"清理了 N 条… · 查看"（整行可点），点开后每条作者那一栏后面一个小标签。
+   这一行比折叠条矮、没有类别色（不是垃圾），宽度跟着字走 */
+.ff-fill-line {
+  display: flex;
+  width: fit-content;
+  max-width: calc(100% - 32px);
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  margin: 4px 16px 8px;
+  padding: 0 12px;
+  border-radius: 15px;
+  background: rgba(15, 20, 25, 0.05);
+  color: inherit;
+  font: 13px/18px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  cursor: pointer;
+  transition: background-color 120ms ease-out;
+}
+.ff-fill-line:hover { background: rgba(15, 20, 25, 0.08); }
+/* 这一行前面的插件图标（0.27）：颜色照插件图标，浅色 Chrome 主色底白漏斗，深色浅蓝底深蓝漏斗（ui/icons/render.mjs） */
+.ff-fill-logo { flex: none; display: inline-flex; width: 16px; height: 16px; }
+.ff-fill-logo svg { width: 16px; height: 16px; }
+.ff-logo-bg { fill: #0b57d0; }
+.ff-logo-fg { fill: #fff; stroke: #fff; }
+.ff-dark .ff-logo-bg { fill: #a8c7fa; }
+.ff-dark .ff-logo-fg { fill: #062e6f; stroke: #062e6f; }
+.ff-fill-line:focus-visible { outline: 2px solid rgb(29, 155, 240); outline-offset: 1px; }
+.ff-fill-line.ff-reddit, .ff-fill-line.ff-yt, .ff-fill-line.ff-xhs { margin: 4px 0 10px; max-width: 100%; }
+/* X 上评论区下面那一行（0.27.2）：在最后一条回复那块的下边框下面，上下留一点空，看着是单独一块 */
+.ff-fill-bottom:not(.ff-reddit):not(.ff-yt):not(.ff-xhs) { margin-top: 12px; margin-bottom: 12px; }
+.ff-fill-text { opacity: 0.75; }
+.ff-fill-act { flex: none; padding: 0; border: 0; background: none; color: rgb(29, 155, 240); font: inherit; cursor: pointer; }
+.ff-fill-tag {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  margin-inline-start: 6px;
+  padding: 1px 7px;
+  border-radius: 9px;
+  background: rgba(15, 20, 25, 0.06);
+  color: rgb(83, 100, 113);
+  font: 11px/16px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  white-space: nowrap;
+}
+.ff-dark .ff-fill-line { background: rgba(255, 255, 255, 0.07); }
+.ff-dark .ff-fill-line:hover { background: rgba(255, 255, 255, 0.1); }
+.ff-dark .ff-fill-tag { background: rgba(255, 255, 255, 0.08); color: rgb(139, 152, 165); }
+@media (prefers-reduced-motion: reduce) { .ff-fill-line { transition: none; } }
+/* "…"菜单里加的那一项：正常情况下复制 X 原生选项的样式；找不到原生选项时才用这个兜底样式 */
+.ff-menuitem-plain {
+  padding: 12px 16px;
+  font: 600 15px/20px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: inherit;
+  cursor: pointer;
+}
+.ff-menuitem-plain:hover, .ff-menuitem-plain:focus-visible { background: rgba(127, 127, 127, 0.1); outline: none; }
+/* "…"菜单里照 X 原生选项克隆的那一项：X 自己的悬停底色是脚本加的，克隆过来就没了（用户 10-17：没有悬停效果），这里补上 */
+.ff-menuitem:not(.ff-menuitem-plain) { cursor: pointer; transition-property: background-color; transition-duration: 150ms; transition-timing-function: ease-out; }
+.ff-menuitem:not(.ff-menuitem-plain):hover, .ff-menuitem:not(.ff-menuitem-plain):focus-visible { background-color: rgba(15, 20, 25, 0.04); outline: none; }
+.ff-dark .ff-menuitem:not(.ff-menuitem-plain):hover, .ff-dark .ff-menuitem:not(.ff-menuitem-plain):focus-visible { background-color: rgba(231, 233, 234, 0.07); }
+
+/* 首页翻译增强：换上的译文（字体、颜色照抄 X 的正文）和下面一行小字 */
+.ff-tx-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.ff-tx-link { color: rgb(29, 155, 240); text-decoration: none; }
+.ff-tx-link:hover { text-decoration: underline; }
+.ff-tx-note {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  color: rgb(83, 100, 113);
+  font: 13px/16px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+.ff-dark .ff-tx-note { color: rgb(139, 152, 165); }
+.ff-tx-note svg { flex: none; width: 14px; height: 14px; fill: currentColor; }
+.ff-tx-text[hidden] + .ff-tx-note { margin-top: 2px; }
+/* 帖子页补翻：说明在正文上面，和 X 自己的"翻译自 英语"一样 */
+.ff-tx-fill .ff-tx-note { margin: 0 0 4px; }
+.ff-tx [hidden] { display: none !important; }
+.ff-tx-toggle { padding: 0; border: 0; background: none; color: rgb(29, 155, 240); font: inherit; cursor: pointer; }
+.ff-tx-toggle::before { content: "· "; color: rgb(83, 100, 113); }
+.ff-dark .ff-tx-toggle::before { color: rgb(139, 152, 165); }
+.ff-tx-toggle:hover { text-decoration: underline; }
+.ff-tx-toggle:focus-visible { outline: 2px solid rgb(29, 155, 240); outline-offset: 2px; border-radius: 4px; }

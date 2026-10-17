@@ -1,0 +1,6 @@
+<!-- 32 像素（Retina 屏的工具栏用的就是这张）：同样的气泡和漏斗，按 32 格对齐 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="7.5" fill="BADGE"/>
+  <path d="M8 5.5H24A3 3 0 0 1 27 8.5V19.5A3 3 0 0 1 24 22.5H14.5L9 27V22.5H8A3 3 0 0 1 5 19.5V8.5A3 3 0 0 1 8 5.5Z" fill="GLYPH"/>
+  <path d="M9.5 9H22.5L17.5 14.5V19.5L14.5 18V14.5Z" fill="BADGE" stroke="BADGE" stroke-width="0.8" stroke-linejoin="round"/>
+</svg>

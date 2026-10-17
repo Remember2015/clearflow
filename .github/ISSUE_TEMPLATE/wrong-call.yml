@@ -1,0 +1,25 @@
+name: Wrong call
+description: A reply was cleaned that shouldn't have been, or obvious junk got through
+labels: ["wrong-call"]
+body:
+  - type: markdown
+    attributes:
+      value: "Please describe the reply instead of pasting it, and don't include anyone's username — this tracker is public. You can also mark it in place: open the bar → 👎 (wrongly cleaned) or the post's ⋯ menu → Clean this one (missed)."
+  - type: dropdown
+    id: site
+    attributes:
+      label: Site
+      options: [X, Reddit, YouTube, Xiaohongshu / RedNote, Hacker News]
+    validations: { required: true }
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What went wrong
+      options: [Cleaned but it was fine, Not cleaned but it was junk, "Hidden as a \"nice / +1\" reply but it had content"]
+    validations: { required: true }
+  - type: textarea
+    id: describe
+    attributes:
+      label: Describe the reply and the post it was under
+      description: Language, roughly what it said, the reason shown on the bar (and its score).
+    validations: { required: true }

@@ -1,0 +1,26 @@
+name: A site changed and something stopped working
+description: Bars don't appear, translations are missing, the popup says nothing is happening…
+labels: ["site-changed"]
+body:
+  - type: dropdown
+    id: site
+    attributes:
+      label: Site
+      options: [X, Reddit, YouTube, Xiaohongshu / RedNote, Hacker News]
+    validations: { required: true }
+  - type: textarea
+    id: what
+    attributes:
+      label: What happens, and on which kind of page
+      description: e.g. "post page comments are no longer cleaned", "search results aren't translated". Please don't paste other people's usernames or comments.
+    validations: { required: true }
+  - type: textarea
+    id: probe
+    attributes:
+      label: Probe output (X only, optional)
+      description: On an X post page, paste extension/test/x_probe.js into the browser console and paste its report here. It lists which page parts the extension can find; it doesn't include anyone's content.
+  - type: input
+    id: version
+    attributes:
+      label: ClearFlow version and browser
+      placeholder: "0.27.4, Chrome 141"

@@ -1,0 +1,9 @@
+# Built files are committed so the extension can be loaded straight from a clone; mark them generated for GitHub
+extension/ui/*.js linguist-generated=true
+extension/ui/ui.css linguist-generated=true
+extension/i18n_all.js linguist-generated=true
+extension/i18n_page.js linguist-generated=true
+extension/_locales/** linguist-generated=true
+extension/THIRD_PARTY_NOTICES.txt linguist-generated=true
+extension/test/x_probe.js linguist-generated=true
+extension/test/fakex/** linguist-generated=true

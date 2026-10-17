@@ -1,0 +1,14 @@
+ClearFlow, X, Reddit, YouTube, Xiaohongshu (RedNote) ve Hacker News’teki yorum bölümlerini yeniden okunabilir hâle getirir.
+
+• Gereksiz yanıtları temizler: spam ve potansiyel müşteri bulma botları, taciz ve cinsel içerikler. Ayrıca her yanıtın neden gizlendiğini söyler. Yine de görmek için tıklayın; yanlış gizlendiğinde işaretleyin.
+• “nice”, “+1” veya “following” gibi içerik sunmayan yanıtları gizler ve yorumların en üstüne, bunları yeniden göstermenizi sağlayan tek satırlık bir seçenek ekler.
+• Art arda gelen gizli yanıtları tek satırda birleştirir; bir konu dizisi gereksiz içeriklerle doluysa hepsini tek bir özet satırının arkasına toplar.
+• İşaretlediklerinizden öğrenir: Bir spam yanıtını kendiniz gizlediğinizde, aynı türdeki yanıtlar da gizlenir. Bunlar yeniden yazılmış, başka hesaplardan gönderilmiş veya aynı yöntemi tanıtıyor olabilir. İstediğiniz zaman işlemi geri alabilirsiniz.
+• Yabancı dildeki gönderi ve yorumları, sayfada ve kendi dilinize çevirir; ayrıca özgün metne dönme seçeneği sunar. X’te, X’in otomatik çevirisini yalnızca yeni çeviri belirgin biçimde daha iyiyse değiştirir.
+• Her site için ayrı ayrı açıp kapatabilir; temizlik ve çeviri özelliklerini birbirinden bağımsız seçebilirsiniz.
+
+ClearFlow, kaydolup kullanıma göre ödeme yaptığınız ve kendi API anahtarlarınızı kullandığınız iki hizmetten yararlanır: TypeSafe (yanıtları değerlendirmek için) ve OpenRouter (çeviri için). Kurulum sayfası anahtarları girmenize yardımcı olur; ayarlardan ne kadar harcadığınızı görebilirsiniz. Anahtarlar olmadan yalnızca yerleşik yerel kurallar çalışır.
+
+Gizlilik: Desteklenen sitelerde görüntülediğiniz yorumlar ve gönderiler, değerlendirme veya çeviri için bu iki hizmete gönderilir. Spam olarak işaretlediğiniz yanıtlar varsa, en son işaretledikleriniz örnek olarak gönderilir. Bize hiçbir şey gönderilmez; analiz veya izleme yapılmaz. Anahtarlarınız ve geçmişiniz tarayıcınızda kalır. Açık kaynaklıdır (MIT): https://github.com/remember2015/clearflow
+
+ClearFlow; X, Reddit, YouTube, Xiaohongshu veya Y Combinator ile bağlantılı değildir.

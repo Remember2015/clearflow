@@ -1,0 +1,14 @@
+ClearFlow sprawia, że sekcje komentarzy na X, Reddicie, YouTube, Xiaohongshu (RedNote) i Hacker News znów są czytelne.
+
+• Ukrywa zbędne odpowiedzi — spam i boty do pozyskiwania potencjalnych klientów, nadużycia i treści seksualne — oraz wyjaśnia, dlaczego każda z nich została ukryta. Kliknij, aby ją mimo to zobaczyć; oznacz ją, jeśli została błędnie ukryta.
+• Ukrywa odpowiedzi niewnoszące żadnej treści, takie jak „nice”, „+1” czy „following”, i dodaje u góry komentarzy jeden wiersz, który pozwala je przywrócić.
+• Łączy ciągi ukrytych odpowiedzi w jeden wiersz, a gdy cały wątek jest pełen zbędnych treści, chowa je za jednym wierszem podsumowania.
+• Uczy się na podstawie Twoich oznaczeń: ukryj samodzielnie odpowiedź spamową, a ukryte zostaną też podobne odpowiedzi — przeredagowane, publikowane z innych kont i promujące ten sam przekręt. Cofnij tę zmianę w dowolnej chwili.
+• Tłumaczy posty i komentarze w obcych językach na Twój język, bezpośrednio na stronie, z możliwością powrotu do oryginału. Na X zastępuje automatyczne tłumaczenie X tylko wtedy, gdy nowe tłumaczenie jest wyraźnie lepsze.
+• Włączaj lub wyłączaj rozszerzenie osobno dla każdej witryny i niezależnie wybieraj czyszczenie oraz tłumaczenie.
+
+ClearFlow korzysta z dwóch usług, w których zakładasz konto i płacisz za użycie, podając własne klucze API: TypeSafe (ocena odpowiedzi) i OpenRouter (tłumaczenie). Strona konfiguracji pomoże Ci je wprowadzić, a w ustawieniach sprawdzisz poniesione koszty. Bez kluczy działają tylko wbudowane reguły lokalne.
+
+Prywatność: komentarze i posty wyświetlane na obsługiwanych witrynach są wysyłane do tych dwóch usług w celu oceny lub tłumaczenia (wraz z ostatnio oznaczonymi przez Ciebie odpowiedziami spamowymi jako przykładami, jeśli jakieś oznaczono). Żadne dane nie są wysyłane do nas. Nie ma analityki ani śledzenia. Klucze i historia pozostają w Twojej przeglądarce. Otwarty kod źródłowy (MIT): https://github.com/remember2015/clearflow
+
+ClearFlow nie jest powiązany z X, Redditem, YouTube, Xiaohongshu ani Y Combinatorem.

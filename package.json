@@ -1,0 +1,17 @@
+{
+  "name": "clearflow",
+  "version": "0.27.4",
+  "private": true,
+  "description": "Cleans up spam, abuse and empty replies and translates posts on X, Reddit, YouTube, Xiaohongshu and Hacker News.",
+  "license": "MIT",
+  "homepage": "https://github.com/remember2015/clearflow",
+  "repository": { "type": "git", "url": "https://github.com/remember2015/clearflow.git" },
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "setup": "npm --prefix ui ci",
+    "build": "npm --prefix ui run build && python3 i18n/build.py",
+    "test": "node extension/test/run_all.mjs",
+    "test:unit": "node extension/test/run_all.mjs --unit",
+    "pack": "node scripts/pack.mjs"
+  }
+}

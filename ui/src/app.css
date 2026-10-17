@@ -1,0 +1,149 @@
+/* 弹窗和设置页的样式（0.19 起）：Tailwind 4 + shadcn/ui 的 maia 风格（组件在 components/ui，底层是 Base UI），打包成插件里的 ui/ui.css。
+   颜色用 shadcn 的中性色；主色、焦点框、深色底照 Chrome 自己的设置页（浅 #0B57D0、深 #A8C7FA，深色底 #1F1F1F、卡片 #27282A），
+   插件页面和 Chrome 的设置页、弹出框看上去是一家的。三档里选中的那一格用 Chrome 的 secondary-container（--tonal），maia 原来的浅灰在深色下看不出来。
+   深浅色跟浏览器的外观（prefers-color-scheme，Tailwind 4 的 dark: 默认就是它），不跟网站。从右往左的语言靠组件里的逻辑属性（ms-/ps-/start-）。 */
+@import "tailwindcss" source(none);
+@import "tw-animate-css";
+@import "./styles/shadcn.css";
+@source "./**/*.{js,jsx,ts,tsx}";
+
+@theme inline {
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans", "Microsoft YaHei", "Noto Sans", sans-serif;
+  --font-heading: var(--font-sans);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-page: var(--page);
+  --color-tonal: var(--tonal);
+  --color-tonal-foreground: var(--tonal-foreground);
+  --color-on: var(--on);
+  --color-seg-track: var(--seg-track);
+  --color-seg-thumb: var(--seg-thumb);
+  --shadow-seg: var(--seg-shadow);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  color-scheme: light dark;
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: #0b57d0;
+  --primary-foreground: #ffffff;
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: #0b57d0;
+  /* 开着的开关、今天那根柱子（0.20.1）：浅色和主色一样 */
+  --on: #0b57d0;
+  --page: oklch(0.975 0 0); /* 设置页的底，卡片是白的 */
+  --tonal: #c2e7ff;
+  --tonal-foreground: #001d35;
+  /* 宽松 / 标准 / 严格（0.19.2 起照苹果的分段控件）：灰色的槽、选中那一格是浮起来的白块 */
+  --seg-track: rgb(118 118 128 / 0.12);
+  --seg-thumb: #ffffff;
+  --seg-shadow: 0 1px 2px rgb(0 0 0 / 0.14), 0 0 0 0.5px rgb(0 0 0 / 0.05);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #1f1f1f;
+    --foreground: oklch(0.985 0 0);
+    --card: #27282a;
+    --card-foreground: oklch(0.985 0 0);
+    --popover: #27282a;
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: #a8c7fa;
+    --primary-foreground: #062e6f;
+    --secondary: oklch(0.269 0 0);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.269 0 0);
+    --muted-foreground: oklch(0.708 0 0);
+    --accent: oklch(0.269 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: #a8c7fa;
+    /* 深色下主色是浅蓝（Chrome 的深色设置页），拿来填开关太亮、配深蓝圆钮看着不舒服（0.20.1 用户）：换成中等亮度的蓝、白圆钮 */
+    --on: #3d7ff5;
+    --page: #1f1f1f;
+    --tonal: #004a77;
+    --tonal-foreground: #c2e7ff;
+    --seg-track: rgb(118 118 128 / 0.24);
+    --seg-thumb: #636366;
+    --seg-shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+  }
+}
+
+/* 细线（0.19.3，用户："边框都改成 0.5px 宽这样更精致一点"）：边框、行间分隔线、卡片和弹出框的描边一律 0.5px（高分屏上是一个物理像素）。
+   Chrome 把 0 到 1px 之间的 border 一律画成 1px（155 实测，DPR 1 / 2 / 3 都一样），所以 0.5px 只能用阴影画：
+   - 卡片、弹出框、菜单、确认框的描边本来就是 ring-1（阴影），改成 0.5px；
+   - 行间分隔线（border-t）：边框留着当 1px 透明的占位（布局不动），线用 0.5px 的内阴影画；每张卡片第一行不画；
+   - 有颜色的边框（border-border / border-input：描边按钮、输入框、"判对了吗"那几条）：同样边框透明占位，换成 0.5px 的内描边，
+     和 Tailwind 的 ring 一样拼进 box-shadow，焦点框（focus-visible:ring-[3px]）照常叠上去。
+   不放进 @layer：要压过 Tailwind 的工具类 */
+.ring-1 { --tw-ring-shadow: var(--tw-ring-inset,) 0 0 0 calc(0.5px + var(--tw-ring-offset-width)) var(--tw-ring-color, currentcolor); }
+.border-t { border-top-color: transparent; box-shadow: inset 0 0.5px 0 0 var(--border); }
+.first\:border-t-0:first-child { box-shadow: none; }
+.border.border-border, .border.border-input {
+  border-color: transparent;
+  box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+}
+.border.border-border { --tw-inset-ring-shadow: inset 0 0 0 0.5px var(--border); }
+.border.border-input { --tw-inset-ring-shadow: inset 0 0 0 0.5px var(--input); }
+
+/* 苹果式的连续圆角（0.19.2，用户："这种大圆角要做苹果化改造"）：卡片、面板、弹出框、提醒、菜单、分段控件用 corner-shape: squircle
+   （超椭圆，曲率连续，Chrome 139 起支持），半径放大一些看上去才和原来的圆角一样圆；不支持的浏览器照旧是普通圆角（这一段整个不生效）。
+   胶囊形的按钮、输入框、开关、小标签不动。不放进 @layer：要压过 Tailwind 的 rounded-* 工具类。里外两层的半径差等于中间的留白 */
+@supports (corner-shape: squircle) {
+  [data-slot="card"] { corner-shape: squircle; border-radius: 26px; }
+  [data-slot="item"], .alert, .toast, [data-slot="popover-content"], [data-slot="dropdown-menu-content"] { corner-shape: squircle; border-radius: 22px; }
+  [data-slot="dropdown-menu-item"] { corner-shape: squircle; border-radius: 18px; }
+  [data-slot="alert-dialog-content"] { corner-shape: squircle; border-radius: 34px; }
+  [data-slot="tooltip-content"] { corner-shape: squircle; border-radius: 14px; }
+  .seg { corner-shape: squircle; border-radius: 12px; }
+  .seg-item { corner-shape: squircle; border-radius: 10px; }
+  .feat-group { corner-shape: squircle; border-radius: 22px; }
+}
+
+@layer base {
+  * { @apply border-border outline-ring/50; }
+  html { @apply font-sans antialiased; }
+  body { @apply bg-background text-foreground; }
+  /* 弹窗整体按 15px 的根字号排（设置页照常 16px）：文字、间距、圆角都跟着 rem 等比缩 6%，样子和 maia 一样，
+     正文约 13px（Chrome 自己的弹出框也是 13px）。Chrome 的弹窗最高 600px，超了出滚动条，按 16px 排常见的状态就超了 */
+  html:has(> body.popup) { font-size: 15px; }
+  body.popup { width: 340px; }
+  body.options { @apply bg-page; }
+}

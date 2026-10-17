@@ -1,0 +1,14 @@
+ClearFlow vuelve a hacer legibles las secciones de comentarios de X, Reddit, YouTube, Xiaohongshu (RedNote) y Hacker News.
+
+• Elimina las respuestas basura —spam y bots de captación de clientes potenciales, insultos y contenido sexual— y te explica por qué ha ocultado cada una. Haz clic para verla de todos modos; márcala si se ha equivocado.
+• Oculta respuestas sin contenido, como «nice», «+1» o «following», y añade una línea al principio de los comentarios para volver a mostrarlas.
+• Agrupa las respuestas ocultas consecutivas en una sola línea; si un hilo está lleno de basura, lo oculta todo tras una línea de resumen.
+• Aprende de lo que marcas: oculta una respuesta de spam y también ocultará las respuestas del mismo tipo —con otra redacción, de otras cuentas y que promuevan el mismo engaño—. Puedes deshacerlo cuando quieras.
+• Traduce las publicaciones y los comentarios en otros idiomas al tuyo, directamente en la página, con una opción para volver al original. En X, solo sustituye la traducción automática de X cuando la nueva es claramente mejor.
+• Actívalo o desactívalo en cada sitio y configura por separado la limpieza y la traducción.
+
+ClearFlow utiliza dos servicios a los que te suscribes y pagas según el uso, con tus propias claves de API: TypeSafe (para evaluar las respuestas) y OpenRouter (para la traducción). Una página de configuración te ayuda a introducirlas; en los ajustes puedes ver cuánto has gastado. Sin claves, solo se aplican las reglas locales integradas.
+
+Privacidad: los comentarios y las publicaciones que ves en los sitios compatibles se envían a esos dos servicios para que los evalúen o traduzcan (junto con los ejemplos de spam que hayas marcado más recientemente, si has marcado alguno). No se nos envía nada y no hay analíticas ni seguimiento. Las claves y el historial permanecen en tu navegador. Código abierto (MIT): https://github.com/remember2015/clearflow
+
+ClearFlow no está afiliado a X, Reddit, YouTube, Xiaohongshu ni Y Combinator.

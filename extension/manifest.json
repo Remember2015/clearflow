@@ -1,0 +1,60 @@
+{
+  "manifest_version": 3,
+  "name": "__MSG_extName__",
+  "version": "0.27.4",
+  "homepage_url": "https://github.com/remember2015/clearflow",
+  "minimum_chrome_version": "120",
+  "description": "__MSG_extDesc__",
+  "icons": { "16": "icons/icon-16.png", "32": "icons/icon-32.png", "48": "icons/icon-48.png", "128": "icons/icon-128.png" },
+  "default_locale": "en",
+  "permissions": ["storage", "unlimitedStorage"],
+  "host_permissions": ["https://api.typesafe.ai/*", "https://openrouter.ai/*"],
+  "optional_host_permissions": ["https://pbs.twimg.com/*", "https://i.redd.it/*", "https://preview.redd.it/*", "*://*.xhscdn.com/*"],
+  "background": { "service_worker": "background.js", "type": "module" },
+  "content_scripts": [
+    {
+      "matches": ["https://x.com/*", "https://twitter.com/*"],
+      "js": ["settings.js", "i18n_page.js", "i18n.js", "xdom.js", "rules.js", "foldbar.js", "content.js", "translate.js", "theme.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://x.com/*", "https://twitter.com/*"],
+      "js": ["xdom.js", "pagedata.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://www.reddit.com/*"],
+      "js": ["settings.js", "i18n_page.js", "i18n.js", "rules.js", "foldbar.js", "ffdom.js", "fold_engine.js", "richtext.js", "tx_engine.js", "rdom.js", "reddit.js", "rtranslate.js", "theme.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.youtube.com/*"],
+      "js": ["settings.js", "i18n_page.js", "i18n.js", "rules.js", "foldbar.js", "ffdom.js", "fold_engine.js", "richtext.js", "tx_engine.js", "ytdom.js", "ytrules.js", "yt.js", "yttx.js", "theme.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.youtube.com/*"],
+      "js": ["ytdata.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://www.xiaohongshu.com/*", "https://www.rednote.com/*"],
+      "js": ["settings.js", "i18n_page.js", "i18n.js", "rules.js", "foldbar.js", "ffdom.js", "fold_engine.js", "richtext.js", "tx_engine.js", "xhsdom.js", "xhs.js", "xhstx.js", "theme.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://news.ycombinator.com/*"],
+      "js": ["settings.js", "i18n_page.js", "i18n.js", "rules.js", "foldbar.js", "ffdom.js", "fold_engine.js", "richtext.js", "tx_engine.js", "hndom.js", "hn.js", "hntx.js", "theme.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": { "default_popup": "popup.html", "default_title": "__MSG_extTitle__", "default_icon": { "16": "icons/icon-16.png", "32": "icons/icon-32.png" } },
+  "options_page": "options.html"
+}

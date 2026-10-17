@@ -1,0 +1,14 @@
+ClearFlow membantu merapikan kolom komentar di X, Reddit, YouTube, Xiaohongshu (RedNote), dan Hacker News agar lebih mudah dibaca.
+
+• Menyaring balasan yang tidak diinginkan—spam dan bot pencari prospek, pelecehan, serta konten seksual—dan memberi tahu Anda alasan setiap balasan disembunyikan. Klik untuk tetap melihatnya; tandai jika ada yang salah disaring.
+• Menyembunyikan balasan tanpa isi seperti “nice”, “+1”, atau “following”, dengan satu baris di bagian atas komentar untuk menampilkannya kembali.
+• Menggabungkan rangkaian balasan tersembunyi menjadi satu baris; jika utas penuh dengan balasan yang tidak diinginkan, semuanya disimpan di balik satu baris ringkasan.
+• Mempelajari balasan yang Anda tandai: sembunyikan sendiri balasan spam, maka balasan serupa—yang ditulis ulang, berasal dari akun lain, atau menjalankan modus yang sama—juga akan disembunyikan. Batalkan kapan saja.
+• Menerjemahkan postingan dan komentar berbahasa asing ke bahasa Anda langsung di tempat, dengan opsi untuk kembali ke teks asli. Di X, ClearFlow hanya menggantikan terjemahan otomatis X jika terjemahan barunya jelas lebih baik.
+• Aktifkan atau nonaktifkan per situs, dan pilih secara terpisah apakah ingin menggunakan penyaringan dan terjemahan.
+
+ClearFlow menggunakan dua layanan yang perlu Anda daftarkan dan bayar sesuai penggunaan, dengan kunci API Anda sendiri: TypeSafe (untuk menilai balasan) dan OpenRouter (untuk terjemahan). Halaman penyiapan membantu Anda memasukkan kunci; pengaturan menampilkan biaya yang telah dikeluarkan. Tanpa kunci, hanya aturan lokal bawaan yang berjalan.
+
+Privasi: komentar dan postingan yang Anda lihat di situs yang didukung akan dikirim ke kedua layanan tersebut untuk dinilai atau diterjemahkan (beserta balasan spam yang terakhir Anda tandai sebagai contoh, jika ada). Tidak ada data yang dikirim kepada kami, dan tidak ada analitik atau pelacakan. Kunci dan riwayat tersimpan di browser Anda. Sumber terbuka (MIT): https://github.com/remember2015/clearflow
+
+ClearFlow tidak berafiliasi dengan X, Reddit, YouTube, Xiaohongshu, atau Y Combinator.

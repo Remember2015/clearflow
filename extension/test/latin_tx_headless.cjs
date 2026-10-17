@@ -1,0 +1,115 @@
+// 界面和原文都是拉丁字母时的翻译（0.25：以前一律不翻）：Reddit、YouTube、Hacker News 共用的翻译引擎（tx_engine.js）认了是哪种语言再定。
+// 替身的 detectLanguage（build_inject_bundle.py）：带西班牙文字母的算西班牙语（认得准）、纯 ASCII 够长的算英语（80 字以上才"认得准"），别的认不准。
+// ① Reddit 英文帖子页 post_en.html，英文界面：西班牙文评论翻成英文（原文语言 es），日文、中文照旧翻，英文的（帖子、评论、夹了个汉字的那条）不翻；
+//    说明写"Translated from Spanish"；再扫一遍不再认语言、不发请求。①b 浏览器"认得准"地认成冷门语言（加利西亚语）的不翻。
+// ② 同一页，西班牙文界面：英文的帖子标题、正文、评论都翻成西班牙文（短的认不准，照帖子标的 en），西班牙文的那条不翻。
+// ③ Hacker News 评论页，西班牙文界面：英文评论翻、中文的也翻；英文界面：英文的不翻、中文的翻。
+// ④ YouTube 视频页，英文界面：西班牙文评论翻成英文，英文评论不翻。
+// 目标语言是网站自己的界面语言（<html lang>），测试里和插件的界面语言一起换。
+// 用法：node test/latin_tx_headless.cjs <装了 puppeteer-core 的目录> [http://localhost:8767]（run_all.mjs 会起服务）
+const path = require("path");
+const puppeteer = require(path.resolve(process.argv[2] || path.join(__dirname, "../../ui"), "node_modules/puppeteer-core"));
+const BASE = process.argv[3] || "http://localhost:8767";
+const out = [];
+const ok = (name, cond, extra = "") => out.push(`${cond ? "PASS" : "FAIL"} ${name} ${cond ? "" : extra}`);
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+(async () => {
+  const browser = await puppeteer.launch({ executablePath: process.env.CHROME_PATH || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", headless: "new", args: ["--no-first-run"] });
+  // 用某个界面语言打开一页，等翻译跑完，返回发出去的补翻请求 [id, 原文语言, 目标语言, 原文]
+  async function open(url, lang) {
+    const page = await browser.newPage();
+    page.on("pageerror", (e) => out.push(`PAGEERROR ${e.message}`));
+    // 目标语言跟着网站自己的界面语言走（<html lang>，HN 没有就用插件的界面语言）：两个都换成 lang
+    await page.evaluateOnNewDocument((l) => {
+      window.__ffUiLang = l;
+      const mo = new MutationObserver(() => { if (document.documentElement) { document.documentElement.lang = l; mo.disconnect(); } });
+      mo.observe(document, { childList: true });
+    }, lang);
+    await page.setViewport({ width: 900, height: 2400 });
+    await page.goto(`${BASE}${url}`, { waitUntil: "load" });
+    await wait(4000);
+    const msgs = await page.evaluate(() => (window.__ffTxMsgs || []).filter((m) => m.type === "translateFill").map((m) => [m.id, m.srcLang, m.target, m.source]));
+    return { page, msgs };
+  }
+  const ids = (msgs) => [...new Set(msgs.map((m) => m[0]))].sort(); // 帖子的标题、正文都记在帖子的 id 下
+  const asked = (msgs, re) => msgs.filter((m) => re.test(m[3].replace(/<\/?[ptx]\d+\/?>/g, "")));
+  try {
+    // ① Reddit，英文界面
+    let { page, msgs } = await open("/fakex/reddit/post_en.html", "en");
+    ok("Reddit 英文界面：西班牙文、日文、中文评论翻，英文的帖子和评论（含夹了个汉字的）不翻",
+      JSON.stringify(ids(msgs)) === JSON.stringify(["t1_e2", "t1_e5", "t1_e6"]), JSON.stringify(ids(msgs)));
+    const es = msgs.find((m) => m[0] === "t1_e6");
+    ok("Reddit 英文界面：西班牙文那条原文语言 es、目标 en", !!es && es[1] === "es" && es[2] === "en", JSON.stringify(es));
+    const label = await page.evaluate(() => {
+      const c = document.querySelector('shreddit-comment[thingid="t1_e6"]');
+      return c?.querySelector(".ff-tx-label")?.textContent || null;
+    });
+    ok("Reddit 英文界面：西班牙文那条换上了，说明写 Translated from Spanish", /Spanish/.test(label || ""), String(label));
+    // 再扫：认过是英文的不再认、不发请求
+    await page.evaluate(() => {
+      window.__ffDetectN = 0;
+      const f = chrome.i18n.detectLanguage;
+      chrome.i18n.detectLanguage = (t, cb) => { window.__ffDetectN++; f(t, cb); };
+      document.body.appendChild(document.createElement("div")); window.scrollBy(0, 5);
+    });
+    await wait(2500);
+    const again = await page.evaluate(() => ({ n: window.__ffDetectN, fills: (window.__ffTxMsgs || []).filter((m) => m.type === "translateFill").length }));
+    ok("Reddit 英文界面：再扫一遍，认过的不再认语言、不多发请求", again.n === 0 && again.fills === msgs.length, JSON.stringify(again));
+    await page.close();
+
+    // ② Reddit，西班牙文界面
+    ({ page, msgs } = await open("/fakex/reddit/post_en.html", "es"));
+    ok("Reddit 西班牙文界面：英文的帖子标题、正文和评论翻，日文、中文翻，西班牙文那条不翻",
+      JSON.stringify(ids(msgs)) === JSON.stringify(["t1_e1", "t1_e2", "t1_e3", "t1_e4", "t1_e5", "t3_def456"]) && msgs.filter((m) => m[0] === "t3_def456").length === 2,
+      JSON.stringify(msgs.map((m) => [m[0], m[3].slice(0, 30)])));
+    const en = msgs.filter((m) => ["t1_e1", "t1_e3", "t1_e4"].includes(m[0]));
+    ok("Reddit 西班牙文界面：英文评论原文语言 en、目标 es", en.length === 3 && en.every((m) => m[1] === "en" && m[2] === "es"), JSON.stringify(en));
+    await page.close();
+
+    // ①b 浏览器"认得准"地说成冷门语言（真 Chrome 常把短的西班牙文认成加利西亚语）：英文界面不翻
+    {
+      const page = await browser.newPage();
+      await page.evaluateOnNewDocument(() => {
+        window.__ffUiLang = "en";
+        window.__ffDetect = (t) => /[¿¡]/.test(t) ? { isReliable: true, languages: [{ language: "gl", percentage: 100 }] }
+          : /^[\x00-\x7f]{12,}$/.test(t) ? { isReliable: t.length >= 80, languages: [{ language: "en", percentage: 100 }] } : { isReliable: false, languages: [] };
+        const mo = new MutationObserver(() => { if (document.documentElement) { document.documentElement.lang = "en"; mo.disconnect(); } });
+        mo.observe(document, { childList: true });
+      });
+      await page.setViewport({ width: 900, height: 2400 });
+      await page.goto(`${BASE}/fakex/reddit/post_en.html`, { waitUntil: "load" });
+      await wait(4000);
+      const m = await page.evaluate(() => (window.__ffTxMsgs || []).filter((x) => x.type === "translateFill").map((x) => x.id));
+      ok("Reddit 英文界面：浏览器认成加利西亚语这种冷门语言的不翻（日文、中文照翻）", JSON.stringify([...new Set(m)].sort()) === JSON.stringify(["t1_e2", "t1_e5"]), JSON.stringify(m));
+      await page.close();
+    }
+
+    // ③ Hacker News
+    ({ page, msgs } = await open("/fakex/hn/item.html", "es"));
+    ok("HN 西班牙文界面：英文评论翻（目标 es），中文的也翻",
+      asked(msgs, /^Thanks, this is a really useful list/).length === 1 && asked(msgs, /^这个说法有道理/).length === 1 && msgs.every((m) => m[2] === "es"),
+      JSON.stringify(msgs.map((m) => m[3].slice(0, 30))));
+    await page.close();
+    ({ page, msgs } = await open("/fakex/hn/item.html", "en"));
+    ok("HN 英文界面：英文的不翻，中文的翻",
+      asked(msgs, /^Thanks, this is a really useful list/).length === 0 && asked(msgs, /^这个说法有道理/).length === 1 && msgs.every((m) => !/^[\x00-\x7f]+$/.test(m[3].replace(/<\/?[ptx]\d+\/?>/g, ""))),
+      JSON.stringify(msgs.map((m) => m[3].slice(0, 30))));
+    await page.close();
+
+    // ④ YouTube，英文界面
+    ({ page, msgs } = await open("/fakex/yt/watch.html", "en"));
+    const ytEs = asked(msgs, /^¿Alguien de verdad gana dinero/);
+    ok("YouTube 英文界面：西班牙文评论翻成英文（原文语言 es）", ytEs.length === 1 && ytEs[0][1] === "es" && ytEs[0][2] === "en", JSON.stringify(msgs.map((m) => [m[1], m[3].slice(0, 30)])));
+    ok("YouTube 英文界面：英文评论不翻", asked(msgs, /^This explanation finally made|^Agreed, the second half/).length === 0, JSON.stringify(msgs.map((m) => m[3].slice(0, 30))));
+    await page.close();
+  } catch (e) {
+    out.push(`FAIL 出错 ${e.stack || e}`);
+  } finally {
+    await browser.close();
+  }
+  console.log(out.join("\n"));
+  const fails = out.filter((l) => !l.startsWith("PASS")).length;
+  console.log(`\n${out.length - fails}/${out.length} PASS`);
+  process.exit(fails ? 1 : 0);
+})();

@@ -1,0 +1,11 @@
+{
+  "extName": {
+    "message": "ClearFlow"
+  },
+  "extTitle": {
+    "message": "ClearFlow"
+  },
+  "extDesc": {
+    "message": "Скрывает спам, оскорбления и контент сексуального характера на X, Reddit, YouTube, RedNote и Hacker News. Переводит посты."
+  }
+}

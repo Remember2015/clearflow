@@ -1,0 +1,46 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>fake x 7004</title>
+<script>{ const m = /[?&]lang=([\w-]+)/.exec(location.search); if (m) { document.documentElement.lang = m[1]; if (/^(ar|fa|he|ur)\b/.test(m[1])) document.documentElement.dir = "rtl"; } }</script>
+<style>body{font:15px/1.5 -apple-system,sans-serif;max-width:600px;margin:20px auto;background:#fff;color:#0f1419} article{border-bottom:1px solid #eee;padding:10px 16px;display:flow-root} [data-testid=User-Name]{white-space:pre;font-weight:600} .x-quote{display:block;border:1px solid #cfd9de;border-radius:12px;padding:8px 12px;margin-top:6px}</style>
+</head><body><main><div data-testid="cellInnerDiv"><div><article data-testid="tweet">
+  <div data-testid="User-Name">测试楼主
+@test_op</div>
+  <a href="/test_op/status/7004"><time datetime="2026-10-10T00:00:00.000Z">120分钟</time></a>
+  <div data-testid="tweetText">测试帖：有人知道这是哪部片子吗</div>
+  <button data-testid="caret" aria-label="更多" type="button">…</button></article></div></div><div data-testid="cellInnerDiv"><div><article data-testid="tweet">
+  <div data-testid="User-Name">要标的
+@mark_src_a1</div>
+  <a href="/mark_src_a1/status/7401"><time datetime="2026-10-10T01:10:00.000Z">50分钟</time></a>
+  <div data-testid="tweetText">是这一部吧<a href="https://t.co/fakeFAKE7401"><span style="display:block;font-size:0;line-height:0">https://</span>t.cn/FAKE7401</a></div>
+  <button data-testid="caret" aria-label="更多" type="button">…</button></article></div></div><div data-testid="cellInnerDiv"><div><article data-testid="tweet">
+  <div data-testid="User-Name">一模一样
+@mark_same_b2</div>
+  <a href="/mark_same_b2/status/7402"><time datetime="2026-10-10T01:11:00.000Z">49分钟</time></a>
+  <div data-testid="tweetText">是这一部吧<a href="https://t.co/fakeFAKE7401"><span style="display:block;font-size:0;line-height:0">https://</span>t.cn/FAKE7401</a></div>
+  <button data-testid="caret" aria-label="更多" type="button">…</button></article></div></div><div data-testid="cellInnerDiv"><div><article data-testid="tweet">
+  <div data-testid="User-Name">换了链接
+@mark_near_c3</div>
+  <a href="/mark_near_c3/status/7403"><time datetime="2026-10-10T01:12:00.000Z">48分钟</time></a>
+  <div data-testid="tweetText">是这部吧
+<a href="https://t.co/fakeFAKE7403"><span style="display:block;font-size:0;line-height:0">https://</span>t.cn/FAKE7403</a></div>
+  <button data-testid="caret" aria-label="更多" type="button">…</button></article></div></div><div data-testid="cellInnerDiv"><div><article data-testid="tweet">
+  <div data-testid="User-Name">正常用户
+@normal_7004</div>
+  <a href="/normal_7004/status/7404"><time datetime="2026-10-10T01:13:00.000Z">47分钟</time></a>
+  <div data-testid="tweetText">这部电影我也看过，结局挺意外的</div>
+  <button data-testid="caret" aria-label="更多" type="button">…</button></article></div></div></main><div id="layers"></div><script>
+document.addEventListener("click", (e) => {
+  const caret = e.target.closest('[data-testid="caret"]');
+  const layers = document.getElementById("layers");
+  if (!caret) { if (!e.target.closest('[role="menu"]')) layers.replaceChildren(); return; }
+  const item = (t) => `<div role="menuitem" tabindex="0" class="x-mi"><div class="x-ic"><svg viewBox="0 0 24 24" width="18" height="18"><g><path d="M4 4h16v16H4z"></path></g></svg></div><div class="x-tx"><div dir="ltr"><span>${t}</span></div></div></div>`;
+  layers.innerHTML = `<div role="menu" class="x-menu"><div><div data-testid="Dropdown">${item("不感兴趣这个帖子")}${item("屏蔽")}${item("举报帖子")}</div></div></div>`;
+  // ?menu=split：模拟 X 分两次挂菜单——过一拍再往同一个菜单里挂第二组 Dropdown（只在容器里查重的旧逻辑会插两项）
+  if (location.search.includes("menu=split")) setTimeout(() => {
+    const g = document.createElement("div");
+    g.innerHTML = `<div data-testid="Dropdown">${item("添加/移除列表")}</div>`;
+    layers.querySelector('[role="menu"] > div').appendChild(g.firstElementChild);
+  }, 0);
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") document.getElementById("layers").replaceChildren(); });
+</script>
+<style>#layers .x-menu{position:fixed;top:80px;right:40px;background:#fff;box-shadow:0 0 15px rgba(0,0,0,.2);border-radius:12px;min-width:260px;font:700 15px -apple-system,sans-serif} .x-mi{display:flex;gap:12px;padding:12px 16px;cursor:pointer} .x-mi:hover{background:#f7f9f9} [data-testid=caret]{float:right}</style><script>if (/dark/.test(location.search)) { document.body.style.background = "#15202b"; document.body.style.color = "#e7e9ea"; }</script><script src="/inject_bundle.js"></script></body></html>

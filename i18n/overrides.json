@@ -1,0 +1,144 @@
+{
+ "_note": "人工改过的句子：build.py 构建时盖在 <语言>.json 上（translate.py 重翻也不会冲掉）。插入的语言名 {lang}、数字 {n} 在有格变化 / 复数变化的语言里会对不上，这里改成不用变形的说法。",
+ "ru": {
+  "tx.filled": "Переведено расширением (оригинал: {lang})",
+  "reason.dup": "Один и тот же текст опубликовали несколько аккаунтов ({n})",
+  "filler.line.one": "Скрыто ответов «класс» или «+1»: {n}",
+  "filler.lineShown.one": "Ответы «класс» или «+1»: {n}",
+  "filler.line.few": "Скрыто ответов «класс» или «+1»: {n}",
+  "filler.lineShown.few": "Ответы «класс» или «+1»: {n}"
+ },
+ "pl": {
+  "tx.filled": "Przetłumaczone przez rozszerzenie (oryginał: {lang})",
+  "reason.dup": "Ten sam tekst opublikowało kilka kont ({n})",
+  "filler.line.one": "Ukryto {n} odpowiedź typu „super” lub „+1”",
+  "filler.lineShown.one": "{n} odpowiedź typu „super” lub „+1”",
+  "filler.line.few": "Ukryto {n} odpowiedzi typu „super” lub „+1”",
+  "filler.lineShown.few": "{n} odpowiedzi typu „super” lub „+1”"
+ },
+ "it": {
+  "tx.filled": "Tradotto dall’estensione (originale: {lang})",
+  "filler.line.one": "Nascosta {n} risposta come «bello» / «+1»",
+  "filler.lineShown.one": "{n} risposta come «bello» / «+1»",
+  "filler.line.few": "Nascoste {n} risposte come «bello» / «+1»",
+  "filler.lineShown.few": "{n} risposte come «bello» / «+1»"
+ },
+ "es": {
+  "tx.filled": "Traducido por la extensión (original: {lang})",
+  "filler.line.one": "Se ocultó {n} respuesta como «bien» o «+1»",
+  "filler.lineShown.one": "{n} respuesta como «bien» o «+1»",
+  "filler.line.few": "Se ocultaron {n} respuestas como «bien» o «+1»",
+  "filler.lineShown.few": "{n} respuestas como «bien» o «+1»"
+ },
+ "fr": {
+  "tx.filled": "Traduit par l’extension (original : {lang})",
+  "group.sep": ", ",
+  "filler.line.one": "{n} réponse du type « sympa » ou « +1 » masquée",
+  "filler.lineShown.one": "{n} réponse du type « sympa » ou « +1 »",
+  "filler.line.few": "{n} réponses du type « sympa » ou « +1 » masquées",
+  "filler.lineShown.few": "{n} réponses du type « sympa » ou « +1 »"
+ },
+ "pt": {
+  "tx.filled": "Traduzido pela extensão (original: {lang})",
+  "filler.line.one": "{n} resposta como “boa” / “+1” removida",
+  "filler.lineShown.one": "{n} resposta como “boa” / “+1”",
+  "filler.line.few": "{n} respostas como “boa” / “+1” removidas",
+  "filler.lineShown.few": "{n} respostas como “boa” / “+1”"
+ },
+ "de": {
+  "tx.from": "Aus {lang} übersetzt",
+  "filler.line.one": "{n} Antwort wie „Top“ oder „+1“ ausgeblendet",
+  "filler.lineShown.one": "{n} Antwort wie „Top“ oder „+1“",
+  "filler.line.few": "{n} Antworten wie „Top“ oder „+1“ ausgeblendet",
+  "filler.lineShown.few": "{n} Antworten wie „Top“ oder „+1“"
+ },
+ "ja": {
+  "reason.thread": "このスレッドで{n}件のアカウントが会話を演出",
+  "reason.setup": "詐欺の手口のようです",
+  "filler.line.one": "「いいね」や「+1」などの返信を{n}件非表示にしました",
+  "filler.lineShown.one": "「いいね」や「+1」などの返信{n}件",
+  "filler.line.few": "「いいね」や「+1」などの返信を{n}件非表示にしました",
+  "filler.lineShown.few": "「いいね」や「+1」などの返信{n}件",
+  "kind.user": "スパムとしてマーク済み",
+  "kind.slogan": "マークしたスパムと完全に一致",
+  "kind.marked_near": "マークしたスパムと同じテンプレート"
+ },
+ "zh-TW": {
+  "pop.unsupportedHint": "清流只在這幾個網站上運作：",
+  "filler.line.one": "已清理 {n} 則「讚」／「mark」類回覆",
+  "filler.lineShown.one": "{n} 則「讚」／「mark」類回覆",
+  "filler.line.few": "已清理 {n} 則「讚」／「mark」類回覆",
+  "filler.lineShown.few": "{n} 則「讚」／「mark」類回覆",
+  "kind.slogan": "和你標記過的一字不差",
+  "kind.marked": "和你標記過的垃圾是同一類",
+  "bar.remember": "以後類似的也清理",
+  "bar.rememberTitle": "標記為垃圾：以後在別處碰到類似的也清理",
+  "bar.forget": "不再清理類似的",
+  "bar.forgetTitle": "從你標記的垃圾裡移除：以後不再依它清理類似的",
+  "opt.slogans": "你標記的垃圾",
+  "mark.this": "清理掉這則",
+  "mark.thisTitle": "清理掉這則，以後類似的也清理",
+  "mark.toast": "已清理。以後類似的回覆也會清理",
+  "kind.marked_link": "推的是你標記過的連結",
+  "kind.marked_near": "和你標記過的是同一個模板",
+  "heavy.line": "已清理 {n} 則：{parts}",
+  "heavy.lineShown": "清理掉的 {n} 則：{parts}",
+  "heavy.spam": "垃圾回覆 {n}",
+  "heavy.abuse": "辱罵 {n}",
+  "heavy.sexual": "色情 {n}",
+  "heavy.filler": "「讚」／「mark」類 {n}"
+ },
+ "th": {
+  "group.sep": ", ",
+  "filler.line.one": "ซ่อนรีพลายอย่าง “ดี” หรือ “+1” จำนวน {n} รายการ",
+  "filler.lineShown.one": "รีพลายอย่าง “ดี” หรือ “+1” จำนวน {n} รายการ",
+  "filler.line.few": "ซ่อนรีพลายอย่าง “ดี” หรือ “+1” จำนวน {n} รายการ",
+  "filler.lineShown.few": "รีพลายอย่าง “ดี” หรือ “+1” จำนวน {n} รายการ"
+ },
+ "ar": {
+  "filler.line.one": "أُخفي {n} ردّ مثل «رائع» أو «+1»",
+  "filler.lineShown.one": "{n} ردّ مثل «رائع» أو «+1»",
+  "filler.line.few": "أُخفيت {n} من الردود مثل «رائع» أو «+1»",
+  "filler.lineShown.few": "{n} من الردود مثل «رائع» أو «+1»"
+ },
+ "hi": {
+  "filler.line.one": "“बढ़िया” / “+1” जैसी {n} टिप्पणी हटाई",
+  "filler.lineShown.one": "“बढ़िया” / “+1” जैसी {n} टिप्पणी",
+  "filler.line.few": "“बढ़िया” / “+1” जैसी {n} टिप्पणियाँ हटाईं",
+  "filler.lineShown.few": "“बढ़िया” / “+1” जैसी {n} टिप्पणियाँ"
+ },
+ "id": {
+  "filler.line.one": "Menyembunyikan {n} balasan seperti “mantap” atau “+1”",
+  "filler.lineShown.one": "{n} balasan seperti “mantap” atau “+1”",
+  "filler.line.few": "Menyembunyikan {n} balasan seperti “mantap” atau “+1”",
+  "filler.lineShown.few": "{n} balasan seperti “mantap” atau “+1”"
+ },
+ "ko": {
+  "filler.line.one": "“좋아요” / “+1” 같은 답글 {n}개를 정리함",
+  "filler.lineShown.one": "“좋아요” / “+1” 같은 답글 {n}개",
+  "filler.line.few": "“좋아요” / “+1” 같은 답글 {n}개를 정리함",
+  "filler.lineShown.few": "“좋아요” / “+1” 같은 답글 {n}개",
+  "kind.marked": "내가 표시한 스팸과 같은 종류",
+  "kind.slogan": "내가 표시한 스팸과 문구가 똑같음",
+  "kind.marked_near": "내가 표시한 스팸과 같은 템플릿",
+  "heavy.line": "답글 {n}개 정리함: {parts}"
+ },
+ "nl": {
+  "filler.line.one": "{n} reactie als „top” of „+1” verborgen",
+  "filler.lineShown.one": "{n} reactie als „top” of „+1”",
+  "filler.line.few": "{n} reacties als „top” of „+1” verborgen",
+  "filler.lineShown.few": "{n} reacties als „top” of „+1”"
+ },
+ "tr": {
+  "filler.line.one": "“güzel” veya “+1” gibi {n} yanıt kaldırıldı",
+  "filler.lineShown.one": "“güzel” veya “+1” gibi {n} yanıt",
+  "filler.line.few": "“güzel” veya “+1” gibi {n} yanıt kaldırıldı",
+  "filler.lineShown.few": "“güzel” veya “+1” gibi {n} yanıt"
+ },
+ "vi": {
+  "filler.line.one": "Đã dọn {n} câu trả lời như “hay” hoặc “+1”",
+  "filler.lineShown.one": "{n} câu trả lời như “hay” hoặc “+1”",
+  "filler.line.few": "Đã dọn {n} câu trả lời như “hay” hoặc “+1”",
+  "filler.lineShown.few": "{n} câu trả lời như “hay” hoặc “+1”"
+ }
+}

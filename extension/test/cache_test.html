@@ -1,0 +1,33 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>cache test</title></head><body><pre id="out">running…</pre>
+<script type="module">
+// cache.js 的 IndexedDB 冒烟测试：写入、超上限淘汰、按上下文取回、统计。
+import * as cache from "/cache.js";
+const out = [];
+const ok = (name, cond, extra = "") => out.push(`${cond ? "PASS" : "FAIL"} ${name} ${extra}`);
+await cache.clear();
+const sid = (i) => "19" + String(i).padStart(17, "0"); // 推文 id 是 19 位字符串，别用数字（超出浮点精度）
+const query = (i) => ({ id: sid(i), fingerprint: "context-" + i });
+const mk = (i, post) => ({ ...query(i), post, scores: { benefit: Math.random(), disguised: 0.1, promo_mention: 0.02 } });
+let r = await cache.putMany([...Array(50)].map((_, i) => mk(i, "P1")), 50 * 1024 * 1024);
+ok("写入 50 条", r.count === 50, JSON.stringify(r));
+const got = await cache.getMany([query(3), query(49), query(999)]);
+ok("按 id 取回", Object.keys(got).length === 2 && got[sid(3)].disguised === 0.1);
+const byPost = await cache.getMany(Array.from({ length: 50 }, (_, i) => query(i)));
+ok("按完整上下文批量取回", Object.keys(byPost).length === 50);
+r = await cache.putMany([...Array(50)].map((_, i) => mk(i, "P1")), 50 * 1024 * 1024);
+ok("重复写入不重复计数", r.count === 50, JSON.stringify(r));
+// 小上限：每条约 200 字节，上限 20 KB → 应淘汰到 18 KB 以下
+for (let k = 0; k < 5; k++) {
+  r = await cache.putMany([...Array(100)].map((_, i) => mk(1000 + k * 100 + i, "P" + (k + 2))), 20 * 1024);
+  await new Promise((res) => setTimeout(res, 5));
+}
+const st = await cache.stats();
+ok("超上限会淘汰", st.bytes <= 20 * 1024 && st.count < 550, JSON.stringify(st));
+const oldest = await cache.getMany(Array.from({ length: 50 }, (_, i) => query(i)));
+const newest = await cache.getMany(Array.from({ length: 100 }, (_, i) => query(1400 + i)));
+ok("淘汰的是最旧的", Object.keys(oldest).length === 0 && Object.keys(newest).length > 0, `P1=${Object.keys(oldest).length} P6=${Object.keys(newest).length}`);
+await cache.clear();
+ok("清空", (await cache.stats()).count === 0);
+document.getElementById("out").textContent = out.join("\n");
+window.__cacheTest = out;
+</script></body></html>

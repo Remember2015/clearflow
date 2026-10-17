@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security issue
+    url: https://github.com/remember2015/clearflow/blob/main/SECURITY.md
+    about: Please report security problems by email, not as a public issue.
+  - name: Email the developers
+    url: mailto:developer@ohmyai.app
+    about: Questions and feedback you'd rather not post publicly.

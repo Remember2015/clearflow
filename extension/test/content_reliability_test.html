@@ -1,0 +1,258 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>content reliability test</title>
+<link rel="stylesheet" href="/content.css"><style>[data-testid="User-Name"]{white-space:pre} article{padding:12px} body{max-width:900px;margin:auto}</style></head>
+<body><pre id="out">running…</pre><main data-testid="primaryColumn"></main><div id="layers"></div>
+<script type="module">
+const data = { ff_settings: { rev: 2 }, ff_key: "good", ff_slogans: ["测试用的重复祝福大家生活幸福平安"] };
+const changes = [];
+let calls = 0, hold = false, failWrite = false;
+// 后台和内容脚本都会挂 onMessage（内容脚本只答弹窗的 pageSummary）：都叫一遍，谁先回就用谁的，和 Chrome 一样
+const listeners = [];
+const deliver = (msg, resolve) => { let done = false; const reply = (r) => { if (!done) { done = true; resolve(r); } }; for (const f of listeners) f(msg, {}, reply); };
+const scores = new Map();
+let delayedType = null, settingsFailures = 0, overrideFailures = 0, gate = null, aborts = 0;
+const delayedAcks = [];
+globalThis.chrome = {
+  storage: { onChanged: { addListener: (f) => changes.push(f) }, local: {
+    get: async (keys) => structuredClone(keys === null ? data : Object.fromEntries((Array.isArray(keys) ? keys : [keys]).filter((k) => k in data).map((k) => [k, data[k]]))),
+    set: async (values) => {
+      if (failWrite && Object.keys(values).some((k) => k.startsWith("ff_reply_override:"))) { failWrite = false; throw new Error("disk failure"); }
+      const delta = Object.fromEntries(Object.entries(values).map(([k,v]) => [k, { oldValue: data[k], newValue: structuredClone(v) }]));
+      Object.assign(data, structuredClone(values));
+      queueMicrotask(() => changes.forEach((f) => f(delta, "local")));
+    },
+    remove: async (keys) => { for (const k of Array.isArray(keys) ? keys : [keys]) delete data[k]; },
+  } },
+  runtime: { id: "test", onMessage: { addListener: (f) => listeners.push(f) },
+    sendMessage(msg, cb) {
+      if (msg.type === "replyOverrides" && cb && overrideFailures > 0) {
+        overrideFailures--;
+        const r = { error: "temporary override read failure" };
+        queueMicrotask(() => cb(r));
+        return Promise.resolve(r);
+      }
+      if (msg.type === "settings" && cb && settingsFailures > 0) {
+        settingsFailures--;
+        const r = { error: "temporary settings read failure" };
+        queueMicrotask(() => cb(r));
+        return Promise.resolve(r);
+      }
+      const p = new Promise((resolve) => deliver(msg, resolve));
+      if (cb) p.then((r) => {
+        if (msg.type === delayedType) delayedAcks.push(() => cb(r));
+        else cb(r);
+      });
+      return p;
+    },
+  },
+};
+globalThis.fetch = async (url, init) => {
+  calls++;
+  if (hold) return new Promise((resolve, reject) => init.signal.addEventListener("abort", () => { aborts++; reject(init.signal.reason); }, { once: true }));
+  // gate：先挂起，测试里放行；中途被取消会记进 aborts
+  if (gate) await new Promise((resolve, reject) => { gate.push(resolve); init.signal.addEventListener("abort", () => { aborts++; reject(init.signal.reason); }, { once: true }); });
+  if (init.headers.Authorization.includes("bad")) return new Response("invalid", { status: 401 });
+  const payload = JSON.parse(init.body), answers = {};
+  for (const key of Object.keys(payload.questions)) {
+    const [id, kind] = key.split("__");
+    answers[key] = { noul: kind === "benefit" ? scores.get(id) || 0.1 : 0.1 };
+  }
+  return new Response(JSON.stringify({ answers, usage: { input_tokens: 1 } }), { status: 200 });
+};
+await import("/background.js");
+const send = (msg) => chrome.runtime.sendMessage(msg);
+await send({ type: "cacheClear" });
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+async function until(fn, name, timeout = 5000) {
+  const end = Date.now() + timeout;
+  while (!fn()) { if (Date.now() > end) throw new Error("timeout: " + name); await wait(30); }
+}
+const out = [];
+const ok = (name, pass) => { out.push(`${pass ? "PASS" : "FAIL"} ${name}`); if (!pass) throw new Error(name); };
+const cell = (id, text, handle = "u" + id) => `<div data-testid="cellInnerDiv"><div><article data-testid="tweet"><div data-testid="User-Name">测试号\n@${handle}</div><a href="/${handle}/status/${id}"><time datetime="2026-10-10T01:00:00Z">现在</time></a><div data-testid="tweetText">${text}</div><button data-testid="caret">更多</button></article></div></div>`;
+const pc = document.querySelector("main");
+function mount(pid, replies) { history.replaceState({}, "", "/op/status/" + pid); pc.innerHTML = "<section>" + cell(pid, "测试讨论", "op") + replies.map(([id,text]) => cell(id,text)).join("") + "</section>"; }
+const bar = (id) => document.querySelector(`.ff-bar[data-ff-id="${id}"]`);
+// 提示条紧跟在主帖（pid）下面
+const afterFocal = (pid) => { const b = document.querySelector(".ff-banner"); const prev = b?.previousElementSibling; return !!prev && prev.matches("article") && !!prev.querySelector(`a[href*="/status/${pid}"]`); };
+// 折叠条上的按钮只有图标：按读屏名称（aria-label）找
+const btnOf = (id, label) => [...(bar(id)?.querySelectorAll("button") || [])].find((b) => b.getAttribute("aria-label") === label || b.textContent === label);
+const hasBtn = (id, label) => !!btnOf(id, label);
+const click = (id, label) => { const b = btnOf(id, label); if (!b) throw new Error("button missing: " + label); b.click(); };
+const labels = (id) => [...bar(id).querySelectorAll("button")].map((b) => b.getAttribute("aria-label"));
+const FP = "判错了：不是垃圾回复"; // 这些用例里折叠的都是垃圾回复
+const articleOf = (id) => [...document.querySelectorAll('article[data-testid="tweet"]')].find((a) => a.querySelector(`a[href*="/status/${id}"]`));
+const script = async (src) => { await new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = rej; document.body.append(s); }); };
+try {
+  const phrase = "测试用的重复祝福大家生活幸福平安";
+  mount("100", [["101",phrase],["102",phrase],["103",phrase]]);
+  settingsFailures = 1;
+  await script("/settings.js"); await script("/xdom.js"); await script("/rules.js"); await script("/foldbar.js"); await script("/content.js");
+  await until(() => document.querySelector(".ff-banner")?.textContent.includes("读取插件设置失败"), "initial settings failure is visible");
+  ok("首次设置读取失败会提示暂停且不误折叠或上传", !bar("101") && !bar("102") && !bar("103") && calls === 0);
+  ok("设置读取失败的提示在主帖下面", afterFocal("100"));
+  await until(() => bar("101") && bar("102") && bar("103"), "D1 fold after settings recovery");
+  ok("首次设置读取失败后自动恢复无需刷新", !document.querySelector(".ff-banner")?.textContent.includes("读取插件设置失败"));
+  ok("收起时只有一个展开按钮，不给判对判错", JSON.stringify(labels("101")) === '["展开"]');
+  ok("图标按钮都有读屏名称和悬停提示", [...bar("101").querySelectorAll("button")].every((b) => b.getAttribute("aria-label") && b.title && b.querySelector("svg")));
+  bar("101").querySelector(".ff-text").click();
+  await until(() => articleOf("101").style.display !== "none", "click bar text expands");
+  ok("点折叠条空白处也能展开", JSON.stringify(labels("101")) === '["判对了：确实是垃圾回复","判错了：不是垃圾回复","记住这句话，以后都清理","收起"]');
+  ok("判对判错前有一句判对了吗", bar("101").querySelector(".ff-ask")?.textContent === "判对了吗？");
+  click("101", "收起");
+  await until(() => articleOf("101").style.display === "none", "collapse again");
+  ok("同帖重复照常折叠但不自动记住", !(data.ff_confirmed_slogans || []).length);
+  mount("200", [["201",phrase]]);
+  await wait(600);
+  ok("旧自动口号和新D1都不跨帖折单条", !bar("201"));
+
+  mount("300", [["301","@outsider 来看看这个测试"]]);
+  await until(() => bar("301"), "M1 fold");
+  failWrite = true;
+  click("301", "展开"); click("301", FP);
+  await until(() => document.querySelector(".ff-banner")?.textContent.includes("没有保存成功"), "feedback failure");
+  ok("纠错保存失败不假装生效", !!bar("301"));
+  ok("出错提示在主帖下面", afterFocal("300"));
+  click("301", FP);
+  await until(() => !bar("301"), "feedback saved");
+  mount("400", [["401","普通内容"]]); await wait(300);
+  mount("300", [["301","@outsider 来看看这个测试"]]); await wait(600);
+  ok("离开再回来仍尊重误判", !bar("301") && data["ff_reply_override:301"].label === "fp");
+
+  mount("500", [["501",phrase],["502",phrase],["503",phrase]]);
+  await until(() => bar("501"), "D1 again");
+  click("501", "展开"); click("501", "记住这句话，以后折叠");
+  await until(() => data.ff_confirmed_slogans?.length === 1, "remember");
+  mount("600", [["601",phrase]]);
+  await until(() => bar("601"), "confirmed cross post");
+  ok("明确确认后才跨帖折叠并保存来源", data.ff_confirmed_slogans[0].source.id === "501");
+  await send({ type: "sloganClear" });
+  await until(() => !bar("601"), "clear applied to open page");
+  ok("清空口号同步到已打开页面", !bar("601"));
+
+  const startCalls = calls;
+  hold = true;
+  mount("700", Array.from({length:25}, (_,i)=>[String(710+i),"普通测试内容编号"+i]));
+  await until(() => calls >= startCalls + 2, "two active requests");
+  await chrome.storage.local.set({ ff_settings: { rev: 2, enabled: false } });
+  await wait(400);
+  ok("关闭后未发出剩余队列", calls === startCalls + 2);
+  hold = false;
+  await chrome.storage.local.set({ ff_settings: { rev: 2, enabled: true } });
+  await until(() => calls >= startCalls + 5, "re-enabled requests");
+  ok("重新启用可继续判断", calls >= startCalls + 5);
+
+  await chrome.storage.local.set({ ff_key: "bad" });
+  mount("800", [["801","一条需要模型才能识别的测试回复"]]);
+  scores.set("801", 0.95);
+  await until(() => document.querySelector(".ff-banner")?.textContent.includes("key 无效"), "bad key");
+  await chrome.storage.local.set({ ff_key: "good" });
+  await until(() => bar("801"), "key recovery");
+  ok("修正key后无需刷新即可重试", !!bar("801"));
+  await chrome.storage.local.set({ ff_settings: { rev:2, enabled:true, useJev:false } });
+  await until(() => !bar("801"), "Jev disabled");
+  ok("关闭Jev也停止使用页面内旧分数折叠", !bar("801"));
+
+  // 后台已经写入并广播；只延迟发起标签页的消息回执，模拟另一标签页随后修改同条回复。
+  mount("900", [["901", "@outsider 看看这条延迟纠错测试"]]);
+  await until(() => bar("901"), "late feedback initial fold");
+  delayedType = "feedback";
+  click("901", "展开"); click("901", FP);
+  await until(() => delayedAcks.length === 1, "feedback reply held");
+  await send({ type: "feedback", entry: { id: "901", postId: "900", text: "@outsider 看看这条延迟纠错测试", label: "missed" } });
+  await until(() => bar("901")?.textContent.includes("你标记的垃圾回复"), "other tab decision applied");
+  delayedType = null; delayedAcks.shift()();
+  await wait(350);
+  ok("迟到的纠错回执不能覆盖另一标签页的新决定", data["ff_reply_override:901"].label === "missed" && bar("901")?.textContent.includes("你标记的垃圾回复"));
+  const logBefore = (data.ff_log || []).length;
+  ok("你标过的回复展开后 👍 显示为已选", !!btnOf("901", "判对了：确实是垃圾回复")?.classList.contains("ff-on"));
+  click("901", "判对了：确实是垃圾回复");
+  await wait(300);
+  ok("已选的 👍 再点不重复记", (data.ff_log || []).length === logBefore);
+
+  mount("1000", [["1001", phrase], ["1002", phrase], ["1003", phrase]]);
+  await until(() => bar("1001"), "late remember initial fold");
+  delayedType = "sloganRemember";
+  click("1001", "展开"); click("1001", "记住这句话，以后折叠");
+  await until(() => delayedAcks.length === 1 && data.ff_confirmed_slogans?.length === 1, "remember reply held");
+  await send({ type: "sloganClear" });
+  await until(() => hasBtn("1001", "记住这句话，以后折叠"), "other tab cleared slogans");
+  delayedType = null; delayedAcks.shift()();
+  await wait(350);
+  ok("迟到的记住回执不能恢复另一标签页清空的口号", data.ff_confirmed_slogans.length === 0 && hasBtn("1001", "记住这句话，以后折叠"));
+
+  delayedType = "sloganRemember";
+  click("1001", "记住这句话，以后折叠");
+  await until(() => delayedAcks.length === 1 && data.ff_confirmed_slogans?.length === 1, "second remember reply held");
+  await send({ type: "feedback", entry: { id: "1001", postId: "1000", text: phrase, label: "fp" } });
+  await until(() => !bar("1001") && !bar("1002") && !bar("1003"), "other tab false positive removes duplicate group");
+  delayedType = null; delayedAcks.shift()();
+  await wait(350);
+  ok("迟到的记住回执不能撤销当前帖的同句误判豁免", !bar("1001") && !bar("1002") && !bar("1003"));
+
+  mount("1100", [["1101", "@outsider 这是设置恢复测试"]]);
+  await until(() => bar("1101"), "local fold before settings edit");
+  const beforeSettingsFailure = calls;
+  settingsFailures = 99;
+  await chrome.storage.local.set({ ff_settings: { rev: 2, enabled: true, useJev: false, m1: false } });
+  await until(() => document.querySelector(".ff-banner")?.textContent.includes("读取插件设置失败"), "changed settings failure is visible");
+  await wait(3500);
+  ok("变更设置持续读取失败时保持暂停而非沿用旧规则", !bar("1101") && calls === beforeSettingsFailure && document.querySelector(".ff-banner")?.textContent.includes("读取插件设置失败"));
+  settingsFailures = 0;
+  const retrySettings = [...document.querySelectorAll(".ff-banner button")].find((b) => b.textContent === "重试");
+  if (!retrySettings) throw new Error("settings retry button missing");
+  retrySettings.click();
+  await until(() => !document.querySelector(".ff-banner")?.textContent.includes("读取插件设置失败"), "manual settings recovery");
+  await wait(350);
+  ok("手动重试读取新设置后恢复且尊重新关闭的规则", !bar("1101") && calls === beforeSettingsFailure);
+
+  await chrome.storage.local.set({ ff_settings: { rev: 2, enabled: true, useJev: true, m1: true } });
+  await wait(400);
+
+  // 主帖被虚拟列表卸载时，出错提示先放在当前第一条回复前；主帖挂回来后挪回主帖下面
+  mount("1300", [["1301", "@outsider 提示条位置测试"], ["1302", "普通内容一三零二"]]);
+  await until(() => bar("1301"), "1300 M1 fold");
+  const focalCell = pc.querySelector('[data-testid="cellInnerDiv"]');
+  focalCell.remove();
+  await wait(300);
+  failWrite = true;
+  click("1301", "展开"); click("1301", FP);
+  await until(() => document.querySelector(".ff-banner")?.textContent.includes("没有保存成功"), "notice without focal");
+  const b1 = document.querySelector(".ff-banner");
+  ok("主帖不在时出错提示放在当前第一条回复前", !!b1.nextElementSibling?.matches("article") && !!b1.nextElementSibling.querySelector('a[href*="/status/1301"]'));
+  pc.querySelector("section").prepend(focalCell);
+  await until(() => afterFocal("1300"), "banner moves below focal");
+  ok("主帖挂回来后提示条挪回主帖下面、只有一条", afterFocal("1300") && document.querySelectorAll(".ff-banner").length === 1);
+  click("1301", FP);
+  await until(() => !bar("1301"), "1301 fp saved");
+
+  // 读纠错记录失败：自动重试两次，用完才提示
+  overrideFailures = 1;
+  mount("1400", [["1401", "@outsider 纠错读取失败一"]]);
+  await until(() => bar("1401"), "auto retry after one override failure", 6000);
+  ok("读纠错记录失败一次后自动重试并照常折叠", !!bar("1401") && !document.querySelector(".ff-banner")?.textContent.includes("读取你的纠错记录失败"));
+  overrideFailures = 99;
+  mount("1500", [["1501", "@outsider 纠错读取失败二"]]);
+  await until(() => document.querySelector(".ff-banner")?.textContent.includes("读取你的纠错记录失败"), "notice after retries exhausted", 9000);
+  ok("自动重试用完才提示，读不到时不折叠", !bar("1501"));
+  overrideFailures = 0;
+  [...document.querySelectorAll(".ff-banner button")].find((b) => b.textContent === "重试未完成的判断").click();
+  await until(() => bar("1501") && !document.querySelector(".ff-banner")?.textContent.includes("读取你的纠错记录失败"), "manual retry recovers");
+  ok("手动重试后恢复折叠、提示消失", !!bar("1501"));
+
+  // 只改翻译开关：评论区不清折叠、不取消进行中的请求、不重发
+  scores.set("1602", 0.95);
+  gate = [];
+  const callsBefore = calls, abortsBefore = aborts;
+  mount("1600", [["1601", "@outsider 首页记录开关测试"], ["1602", "一条需要模型判断的首页开关测试回复"]]);
+  // 帖子页先问一句"是不是求推荐帖"（0.15.3），所以挂起的是两个：帖子那一问 + 一批回复
+  await until(() => bar("1601") && gate.length === 2, "M1 fold and two held Jev requests");
+  await chrome.storage.local.set({ ff_settings: { ...data.ff_settings, translateFill: false } });
+  ok("只改翻译开关不清掉评论区的折叠", !!bar("1601"));
+  ok("只改翻译开关不取消进行中的 Jev 请求", aborts === abortsBefore);
+  const held = gate; gate = null; held.forEach((release) => release());
+  await until(() => bar("1602"), "held request completes");
+  ok("请求照常完成、没有重发", calls === callsBefore + 2);
+} catch (e) { out.push("ERROR " + e.stack); }
+document.getElementById("out").textContent = out.join("\n");
+window.__contentTest = out;
+</script></body></html>

@@ -1,0 +1,386 @@
+// 翻译增强（后台）。两件事：
+// ① 改进（improve）：X 自带（Grok）的译文先交给 Jev 判三问（忠实 / 完整 / 地道），三问最低分低于阈值才用
+//    OpenRouter 重译；重译的再判一次，比 Grok 的至少高 margin 才换上。结果按"帖子 id + 原文 + Grok 译文 + 目标语言 + 模型"缓存 30 天。
+// ② 补翻（fillIn）：X 翻译了主帖、却没翻作者自己的回复时，直接用 OpenRouter 翻（没有 Grok 译文可比，不判分）。
+// 目标语言（target）就是 X 把帖子翻成的语言（X 的界面语言），页面那头传过来。简体中文用 translate_eval 里验证过的中文提示词
+// 和问法；别的语言用同样规则的英文模板（问法里引用 `target_language`）。
+// 模型调用一律不开思考（reasoning.enabled = false）：有的模型不设就默认思考（Haiku 5.5 默认中档），又慢又贵，
+// 还有的思考关不掉（Gemini 3.8 Flash、Sonnet 5.5 会报 400），这种直接当失败、换后备模型。
+// 问法、提示词、阈值的依据见 feed-filter/translate_eval（合成集三问最低分 AUC 1.000；真实 X 帖 64 条上 GPT-6 Luna
+// 比 Grok 好 15 条、差 0 条）。
+import { askJev } from "./jev.js";
+
+export const OR_API = "https://openrouter.ai/api/v1/chat/completions";
+export const TRANSLATOR_VERSION = "tx2", FILL_VERSION = "fill2"; // 2：缓存键里加了目标语言
+// 语言名用 Intl.DisplayNames（service worker 和 Node 都有）；X 有几个老代码（in = 印尼语、iw = 希伯来语）
+const LEGACY = { in: "id", iw: "he", ji: "yi" };
+function langName(code, inLang) {
+  const c = LEGACY[String(code || "").toLowerCase()] || code;
+  try { return new Intl.DisplayNames([inLang], { type: "language" }).of(c) || code; } catch { return code || ""; }
+}
+const ZH_HANS = /^zh(-(cn|sg|my|hans)\b.*)?$/i, ZH_HANT = /^zh-(tw|hk|mo|hant)\b/i;
+export const isZhHans = (target) => ZH_HANS.test(target || "");
+// 目标语言的英文名（给模型和 Jev 看）
+export function targetName(target) {
+  if (isZhHans(target)) return "Simplified Chinese";
+  if (ZH_HANT.test(target || "")) return "Traditional Chinese";
+  return langName(target, "en") || "English";
+}
+
+// 和 translate_eval/jev_judge.py 一字不差（阈值是用它定的）
+export const JUDGE_QUESTIONS = {
+  faithful: "Does `translation` express the same meaning as `source` - the same facts, numbers, names, " +
+    "negation and stance (including sarcasm and jokes) - without mistranslating, distorting or adding anything?",
+  complete: "Does `translation` include everything in `source` - every sentence and clause, every number, " +
+    "@mention, #hashtag, $cashtag, link and meaningful emoji - with nothing dropped and nothing left untranslated?",
+  natural: "Does `translation` read as natural, idiomatic Simplified Chinese that a native speaker would write on " +
+    "social media, rather than stiff word-for-word translationese?",
+};
+// 别的目标语言：同样三问，"地道"那一问改成引用 state 里的 `target_language`
+export const JUDGE_QUESTIONS_ANY = {
+  ...JUDGE_QUESTIONS,
+  natural: "Does `translation` read as natural, idiomatic `target_language` that a native speaker would write on " +
+    "social media, rather than stiff word-for-word translationese?",
+};
+// 和 translate_eval/or_bench.py 一字不差
+export const SYSTEM_PROMPT = `你是资深的社交媒体译者，把 X（推特）上的帖子翻成简体中文，给中文用户在信息流里读。
+要求：
+1. 全部翻完：每一句、每个数字、每条列表都要在，不漏、不加、不解释。只输出译文本身。
+2. @账号、#话题、$股票代码、链接、emoji、代码、版本号原样保留；产品名、人名没有通行译名时保留原文。
+3. 用自然的中文网络口语，像中文用户自己写的；俚语、玩笑、反讽、双关按意思翻，不要逐字直译，语气要保留（粗口就用中文粗口）。
+4. 保留原文的换行和列表结构。`;
+// 别的目标语言：同样四条规则的英文模板
+export const systemPromptFor = (name) => `You are an experienced social media translator. Translate posts from X (Twitter) into ${name} for people reading them in their feed.
+Rules:
+1. Translate everything: every sentence, number and list item must be there - nothing dropped, added or explained. Output only the translation.
+2. Keep @handles, #hashtags, $cashtags, links, emoji, code and version numbers exactly as they are; keep product and personal names in the original when there is no established ${name} name.
+3. Write natural, casual ${name} the way native speakers post online. Translate slang, jokes, sarcasm and puns by meaning, not word for word, and keep the tone (swearing stays swearing).
+4. Keep the original line breaks and list structure.`;
+
+const sleep = (ms, signal) => new Promise((resolve, reject) => {
+  const t = setTimeout(resolve, ms);
+  signal?.addEventListener("abort", () => { clearTimeout(t); reject(signal.reason); }, { once: true });
+});
+const fail = (message, code, retryable) => Object.assign(new Error(message), { code, retryable });
+
+export async function judge(jevKey, { source, translation, srcLang, target = "zh" }, opts = {}) {
+  const state = { source_language: (srcLang && langName(srcLang, "en")) || "unknown", target_language: targetName(target), source, translation };
+  const { scores, tokens } = await askJev(jevKey, state, isZhHans(target) ? JUDGE_QUESTIONS : JUDGE_QUESTIONS_ANY, opts);
+  return { scores, min: Math.min(...Object.values(scores)), tokens };
+}
+
+// 模型有时会给整段加引号或"译文："前缀；再多的格式问题交给 Jev 判（判下来不更好就不换）
+export function cleanOutput(text) {
+  let t = String(text || "").trim().replace(/^(译文|翻译|中文译文|Translation|Translated text)\s*[:：]\s*/i, "");
+  const pairs = [["“", "”"], ["\"", "\""], ["「", "」"]];
+  for (const [a, b] of pairs) if (t.startsWith(a) && t.endsWith(b) && t.length > 2 && !t.slice(1, -1).includes(b)) t = t.slice(1, -1).trim();
+  return t;
+}
+
+// truncated：X 只显示了前一截（"显示更多"还没点开），告诉模型别替作者补完后半句
+// markup：原文带着标记（Reddit 上的链接、加粗、列表这些，见 richtext.js）：<p1>…</p1> 一段，<t1>…</t1> 链接或格式（里面的字要翻），
+// <x1/> 原样保留的东西（网址、代码、表情）。让模型原样留着，页面那头照标记把链接和格式拼回去
+export const MARKUP_ZH = "原文带标记：<p1>…</p1> 是一段；<t1>…</t1> 是原文里的链接、加粗这类格式，里面的字要翻；<x1/> 是原样保留的东西（网址、代码、表情）。" +
+  "每个标记都要出现在译文里，一个不少、不加新的，名字、编号、成对、嵌套都不变；<tN> 包住的是和原文那几个词对应的译文；只翻标记之间的文字；一段对一段，不合并、不拆开。";
+export const MARKUP_EN = "The text carries markers: <p1>…</p1> is a paragraph; <t1>…</t1> wraps a link or formatting in the original - translate the words inside; " +
+  "<x1/> stands for something kept as is (a URL, code, an emoji). Every marker must appear in your translation - none dropped, none added, same names and numbers, " +
+  "same pairing and nesting - and each <tN> must wrap the words that translate the words it wrapped in the original. Translate only the text between markers; " +
+  "one paragraph for one paragraph, never merge or split them.";
+// batch：几条互不相干的短内容拼成一个请求（0.19.4，见 fillInBatch），每条用 <u1>…</u1> 包着，译文照样包着回来
+export const BATCH_ZH = "下面是几条互不相干的内容，每条用 <u1>…</u1> 这样的标记包着。每一条单独翻；译文也用同样的标记包着，按原来的顺序，" +
+  "每个标记出现一次、不多不少；不要把一条的内容挪到另一条，不要合并、拆开。";
+export const BATCH_EN = "Below are several unrelated items, each wrapped in a marker like <u1>…</u1>. Translate each item on its own and wrap each translation " +
+  "in the same marker, in the original order, every marker exactly once; never move content between items, merge them or split them.";
+// onText：流式（0.19.4，只有几条一起翻的用）——请求带 stream: true，每来一段字就 onText(到现在为止的全文)，几条里先译完的那条先换上；
+// 回来的不是事件流（比如中间的代理不支持）就照整段的读
+export async function translateOnce(orKey, model, { source, srcLang, truncated, markup, batch, target = "zh" }, { signal, fetchImpl = fetch, timeoutMs = 20000, onText } = {}) {
+  const control = new AbortController();
+  const stop = () => control.abort(signal.reason);
+  signal?.addEventListener("abort", stop, { once: true });
+  if (signal?.aborted) stop();
+  const timer = setTimeout(() => control.abort(fail("翻译请求超时", "timeout", true)), timeoutMs);
+  const t0 = Date.now();
+  try {
+    const resp = await fetchImpl(OR_API, {
+      method: "POST",
+      // OpenRouter 认应用的两个头（用量统计里显示是谁在调）：名字和主页
+      headers: { Authorization: `Bearer ${orKey}`, "Content-Type": "application/json", "X-Title": "ClearFlow", "HTTP-Referer": "https://github.com/remember2015/clearflow" },
+      body: JSON.stringify({
+        // 上限给足（按实际输出计费，给大了不多花钱）：中文译文的 token 数和英文原文的字数差不多，长帖 2000 不够用
+        model, temperature: 0.2, max_tokens: Math.min(8000, Math.max(400, source.length * 2 + 300)),
+        reasoning: { enabled: false }, usage: { include: true }, ...(onText ? { stream: true } : {}),
+        messages: isZhHans(target)
+          ? [{ role: "system", content: SYSTEM_PROMPT },
+            { role: "user", content: `${batch ? BATCH_ZH + "\n" : ""}${markup ? MARKUP_ZH + "\n" : ""}原文（${(srcLang && langName(srcLang, "zh-CN")) || "外语"}${truncated ? "，后面被截断了：只翻这一段，末尾加“…”，不要补全" : ""}）：\n${source}` }]
+          : [{ role: "system", content: systemPromptFor(targetName(target)) },
+            { role: "user", content: `${batch ? BATCH_EN + "\n" : ""}${markup ? MARKUP_EN + "\n" : ""}Original (${(srcLang && langName(srcLang, "en")) || "another language"}${truncated ? "; it is cut off here - translate only this part, end with “…”, and do not complete it" : ""}):\n${source}` }],
+      }),
+      signal: control.signal,
+    });
+    if (!resp.ok) {
+      const body = (await resp.text()).slice(0, 200);
+      if (resp.status === 401) throw fail(`OpenRouter key 无效（${body}）`, "or_badkey", false);
+      if (resp.status === 402) throw fail(`OpenRouter 余额不足（${body}）`, "or_credit", false);
+      throw fail(`OpenRouter HTTP ${resp.status}: ${body}`, "or_http", resp.status === 429 || resp.status >= 500);
+    }
+    const streamed = onText && resp.body && /event-stream/i.test(resp.headers.get("content-type") || "");
+    const data = streamed ? await readStream(resp, onText) : await resp.json();
+    const text = cleanOutput(data?.choices?.[0]?.message?.content);
+    if (!text) throw fail("模型没有返回译文", "or_empty", true);
+    // 输出到了上限被截断：这份译文不全，不能用（再试一次，还不行换后备模型）
+    if (data.choices[0].finish_reason === "length") throw fail("模型输出被截断", "or_truncated", true);
+    const u = data.usage || {};
+    return { text, model: data.model || model, cost: Number.isFinite(u.cost) ? u.cost : 0,
+      reasoningTokens: u.completion_tokens_details?.reasoning_tokens || 0, secs: (Date.now() - t0) / 1000 };
+  } catch (e) {
+    if (signal?.aborted) throw signal.reason;
+    if (control.signal.aborted && control.signal.reason?.code === "timeout") throw control.signal.reason;
+    throw e;
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener("abort", stop);
+  }
+}
+
+// 读 OpenRouter 的事件流：一行一个 "data: {…}"，最后 "data: [DONE]"，": OPENROUTER PROCESSING" 这类注释行跳过；
+// 字在 choices[0].delta.content 里一段段来，花费（usage）在最后一段。中途出错（带 error）当可重试的错。拼成和整段回来一样的样子
+async function readStream(resp, onText) {
+  const reader = resp.body.getReader(), dec = new TextDecoder();
+  let buf = "", content = "", finish = null, model = null, usage = null;
+  const line = (l) => {
+    if (!l.startsWith("data:")) return;
+    const p = l.slice(5).trim();
+    if (!p || p === "[DONE]") return;
+    let j;
+    try { j = JSON.parse(p); } catch { return; }
+    if (j.error) throw fail(`OpenRouter 出错：${String(j.error.message || j.error).slice(0, 200)}`, "or_http", true);
+    if (j.model) model = j.model;
+    if (j.usage) usage = j.usage;
+    const ch = j.choices?.[0];
+    if (ch?.finish_reason) finish = ch.finish_reason;
+    if (ch?.delta?.content) {
+      content += ch.delta.content;
+      try { onText(content); } catch { /* 那头出错不影响翻译 */ }
+    }
+  };
+  try {
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      for (let i; (i = buf.indexOf("\n")) >= 0; buf = buf.slice(i + 1)) line(buf.slice(0, i).trim());
+    }
+    line((buf + dec.decode()).trim());
+  } catch (e) {
+    reader.cancel().catch(() => {}); // 不再读了：连接放掉
+    throw e;
+  }
+  return { model, usage, choices: [{ message: { content }, finish_reason: finish }] };
+}
+
+// 主模型一次、可重试的错误再一次，还不行换后备模型；key 无效、余额不足不换（换了也一样）
+export async function translate(orKey, settings, item, opts = {}) {
+  const models = [settings.translateModel, settings.translateFallback].filter((m, i, a) => m && a.indexOf(m) === i);
+  let last;
+  for (const model of models) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        return await translateOnce(orKey, model, item, opts.onText ? { ...opts, onText: (text) => opts.onText(text, model) } : opts);
+      } catch (e) {
+        if (opts.signal?.aborted) throw e;
+        last = e;
+        if (e.code === "or_badkey" || e.code === "or_credit") throw e;
+        if (!e.retryable) break; // 比如这个模型的思考关不掉（400）：直接换后备
+        await sleep(600 * (attempt + 1), opts.signal);
+      }
+    }
+  }
+  throw last || fail("没有可用的翻译模型", "or_model", false);
+}
+
+// ---------- 缓存：IndexedDB ff-translate，按占的地方算上限（设置里的 txCacheMB，默认 50 MB，和 Jev 结果的缓存分开算）----------
+// 每条 {key, result, ts, size}；size 和 Jev 缓存一样估算（JSON 长度 + 64）。总量记在 meta 里，超过上限就按最后用到的时间
+// 从旧到新删到上限的九成。读到时把时间刷新成现在（超过一天才刷，少写几次）：常看的留着，30 天没用过才过期。
+// 0.13.6 以前按条数算（5000 条、后来 20000 条），用户觉得少，要按地方算（0.13.7）
+const DB = "ff-translate", STORE = "tx", META = "meta", TTL = 30 * 86400e3, DEFAULT_CAP_MB = 50;
+export const capOf = (settings) => (Number(settings?.txCacheMB) || DEFAULT_CAP_MB) * 1048576;
+const sizeOf = (rec) => JSON.stringify(rec).length + 64;
+let dbp = null;
+function open() {
+  if (!dbp) dbp = new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB, 2);
+    req.onupgradeneeded = (e) => {
+      const db = req.result;
+      if (e.oldVersion < 1) db.createObjectStore(STORE, { keyPath: "key" }).createIndex("ts", "ts");
+      if (e.oldVersion < 2) db.createObjectStore(META);
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => { dbp = null; reject(req.error); };
+  });
+  return dbp;
+}
+const reqp = (r) => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+const done = (tx) => new Promise((res, rej) => { tx.oncomplete = () => res(); tx.onerror = tx.onabort = () => rej(tx.error); });
+// 总量（字节、条数）；从旧版（没记总量）升上来的第一次用时数一遍
+async function totals(tx) {
+  const meta = tx.objectStore(META), st = tx.objectStore(STORE);
+  const [bytes, count] = await Promise.all([reqp(meta.get("bytes")), reqp(meta.get("count"))]);
+  if (Number.isFinite(bytes) && Number.isFinite(count)) return [bytes, count];
+  let b = 0, n = 0;
+  await new Promise((res, rej) => {
+    const cur = st.openCursor();
+    cur.onsuccess = () => { const c = cur.result; if (!c) return res(); b += c.value.size || sizeOf(c.value); n++; c.continue(); };
+    cur.onerror = () => rej(cur.error);
+  });
+  meta.put(b, "bytes"); meta.put(n, "count");
+  return [b, n];
+}
+export const idbCache = {
+  async get(key) {
+    const db = await open();
+    const rec = await reqp(db.transaction(STORE, "readonly").objectStore(STORE).get(key));
+    if (!rec || Date.now() - rec.ts >= TTL) return null;
+    if (Date.now() - rec.ts > 86400e3) { // 刷新时间（大小不变，不用动总量），不等它写完
+      try { db.transaction(STORE, "readwrite").objectStore(STORE).put({ ...rec, ts: Date.now() }); } catch { /* 写不进就算了 */ }
+    }
+    return rec.result;
+  },
+  async put(key, result, capBytes = DEFAULT_CAP_MB * 1048576) {
+    const db = await open();
+    const tx = db.transaction([STORE, META], "readwrite"), st = tx.objectStore(STORE), meta = tx.objectStore(META);
+    let [bytes, count] = await totals(tx);
+    const old = await reqp(st.get(key));
+    if (old) { bytes -= old.size || sizeOf(old); count--; }
+    const rec = { key, result, ts: Date.now() };
+    rec.size = sizeOf(rec);
+    st.put(rec);
+    bytes += rec.size; count++;
+    if (bytes > capBytes) await new Promise((res, rej) => { // 超了：最久没用的先删，删到上限的九成
+      const cur = st.index("ts").openCursor();
+      cur.onsuccess = () => {
+        const c = cur.result;
+        if (!c || bytes <= capBytes * 0.9) return res();
+        if (c.value.key !== key) { bytes -= c.value.size || sizeOf(c.value); count--; c.delete(); }
+        c.continue();
+      };
+      cur.onerror = () => rej(cur.error);
+    });
+    meta.put(Math.max(bytes, 0), "bytes"); meta.put(Math.max(count, 0), "count");
+    await done(tx);
+  },
+  async stats() {
+    const db = await open();
+    const tx = db.transaction([STORE, META], "readwrite");
+    const [bytes, count] = await totals(tx);
+    await done(tx);
+    return { bytes, count };
+  },
+  async clear() {
+    const db = await open();
+    const tx = db.transaction([STORE, META], "readwrite");
+    tx.objectStore(STORE).clear();
+    tx.objectStore(META).put(0, "bytes"); tx.objectStore(META).put(0, "count");
+    await done(tx);
+  },
+};
+
+async function sha256(text) {
+  const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(hash), (n) => n.toString(16).padStart(2, "0")).join("");
+}
+
+// 补翻（X 帖子页的补翻、Reddit 上的翻译）的缓存键：原文、截没截断、目标语言、模型、带不带标记（原文语言不在里面：同一段字认成哪种语言都一样）
+const fillKey = (item, settings) => sha256(JSON.stringify([FILL_VERSION, item.id, item.source, !!item.truncated, item.target || "zh", settings.translateModel, ...(item.markup ? ["markup"] : [])]));
+// 只查缓存、不翻：有就返回（带 cached: true），没有返回 null
+export async function fillCached({ settings, item, cache = idbCache }) {
+  try {
+    const hit = await cache.get(await fillKey(item, settings));
+    return hit ? { ...hit, cached: true } : null;
+  } catch { return null; } // 缓存坏了就当没命中
+}
+// 帖子页补翻：item: {id, source, srcLang, truncated}；返回 {action: "fill", text, model, cost, cached}
+export async function fillIn({ orKey, settings, item, cache = idbCache, signal, fetchImpl }) {
+  const key = await fillKey(item, settings);
+  try {
+    const hit = await cache.get(key);
+    if (hit) return { ...hit, cached: true };
+  } catch { /* 缓存坏了就当没命中 */ }
+  const ours = await translate(orKey, settings, item, { signal, fetchImpl });
+  const result = { action: "fill", text: ours.text, model: ours.model, cost: ours.cost };
+  try { await cache.put(key, result, capOf(settings)); } catch { /* 写不进缓存也照样返回 */ }
+  return { ...result, cached: false };
+}
+
+// 几条一起补翻（0.19.4）：Hacker News 首页 30 个标题一条一个请求要 7 秒左右翻完（同时 8 个请求），4–5 条拼一个请求、同时 16 个，3 秒以内；
+// 评论（几百个字）一条一个请求 40 条 13 秒，4 条 / 1200 字一个请求、同时 16 个 5 秒（真模型 GPT-6 Luna 量的，见 README 0.19.4）。
+// items 都是缓存里没有的（后台先查过）；每条用 <uN> 包着发，回来按标记拆，每条照单条补翻的键存进缓存（以后单独查也命中）。
+// 返回和 items 一一对应：拆得出来的 {action: "fill", text, model, cost, cached: false}，少了的、重复的是 null（页面那头单独再翻一次）。
+// 纯文字的条目（标题）不该带标记，模型要是加了就去掉。
+// onItem(k, 结果)：流式，第 k 条（从 0 数）的 </uN> 一到就先给（4 个标题一批，第一条 1.3 秒、整批 2 秒左右才完）；先给了的就定了，
+// 后面同一个标记再出现（模型重复了）也不改。整批出错时先给了的照样进缓存。花费最后才知道：先给的不带，返回的带
+export async function fillInBatch({ orKey, settings, items, cache = idbCache, signal, fetchImpl, onItem }) {
+  const source = items.map((it, k) => `<u${k + 1}>${it.source}</u${k + 1}>`).join("\n");
+  const langs = new Set(items.map((it) => it.srcLang || ""));
+  const unit = (it, text) => { // 一条的译文：纯文字的去掉标记、去掉多余的引号和前缀
+    if (text && !it.markup) text = text.replace(/<\/?[pt]\d+>|<x\d+\/>/g, "");
+    return text ? cleanOutput(text) : "";
+  };
+  const early = new Map(); // 流式先给了的：k → {text, model}
+  const onText = onItem && ((all, model) => {
+    for (const m of all.matchAll(/<u(\d+)>([\s\S]*?)<\/u\1>/g)) {
+      const k = Number(m[1]) - 1;
+      if (early.has(k) || !items[k]) continue;
+      const text = unit(items[k], m[2]);
+      if (!text) continue;
+      early.set(k, { text, model });
+      try { onItem(k, { action: "fill", text, model, cost: 0, cached: false }); } catch { /* 那头出错不影响 */ }
+    }
+  });
+  const put = async (it, result) => { try { await cache.put(await fillKey(it, settings), result, capOf(settings)); } catch { /* 写不进缓存也照样返回 */ } };
+  let r;
+  try {
+    r = await translate(orKey, settings, { source, srcLang: langs.size === 1 ? items[0].srcLang : null, markup: items.some((it) => it.markup),
+      batch: items.length, target: items[0].target }, { signal, fetchImpl, onText });
+  } catch (e) {
+    await Promise.all([...early].map(([k, x]) => put(items[k], { action: "fill", ...x, cost: 0 })));
+    throw e;
+  }
+  const got = new Map();
+  for (const m of r.text.matchAll(/<u(\d+)>([\s\S]*?)<\/u\1>/g)) { const k = Number(m[1]) - 1; got.set(k, got.has(k) ? null : m[2]); }
+  const cost = r.cost / items.length;
+  return Promise.all(items.map(async (it, k) => {
+    const e = early.get(k), text = e ? e.text : unit(it, got.get(k));
+    if (!text) return null;
+    const result = { action: "fill", text, model: e ? e.model : r.model, cost };
+    await put(it, result);
+    return { ...result, cached: false };
+  }));
+}
+
+// item: {id, source, xText, srcLang, target}；返回 {action: "keep" | "replace", text?, model?, weak?（Grok 哪一问最差）, grok, ours?, cost, jevTokens, cached}
+export async function improve({ jevKey, orKey, settings, item, cache = idbCache, signal, fetchImpl }) {
+  const key = await sha256(JSON.stringify([TRANSLATOR_VERSION, item.id, item.source, item.xText, item.target || "zh", settings.translateModel,
+    settings.translateThreshold, settings.translateMargin]));
+  try {
+    const hit = await cache.get(key);
+    if (hit) return { ...hit, cached: true };
+  } catch { /* 缓存坏了就当没命中 */ }
+  const jevOpts = { signal, fetchImpl };
+  const grok = await judge(jevKey, { source: item.source, translation: item.xText, srcLang: item.srcLang, target: item.target }, jevOpts);
+  let result;
+  if (grok.min >= settings.translateThreshold) {
+    result = { action: "keep", grok: grok.scores, grokMin: grok.min, cost: 0, jevTokens: grok.tokens };
+  } else {
+    const ours = await translate(orKey, settings, item, { signal, fetchImpl });
+    const judged = await judge(jevKey, { source: item.source, translation: ours.text, srcLang: item.srcLang, target: item.target }, jevOpts);
+    const weakest = Object.entries(grok.scores).sort((a, b) => a[1] - b[1])[0][0];
+    const better = judged.min - grok.min >= settings.translateMargin - 1e-9; // 0.75 − 0.65 在浮点里比 0.1 小一点
+    result = {
+      action: better ? "replace" : "keep", tried: true, text: better ? ours.text : undefined, model: ours.model,
+      weak: weakest, grok: grok.scores, grokMin: grok.min, ours: judged.scores, oursMin: judged.min,
+      cost: ours.cost, jevTokens: grok.tokens + judged.tokens,
+    };
+  }
+  try { await cache.put(key, result, capOf(settings)); } catch { /* 写不进缓存也照样返回 */ }
+  return { ...result, cached: false };
+}

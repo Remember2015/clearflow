@@ -1,0 +1,14 @@
+{
+  "//": "只给 esbuild 和编辑器看：shadcn 组件里的 @/components/... 指向 src/。不做类型检查（组件是 .tsx，页面是 .jsx）",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "allowJs": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "paths": { "@/*": ["./src/*"] }
+  },
+  "include": ["src"]
+}

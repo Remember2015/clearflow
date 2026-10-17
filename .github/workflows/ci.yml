@@ -1,0 +1,59 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: npm run setup
+      - run: npm run build
+      - name: Built files are up to date
+        run: git diff --exit-code -- extension
+      - run: npm run test:unit
+      - run: npm run pack
+
+  browser-tests:
+    runs-on: ubuntu-latest
+    needs: build-and-unit
+    # The headless tests were written on macOS; layout-measuring checks can differ with Linux fonts.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: npm run setup
+      - run: sudo apt-get update && sudo apt-get install -y fonts-noto-cjk
+      - run: npm test
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # The gitleaks GitHub Action needs a license key for organization repos; the container doesn't
+      - name: gitleaks
+        run: docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.18.4 detect --source /repo --redact --verbose

@@ -1,0 +1,53 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>cache context regression</title><pre id="out">running…</pre>
+<script type="module">
+import * as cache from "../cache.js";
+import { cacheRequests, ALL_KEYS } from "../jev.js";
+const out = [];
+const check = (name, condition) => { out.push(`${condition ? "PASS" : "FAIL"} ${name}`); };
+const sc = Object.fromEntries(ALL_KEYS.map((k) => [k, 0.2]));
+const reply = { id: "9001", name: "Reader", handle: "@reader", text: "普通回复" };
+const author = { name: "作者", handle: "@op" };
+const mutate = async (id, patch) => {
+  const db = await new Promise((resolve, reject) => { const r = indexedDB.open("ff-cache", 1); r.onsuccess = () => resolve(r.result); r.onerror = () => reject(r.error); });
+  try {
+    const tx = db.transaction("jev", "readwrite"), st = tx.objectStore("jev");
+    const done = new Promise((resolve, reject) => { tx.oncomplete = resolve; tx.onabort = tx.onerror = () => reject(tx.error); });
+    const rec = await new Promise((resolve, reject) => { const r = st.get(id); r.onsuccess = () => resolve(r.result); r.onerror = () => reject(r.error); });
+    Object.assign(rec, patch); st.put(rec); await done;
+  } finally { db.close(); }
+};
+try {
+  await cache.clear();
+  const original = await cacheRequests("P1", "原帖", [reply], author);
+  await cache.putMany([{ ...original[0], post: "P1", scores: sc }], 1024 * 1024);
+  check("相同输入命中", (await cache.getMany(original))[reply.id]?.benefit === 0.2);
+  for (const [name, pid, post, replies, op] of [
+    ["更换原帖", "P2", "原帖", [reply], author],
+    ["原帖内容变化", "P1", "新原帖", [reply], author],
+    ["原帖作者变化", "P1", "原帖", [reply], { ...author, handle: "@other" }],
+    ["回复内容变化", "P1", "原帖", [{ ...reply, text: "不同回复" }], author],
+    ["回复作者变化", "P1", "原帖", [{ ...reply, name: "Another" }], author],
+  ]) {
+    check(name + "不命中", Object.keys(await cache.getMany(await cacheRequests(pid, post, replies, op))).length === 0);
+  }
+  check("不同分类器指纹不命中", Object.keys(await cache.getMany([{ id: reply.id, fingerprint: "other-classifier" }])).length === 0);
+  await cache.putMany([{ id: "old", post: "P1", scores: sc }], 1024 * 1024);
+  check("旧缓存即使五问齐全也不命中", Object.keys(await cache.getMany([{ id: "old", fingerprint: original[0].fingerprint }])).length === 0);
+  check("旧按id读取不能绕过验证", Object.keys(await cache.getMany([reply.id])).length === 0);
+  await mutate(reply.id, { scoredAt: Date.now() - cache.CACHE_TTL_MS - 1, ts: Date.now() });
+  check("最近访问不能延长七天评分有效期", Object.keys(await cache.getMany(original)).length === 0);
+  await cache.putMany([{ ...original[0], post: "P1", scores: sc }], 1024 * 1024);
+  check("过期后重新评分可命中", !!(await cache.getMany(original))[reply.id]);
+  check("覆盖写不重复计数", (await cache.stats()).count === 2);
+  await mutate(reply.id, { scoredAt: undefined });
+  check("没有评分时间不命中", Object.keys(await cache.getMany(original)).length === 0);
+  await cache.putMany([{ ...original[0], post: "P1", scores: sc }], 1024 * 1024);
+  await cache.putMany(Array.from({ length: 50 }, (_, i) => ({ id: `cap-${i}`, post: "P2", fingerprint: `fp-${i}`, scores: sc })), 2000);
+  const size = await cache.stats();
+  check("带指纹的新记录仍遵守容量淘汰", size.bytes <= 2000 && size.count < 52);
+  await cache.clear();
+  check("清理归零", (await cache.stats()).count === 0);
+} catch (e) { out.push("FAIL " + e.stack); }
+document.getElementById("out").textContent = out.join("\n");
+window.__cacheContextTest = out;
+</script></html>

@@ -1,0 +1,5 @@
+<!-- 16 像素：气泡里的漏斗缩到这么小会糊成一个"T"（2026-10-14 实测），只画一个大漏斗 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+  <rect width="16" height="16" rx="3.75" fill="BADGE"/>
+  <path d="M3 3.5H13L9.25 8V12.5L6.75 11.25V8Z" fill="GLYPH" stroke="GLYPH" stroke-width="0.6" stroke-linejoin="round"/>
+</svg>
