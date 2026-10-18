@@ -953,11 +953,14 @@ sc.onload = () => fetch("/fakex/yt/youtubei/v1/next").then((r) => r.json()).then
 document.body.appendChild(sc);
 </script></body></html>"""
 VID = "SYNTHVID001"
-def ycomment(cid, handle, html):
+def ycomment(cid, handle, html, tx=None):
+    # tx：YouTube 自己的"翻译成中文（中国）"按钮（native.html 用）："ok" 点了换成译文，"fail" 点了没反应
+    btn = (f'<ytd-tri-state-button-view-model class="translate-button style-scope ytd-comment-view-model" state="untoggled" data-fake="{tx}">'
+           '<tp-yt-paper-button role="button">翻译成中文（中国）</tp-yt-paper-button></ytd-tri-state-button-view-model>') if tx else ""
     return (f'<ytd-comment-view-model id="comment" class="style-scope ytd-comment-thread-renderer"><div id="body"><div id="main">'
             f'<div id="header"><div id="header-author"><h3><a id="author-text" class="yt-simple-endpoint" href="/{handle}"><span> {handle} </span></a></h3>'
             f'<span id="author-comment-badge"></span><span dir="auto" id="published-time-text"><a class="yt-simple-endpoint" href="/watch?v={VID}&amp;lc={cid}">1 小时前</a></span></div></div>'
-            f'<ytd-expander id="expander"><div id="content"><yt-attributed-string slot="content" id="content-text"><span class="ytAttributedStringHost ytAttributedStringWhiteSpacePreWrap" dir="auto" role="text">{html}</span></yt-attributed-string></div></ytd-expander>'
+            f'<ytd-expander id="expander"><div id="content"><yt-attributed-string slot="content" id="content-text"><span class="ytAttributedStringHost ytAttributedStringWhiteSpacePreWrap" dir="auto" role="text">{html}</span></yt-attributed-string></div></ytd-expander>{btn}'
             f'<ytd-comment-engagement-bar id="action-buttons"><div id="toolbar"><span id="vote-count-middle">12</span> · 回复</div></ytd-comment-engagement-bar>'
             f'<div id="action-menu"></div></div></div></ytd-comment-view-model>')
 def ythread(cid, handle, html, replies=""):
@@ -1012,11 +1015,30 @@ def yresult(vid, title, snippet):
     return (f'<ytd-video-renderer><div id="dismissible"><div class="text-wrapper"><div id="title-wrapper"><h3 class="title-and-badge"><a id="video-title" class="yt-simple-endpoint" title="{title}" href="/watch?v={vid}">'
             f'<yt-icon id="inline-title-icon" hidden=""></yt-icon><yt-formatted-string class="style-scope ytd-video-renderer">{title}</yt-formatted-string></a></h3></div>'
             f'<div class="metadata-snippet-container"><yt-formatted-string class="metadata-snippet-text style-scope ytd-video-renderer">{snippet}</yt-formatted-string></div></div></div></ytd-video-renderer>')
+# yt/native.html → /watch?v=SYNTHVID001（0.28.1）：评论带 YouTube 自己的"翻译成中文（中国）"按钮（登录了才有，Shorts、视频页都是）。
+#   Ugn01 韩文、按钮能用（点了正文换成"【YouTube 翻译】…"）；Ugn02 西班牙文、按钮点了没反应（YouTube 没翻成 → 插件自己翻）；
+#   Ugn03 日文、没按钮（插件自己翻）；Ugn04 中文、没按钮（不翻）。
+YT_NATIVE = [("Ugn01", "@kfan", "수많은 챌린지를 했지만 선생님 옆에선 정말 사랑스러워", "ok"), ("Ugn02", "@esfan", "¿Alguien sabe dónde comprar esta tienda de campaña?", "fail"),
+             ("Ugn03", "@jafan", "このテントはとても大きくて素敵ですね。", None), ("Ugn04", "@zhfan", "这个帐篷看起来真不错，求链接。", None)]
+yt_native_js = """<script>
+document.addEventListener("click", (ev) => {
+  const p = ev.target.closest(".translate-button tp-yt-paper-button"), host = p && p.closest(".translate-button");
+  if (!host || host.dataset.fake !== "ok") return;
+  const span = host.closest("ytd-comment-view-model").querySelector("#content-text > span");
+  if (host.getAttribute("state") === "untoggled") { span.__orig = span.textContent; span.textContent = "【YouTube 翻译】" + span.__orig; host.setAttribute("state", "toggled"); p.textContent = "查看原文（由 Google 翻译）"; }
+  else { span.textContent = span.__orig; host.setAttribute("state", "untoggled"); p.textContent = "翻译成中文（中国）"; }
+});
+</script>"""
+yt_native = ypage("How Synthetic Engines Work, Explained - YouTube", f"/watch?v={VID}",
+  '<div id="primary"><ytd-watch-metadata><div id="title"><h1 class="style-scope ytd-watch-metadata"><yt-formatted-string class="style-scope ytd-watch-metadata">合成发动机讲解</yt-formatted-string></h1></div></ytd-watch-metadata>'
+  f'<ytd-comments id="comments"><ytd-item-section-renderer id="sections"><div id="contents"></div></ytd-item-section-renderer></ytd-comments></div>'
+  f'<template id="yt-comments">{"".join(f"<ytd-comment-thread-renderer>{ycomment(cid, h, t, tx)}</ytd-comment-thread-renderer>" for cid, h, t, tx in YT_NATIVE)}</template>',
+  extra='<script>window.ytInitialPlayerResponse = { videoDetails: { videoId: "SYNTHVID001", channelId: "UCsynthchannel00000000000", author: "Synthetic Channel" } };</script>' + yt_native_js)
 yt_results = ypage("engines - YouTube", "/results?search_query=engines", '<div id="primary"><ytd-section-list-renderer><div id="contents">'
   + yresult("SEARCHV0001", "Why synthetic engines are quieter than you think", "A long look at noise levels, materials and the tricks engineers use every day.")
   + yresult("SEARCHV0002", "合成发动机入门", "从零开始讲合成发动机。") + "</div></ytd-section-list-renderer></div>")
 os.makedirs(os.path.join(HERE, "fakex", "yt", "youtubei", "v1"), exist_ok=True)
-for name, html in [("watch", yt_watch), ("results", yt_results)]:
+for name, html in [("watch", yt_watch), ("results", yt_results), ("native", yt_native)]:
     open(os.path.join(HERE, "fakex", "yt", name + ".html"), "w", encoding="utf-8").write(html)
 open(os.path.join(HERE, "fakex", "yt", "youtubei", "v1", "next"), "w", encoding="utf-8").write(_json.dumps(yt_next, ensure_ascii=False))
 

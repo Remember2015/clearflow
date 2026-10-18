@@ -639,7 +639,8 @@
     }
     function renderAll() { if (alive()) site.render(api); }
 
-    const api = { want, wantRich, nearOnes, watch, ready, has, cut, previewMax, guessLang, foreign, mainScript,
+    const known = (key) => jobs.has(key); // 有这个任务（还在认语言、查缓存的也算）
+    const api = { want, wantRich, nearOnes, watch, ready, has, known, cut, previewMax, guessLang, foreign, mainScript,
       swapText, swapBox, swapRich, swapRichWhole, placeNote, placeIconNote, renderTitle, linesOf, isOn: () => on };
     // 弹窗问"这个页面"时：这一页翻了几条（折叠那边的 pageSummary 带上）
     globalThis.FFTxSummary = () => ({ improved: 0, filled: site.count(api), on });

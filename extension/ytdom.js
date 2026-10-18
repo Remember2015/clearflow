@@ -45,8 +45,25 @@
   const commentBodyHost = (c) => c.querySelector("#content-text");
   // 正文那一格：yt-attributed-string 里那个普通 span（换译文时整格克隆它，不克隆 YouTube 自己的组件）
   const commentBody = (c) => { const h = commentBodyHost(c); return h ? h.querySelector(`:scope > span:not(.${OWN})`) || h : null; };
-  const commentText = (c) => readText(commentBody(c));
   const commentInfo = (c) => authors.get(rawId(c) || "") || null;
+  // YouTube 自己的"翻译成中文（中国）"按钮（评论上，Shorts 和视频页都有，登录了才有）：state 是 untoggled（原文）/ toggled（正文那一格
+  // 原地换成了 Google 的译文，按钮写"查看原文（由 Google 翻译）"）。0.28.1 起插件替你点它（yttx.js）
+  const translateButton = (c) => [...c.querySelectorAll("ytd-tri-state-button-view-model.translate-button")].find((b) => b.closest("ytd-comment-view-model") === c) || null;
+  const ytTranslated = (c) => translateButton(c)?.getAttribute("state") === "toggled";
+  // 正文的字。YouTube 翻过的（页面上是译文）读原文：没翻时读到的（插件替你点之前也记一次）优先，没有就用页面数据里的正文——
+  // 不然清理那边以为字变了，每条都重判一次（0.28.1）
+  const originals = new Map(); // 评论 id → 原文
+  const rememberOriginal = (c) => {
+    const id = rawId(c), t = readText(commentBody(c));
+    if (!id || !t || ytTranslated(c)) return;
+    if (originals.size > 5000) originals.clear();
+    originals.set(id, t);
+  };
+  const commentText = (c) => {
+    if (ytTranslated(c)) { const id = rawId(c); return (id && originals.get(id)) || commentInfo(c)?.text || readText(commentBody(c)); }
+    rememberOriginal(c);
+    return readText(commentBody(c));
+  };
   // 折叠时藏的：正文那一块（带"展开"的 ytd-expander）和点赞那一排；作者那一行留着
   const commentFoldEls = (c) => [c.querySelector("#expander") || commentBodyHost(c), c.querySelector("#action-buttons")].filter(Boolean);
   const isReply = (c) => !!c.closest("ytd-comment-replies-renderer");
@@ -97,5 +114,6 @@
   const dark = () => document.documentElement.hasAttribute("dark");
   const uiLang = () => document.documentElement.lang || navigator.language || "en";
   globalThis.FFYT = Object.freeze({ route, vidOf, comments, rawId, commentId, commentAuthor, commentBody, commentBodyHost, commentText, commentInfo, commentFoldEls, isReply,
+    translateButton, ytTranslated, rememberOriginal,
     commentHeader, owner, watchTitleEl, watchTitle, listTitles, snippetOf, descBox, descSnippet, descFull, descExpanded, dark, uiLang, readText, authors, QUIET });
 })();

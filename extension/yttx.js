@@ -7,6 +7,9 @@
 // - 评论（视频页、Shorts）：正文带格式原位置换（整格克隆 yt-attributed-string 里那个 span）；说明放在作者那一行的后面
 //   （"@作者 · 11 个月前 ✦ 翻译自英语 · 看原文"）——放进正文那一格的话，YouTube 的"展开"组件（最多 4 行）换字时会以为内容变长了，
 //   每条评论下面冒出一个"了解详情"、点了也没东西（2026-10-13 真页面上看到的）。
+// - 评论上有 YouTube 自己的"翻译成中文（中国）"按钮的（Shorts、视频页，登录了才有）：替你点一下，用 YouTube 的译文（Google 翻译），
+//   插件不翻、不花 API（0.28.1，用户 10-18：Shorts 自带翻译，先替用户点；Google 翻译水平不错，不判）。每条只替你点一次（你点回原文
+//   就不再点）；点了 NATIVE_WAIT 还没换成译文的（YouTube 没翻成）改用插件自己翻。一轮最多点 NATIVE_PER_SCAN 条（离视野近的先点）。
 // YouTube 自己翻成你的语言的标题（作者给了多语言标题、自动配音）已经是中文，按文字认出来就不翻。
 // 站内跳转不换整页、同一个元素会换着显示别的视频和评论：每一轮都按链接里的 id 重新认（tx_engine 的说明、克隆都带着任务的键）。
 (() => {
@@ -14,6 +17,29 @@
   globalThis.__ffYTTx = true;
   const Y = globalThis.FFYT;
   const watching = (r) => r.kind === "watch" || r.kind === "shorts";
+  const NATIVE_WAIT = 6000, NATIVE_PER_SCAN = 6;
+  const native = new Map(); // 评论 id → { at: 替你点的时候, done: 换成过译文, mine: 是插件点的, failed: 没翻成、改用插件的 }
+  let clicks = 0;
+  // 交给 YouTube 翻了（或者这一轮先不管、下一轮再点）：返回 true，插件不给这条建任务
+  function nativeTx(c, id) {
+    const st = native.get(id);
+    if (st && st.failed) return false;
+    const b = Y.translateButton(c);
+    if (!b) return !!st; // 按钮没了：替你点过的不再管
+    const toggled = b.getAttribute("state") === "toggled";
+    if (st) {
+      if (toggled) st.done = true;
+      else if (!st.done && Date.now() - st.at > NATIVE_WAIT) { st.failed = true; return false; }
+      return true;
+    }
+    if (toggled) { native.set(id, { at: Date.now(), done: true, mine: false }); return true; } // 你自己点开的
+    if (clicks >= NATIVE_PER_SCAN) return true;
+    Y.rememberOriginal(c); // 换成译文以前把原文记下（清理那边照原文判）
+    (b.querySelector("tp-yt-paper-button, [role=button], button") || b).click();
+    clicks++;
+    native.set(id, { at: Date.now(), done: false, mine: true });
+    return true;
+  }
   function renderListTitle(e, x) {
     const job = e.ready(`${x.id}|t`);
     e.swapText(x.box, x.id, job, "ff-rtx-title", { plain: true });
@@ -74,9 +100,11 @@
         if (full) wantRichOrPlain(e, `${id}|b`, id, full, box);
         else if (sn) wantRichOrPlain(e, `${id}|p`, id, sn, box, true);
       }
+      clicks = 0;
       for (const c of e.nearOnes(Y.comments())) {
         const cid = Y.commentId(c), body = Y.commentBody(c);
-        if (cid && body) wantRichOrPlain(e, cid, cid, body, c);
+        if (!cid || !body || (!e.known(cid) && nativeTx(c, cid))) continue;
+        wantRichOrPlain(e, cid, cid, body, c);
       }
     },
     render(e) {
@@ -89,7 +117,9 @@
     count(e) {
       const r = Y.route();
       let n = Y.listTitles().filter((x) => e.has(x.id)).length;
-      if (watching(r)) n += (e.has("yt_v_" + r.vid) ? 1 : 0) + Y.comments().filter((c) => e.has(Y.commentId(c))).length;
+      // YouTube 替你翻的（插件点的、现在显示着译文）也算
+      if (watching(r)) n += (e.has("yt_v_" + r.vid) ? 1 : 0) + Y.comments().filter((c) => { const id = Y.commentId(c), st = native.get(id);
+        return e.has(id) || (st && st.mine && !st.failed && Y.ytTranslated(c)); }).length;
       return n;
     },
   });
