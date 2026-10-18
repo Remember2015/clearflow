@@ -48,10 +48,14 @@
       return Object.entries(n).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
     }
     const targetScript = () => SCRIPT_OF[target().toLowerCase().split("-")[0]] || "latin";
-    // 光看文字就知道和界面不是一种语言：文字不一样（界面是中文、原文有假名的也算不一样）
-    function scriptDiffers(s, ts) {
+    // 浏览器认不准时，光看文字定和界面是不是一种语言：文字不一样就不是（界面是中文、原文有假名的也算不一样）。
+    // 日文界面看全是汉字的：当中文、翻（0.28.2，用户 10-18："自己算的结果准，那也应该走翻译"——x_multi 上浏览器认不准、全是汉字的
+    // 50 条里 47 条是中文；以前当成和日文一样不翻，47 条全漏），但有一个假名就当日文（"東京の夜"这种只有一个假名的短日文）：
+    // 日文界面漏翻 47 → 0，多翻 2 条很短的纯汉字日文（jev_eval/code/langdetect）
+    const KANA = /[\p{Script=Hiragana}\p{Script=Katakana}]/u;
+    function scriptDiffers(s, ts, text) {
       if (ts === "han") return s !== "han";
-      if (ts === "kana") return s !== "kana" && s !== "han";
+      if (ts === "kana") return s === "han" ? !KANA.test(text) : s !== "kana";
       return s !== ts;
     }
     // 只有一种语言用的文字：和界面同一种文字就一定是界面语言，不用再认（韩文、泰文；有假名的就是日文）
@@ -91,7 +95,7 @@
       const ui = target(), ts = targetScript();
       const done = (label, other) => { detecting--; res({ label, other }); };
       const byScript = (r) => { // 浏览器认不准：按文字算
-        if (s !== "latin") return done(hint || LANG_OF[s] || null, scriptDiffers(s, ts));
+        if (s !== "latin") return done(hint || LANG_OF[s] || null, scriptDiffers(s, ts, text));
         const top = r && r.languages && r.languages[0], code = top ? base(top.language) : "";
         const guess = /^[a-z]{2}$/.test(code) && !SCRIPT_OF[code] ? code : null; // 浏览器头一个猜的
         const label = hint || (guess === "en" && top.percentage >= 90 ? "en" : null);

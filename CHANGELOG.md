@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.28.2 — 2026-10-18
+
+- With a Japanese interface, short all-kanji text that the browser can't identify is now treated as Chinese and translated (any kana means Japanese). Before, it was labeled Chinese but never translated.
+
 ## 0.28.1 — 2026-10-18
 
 - YouTube comments: when YouTube shows its own "Translate to …" button on a comment (signed-in users, on Shorts and regular videos), ClearFlow clicks it for you and uses YouTube's (Google) translation instead of calling OpenRouter — no API cost. Each comment is clicked at most once (switch back to the original and it stays that way); if YouTube's translation doesn't arrive within a few seconds, ClearFlow translates it itself. Cleaning still judges the original text.

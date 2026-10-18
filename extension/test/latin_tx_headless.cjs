@@ -131,18 +131,18 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     }
 
     // ⑥ 所有文字都先问浏览器
-    const cldPage = async (lang, sayJa) => {
+    const cldPage = async (lang, sayJa, unsure = false) => {
       const page = await browser.newPage();
       page.on("pageerror", (e) => out.push(`PAGEERROR ${e.message}`));
-      await page.evaluateOnNewDocument((l, sayJa) => {
+      await page.evaluateOnNewDocument((l, sayJa, unsure) => {
         window.__ffUiLang = l;
         window.__ffDetect = (t) => /[\u3040-\u30ff]/.test(t) ? { isReliable: true, languages: [{ language: "ja", percentage: 98 }] }
-          : /\p{Script=Han}/u.test(t) ? { isReliable: true, languages: [{ language: sayJa ? "ja" : "zh-CN", percentage: 95 }] }
+          : /\p{Script=Han}/u.test(t) ? { isReliable: !unsure, languages: [{ language: sayJa ? "ja" : "zh-CN", percentage: unsure ? 60 : 95 }] }
           : /[¿¡]/.test(t) ? { isReliable: true, languages: [{ language: "es", percentage: 96 }] }
           : { isReliable: t.length >= 40, languages: [{ language: "en", percentage: 97 }] };
         const mo = new MutationObserver(() => { if (document.documentElement) { document.documentElement.lang = l; mo.disconnect(); } });
         mo.observe(document, { childList: true });
-      }, lang, sayJa);
+      }, lang, sayJa, unsure);
       await page.setViewport({ width: 900, height: 2400 });
       await page.goto(`${BASE}/fakex/reddit/post_en.html`, { waitUntil: "load" });
       await wait(4000);
@@ -154,6 +154,10 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     const zhC = m.filter((x) => x[0] === "t1_e2"), jaC = m.filter((x) => x[0] === "t1_e5");
     ok("先问浏览器，日文界面：全是汉字、浏览器认得准是中文的评论翻（原文语言 zh），日文评论不翻",
       zhC.length === 1 && zhC[0][1] === "zh" && zhC[0][2] === "ja" && jaC.length === 0, JSON.stringify(m));
+    m = await cldPage("ja", false, true);
+    const zhU = m.filter((x) => x[0] === "t1_e2"), jaU = m.filter((x) => x[0] === "t1_e5");
+    ok("浏览器认不准，日文界面：全是汉字的评论按文字算是中文，照翻（0.28.2）；有假名的日文不翻",
+      zhU.length === 1 && zhU[0][1] === "zh" && jaU.length === 0, JSON.stringify(m));
     m = await cldPage("zh-CN", true);
     const e2 = m.filter((x) => x[0] === "t1_e2");
     ok("先问浏览器，中文界面：全是汉字、但浏览器认得准是日文的评论照翻（原文语言 ja）", e2.length === 1 && e2[0][1] === "ja", JSON.stringify(m));

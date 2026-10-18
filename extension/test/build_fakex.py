@@ -956,7 +956,7 @@ VID = "SYNTHVID001"
 def ycomment(cid, handle, html, tx=None):
     # tx：YouTube 自己的"翻译成中文（中国）"按钮（native.html 用）："ok" 点了换成译文，"fail" 点了没反应
     btn = (f'<ytd-tri-state-button-view-model class="translate-button style-scope ytd-comment-view-model" state="untoggled" data-fake="{tx}">'
-           '<tp-yt-paper-button role="button">翻译成中文（中国）</tp-yt-paper-button></ytd-tri-state-button-view-model>') if tx else ""
+           '<tp-yt-paper-button role="button">' + ("Translate to Chinese (China)" if tx == "ok" else "日本語に翻訳") + '</tp-yt-paper-button></ytd-tri-state-button-view-model>') if tx else ""
     return (f'<ytd-comment-view-model id="comment" class="style-scope ytd-comment-thread-renderer"><div id="body"><div id="main">'
             f'<div id="header"><div id="header-author"><h3><a id="author-text" class="yt-simple-endpoint" href="/{handle}"><span> {handle} </span></a></h3>'
             f'<span id="author-comment-badge"></span><span dir="auto" id="published-time-text"><a class="yt-simple-endpoint" href="/watch?v={VID}&amp;lc={cid}">1 小时前</a></span></div></div>'
@@ -1017,7 +1017,8 @@ def yresult(vid, title, snippet):
             f'<div class="metadata-snippet-container"><yt-formatted-string class="metadata-snippet-text style-scope ytd-video-renderer">{snippet}</yt-formatted-string></div></div></div></ytd-video-renderer>')
 # yt/native.html → /watch?v=SYNTHVID001（0.28.1）：评论带 YouTube 自己的"翻译成中文（中国）"按钮（登录了才有，Shorts、视频页都是）。
 #   Ugn01 韩文、按钮能用（点了正文换成"【YouTube 翻译】…"）；Ugn02 西班牙文、按钮点了没反应（YouTube 没翻成 → 插件自己翻）；
-#   Ugn03 日文、没按钮（插件自己翻）；Ugn04 中文、没按钮（不翻）。
+#   Ugn03 日文、没按钮（插件自己翻）；Ugn04 中文、没按钮（不翻）。按钮上的字故意是英文、日文（插件认的是组件和 state，不读字——
+#   YouTube 的按钮按你账号的界面语言写"翻译成中文（中国）""Translate to English""日本語に翻訳"……）。
 YT_NATIVE = [("Ugn01", "@kfan", "수많은 챌린지를 했지만 선생님 옆에선 정말 사랑스러워", "ok"), ("Ugn02", "@esfan", "¿Alguien sabe dónde comprar esta tienda de campaña?", "fail"),
              ("Ugn03", "@jafan", "このテントはとても大きくて素敵ですね。", None), ("Ugn04", "@zhfan", "这个帐篷看起来真不错，求链接。", None)]
 yt_native_js = """<script>
@@ -1025,8 +1026,8 @@ document.addEventListener("click", (ev) => {
   const p = ev.target.closest(".translate-button tp-yt-paper-button"), host = p && p.closest(".translate-button");
   if (!host || host.dataset.fake !== "ok") return;
   const span = host.closest("ytd-comment-view-model").querySelector("#content-text > span");
-  if (host.getAttribute("state") === "untoggled") { span.__orig = span.textContent; span.textContent = "【YouTube 翻译】" + span.__orig; host.setAttribute("state", "toggled"); p.textContent = "查看原文（由 Google 翻译）"; }
-  else { span.textContent = span.__orig; host.setAttribute("state", "untoggled"); p.textContent = "翻译成中文（中国）"; }
+  if (host.getAttribute("state") === "untoggled") { span.__orig = span.textContent; span.textContent = "【YouTube 翻译】" + span.__orig; host.setAttribute("state", "toggled"); p.textContent = "See original (Translated by Google)"; }
+  else { span.textContent = span.__orig; host.setAttribute("state", "untoggled"); p.textContent = "Translate to Chinese (China)"; }
 });
 </script>"""
 yt_native = ypage("How Synthetic Engines Work, Explained - YouTube", f"/watch?v={VID}",
