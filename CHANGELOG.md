@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.27.5 — 2026-10-18
+
+- Fixed: an English text with a few Japanese characters in it (such as a Japanese hashtag at the end of a YouTube video description) was labeled as Japanese, and with a Japanese interface it wasn't translated at all.
+
 ## 0.27.4 — 2026-10-18 · first public release
 
 ClearFlow (清流) was developed privately from 0.1 to 0.27 — under the working names “feed-filter” and later “BetterFeed”, renamed before release because other extensions already use that name. This is the first release published as open source. What it does:

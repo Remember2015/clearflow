@@ -5,6 +5,7 @@
 // ② 同一页，西班牙文界面：英文的帖子标题、正文、评论都翻成西班牙文（短的认不准，照帖子标的 en），西班牙文的那条不翻。
 // ③ Hacker News 评论页，西班牙文界面：英文评论翻、中文的也翻；英文界面：英文的不翻、中文的翻。
 // ④ YouTube 视频页，英文界面：西班牙文评论翻成英文，英文评论不翻。
+// ⑤ YouTube 简介是一段英文、末尾一行日文标签"キャンプ"（0.27.5，用户 10-18 截图）：中文界面翻、原文语言不写日语；日文界面也翻（以前整段当成日文、不翻）。
 // 目标语言是网站自己的界面语言（<html lang>），测试里和插件的界面语言一起换。
 // 用法：node test/latin_tx_headless.cjs <装了 puppeteer-core 的目录> [http://localhost:8767]（run_all.mjs 会起服务）
 const path = require("path");
@@ -103,6 +104,29 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     ok("YouTube 英文界面：西班牙文评论翻成英文（原文语言 es）", ytEs.length === 1 && ytEs[0][1] === "es" && ytEs[0][2] === "en", JSON.stringify(msgs.map((m) => [m[1], m[3].slice(0, 30)])));
     ok("YouTube 英文界面：英文评论不翻", asked(msgs, /^This explanation finally made|^Agreed, the second half/).length === 0, JSON.stringify(msgs.map((m) => m[3].slice(0, 30))));
     await page.close();
+
+    // ⑤ 英文简介夹一行日文标签
+    for (const lang of ["zh-CN", "ja"]) {
+      const page = await browser.newPage();
+      page.on("pageerror", (e) => out.push(`PAGEERROR ${e.message}`));
+      await page.evaluateOnNewDocument((l) => {
+        window.__ffUiLang = l;
+        let swapped = false;
+        const mo = new MutationObserver(() => {
+          if (document.documentElement && document.documentElement.lang !== l) document.documentElement.lang = l;
+          const sn = document.querySelector("#attributed-snippet-text > span");
+          if (sn && !swapped) { swapped = true; sn.textContent = "I set up a huge 2-story tent in the forest and enjoyed a peaceful night of solo camping in heavy rain with two dogs.\nキャンプ"; }
+        });
+        mo.observe(document, { childList: true, subtree: true });
+      }, lang);
+      await page.setViewport({ width: 900, height: 2400 });
+      await page.goto(`${BASE}/fakex/yt/watch.html`, { waitUntil: "load" });
+      await wait(4000);
+      const m = await page.evaluate(() => (window.__ffTxMsgs || []).filter((x) => x.type === "translateFill" && /huge 2-story tent/.test(x.source)).map((x) => [x.srcLang, x.target]));
+      ok(`YouTube ${lang} 界面：英文简介末尾一行"キャンプ"——照样翻（目标 ${lang.split("-")[0]}），原文语言不当日语`,
+        m.length === 1 && m[0][0] !== "ja" && m[0][1].split("-")[0] === lang.split("-")[0], JSON.stringify(m));
+      await page.close();
+    }
   } catch (e) {
     out.push(`FAIL 出错 ${e.stack || e}`);
   } finally {

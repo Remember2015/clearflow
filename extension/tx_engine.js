@@ -41,7 +41,10 @@
     function mainScript(text) {
       const n = {};
       for (const ch of text.replace(/https?:\/\/\S+|\bu\/\w+|\br\/\w+/g, "")) for (const [k, re] of SCRIPTS) if (re.test(ch)) { n[k] = (n[k] || 0) + (WIDE.has(k) ? 3 : 1); break; }
-      if ((n.kana || 0) >= 6) return "kana"; // 日文里汉字多，有两个以上假名就算日文
+      // 日文里汉字多，有两个以上假名就算日文——但汉字加假名得比别的文字多（0.27.5，用户 10-18 截图：一段英文的 YouTube 简介末尾一行
+      // "キャンプ"标签，整段被当成日文，说明写"原文（日语）"；日文界面还会因此不翻）
+      const cjk = (n.han || 0) + (n.kana || 0);
+      if ((n.kana || 0) >= 6 && Object.entries(n).every(([k, v]) => k === "han" || k === "kana" || v <= cjk)) return "kana";
       return Object.entries(n).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
     }
     const targetScript = () => SCRIPT_OF[target().toLowerCase().split("-")[0]] || "latin";
