@@ -48,54 +48,67 @@
       return Object.entries(n).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
     }
     const targetScript = () => SCRIPT_OF[target().toLowerCase().split("-")[0]] || "latin";
-    // 要翻的：认得出文字、和界面语言不是一种文字（界面是中文时，日文也算要翻：有假名就不是中文）。
-    // 界面和原文都是拉丁字母的（英文界面看西班牙文、西班牙文界面看英文……）先算候选，建任务时认了是哪种语言再定（detect 的 other）。
-    // 0.25 以前拉丁字母之间一律不翻：西、葡、印尼、德、土这些界面的人，最想看懂的英文反倒不翻
-    function foreign(text) {
-      const s = mainScript(text), ts = targetScript();
-      if (!s) return false;
+    // 光看文字就知道和界面不是一种语言：文字不一样（界面是中文、原文有假名的也算不一样）
+    function scriptDiffers(s, ts) {
       if (ts === "han") return s !== "han";
       if (ts === "kana") return s !== "kana" && s !== "han";
-      return s !== ts || s === "latin";
+      return s !== ts;
     }
-    // 原文是什么语言（只用来写说明）：非拉丁字母的按文字认；拉丁字母的先当和帖子标的语言一样（没标就不写，说明里显示成"外语"），再问浏览器（detect）
+    // 只有一种语言用的文字：和界面同一种文字就一定是界面语言，不用再认（韩文、泰文；有假名的就是日文）
+    const ONLY = new Set(["hangul", "thai", "kana"]);
+    // 候选（建任务、认语言）：认得出文字，而且不是"和界面同一种、只有一种语言用的文字"。翻不翻建任务时认了语言再定（detect 的 other）：
+    // 0.28 起所有文字都先问浏览器，日文界面看全是汉字的中文、俄文界面看乌克兰文、阿拉伯文界面看波斯文这些"文字一样、语言不一样"的也翻
+    // （以前按文字一律不翻）。0.25 以前拉丁字母之间一律不翻：西、葡、印尼、德、土这些界面的人，最想看懂的英文反倒不翻
+    function foreign(text) {
+      const s = mainScript(text);
+      return !!s && !(s === targetScript() && ONLY.has(s));
+    }
+    // 原文是什么语言（建任务时先填上，认不准时用）：非拉丁字母的按文字认；拉丁字母的先当和帖子标的语言一样（没标就不写，说明里显示成"外语"）
     function guessLang(text, postLang) {
       const s = mainScript(text);
       if (s === "latin") return postLang && /^[a-z]{2}$/.test(postLang) && !SCRIPT_OF[postLang] ? postLang : null;
       return LANG_OF[s] || null;
     }
-    // 拉丁字母的原文是哪种语言（label，写说明用）：浏览器（chrome.i18n.detectLanguage，本机认、不联网）认得准就用它；不准时（短句子都"不准"）
-    // 先信帖子标的，帖子没标、浏览器猜英语 ≥90% 也算英语（实测短标题猜英语都对；猜别的会错，比如西班牙语猜成加泰罗尼亚语，就写"外语"）。
-    // other：和界面不是一种语言、要翻（界面也是拉丁字母时才看它）。只认主流的几种拉丁字母语言（MAIN）：浏览器"认得准"地说成加利西亚语、
-    // 世界语、爪哇语、马达加斯加语、弗里斯兰语……的，多半是西班牙文、印尼文、英文认错了，当认不出、不翻；认不准、但浏览器头一个猜的
-    // 就是界面语言的也不翻（"¡Qué bueno!" 不准、猜西班牙语）。真 Chrome 在 X 上 766 条拉丁字母回复（X 标的语言当真值）、HN 2809 条
-    // 英文评论上量的：不限主流语言时把界面语言的翻掉 17/751、HN 英文界面 5 条，限了以后 2/751、1 条，别的拉丁字母语言翻到 74%
-    // （没翻的是短句子、浏览器认不准；认不准也照浏览器头一个猜的翻能到 84%，但误翻多三倍，没用）
+    // 原文是哪种语言（label，写说明用）、要不要翻（other）。0.28 起所有文字都先问浏览器（chrome.i18n.detectLanguage，Chrome 自带的
+    // CLD，本机认、不联网）：认得准（isReliable、头一个 ≥ 70%）就用它（用户 10-18 定："所有文字都先问浏览器，认不准再去算"）。
+    // x_multi 1118 条 X 回复（X 标的语言当真值）上量的：说明写的语言和以前一条不差；日文界面下中文回复漏翻 115 → 47；
+    // 中、韩、英、西、印尼界面一条不变（jev_eval/code/langdetect/cld_compare.mjs）。
+    // 拉丁字母的还只认主流的几种（MAIN）：浏览器"认得准"地说成加利西亚语、世界语、爪哇语、马达加斯加语、弗里斯兰语……的，多半是
+    // 西班牙文、印尼文、英文认错了，当认不准。
+    // 认不准的（短句子多半认不准）按文字算：非拉丁字母的按文字定语言、文字和界面不一样才翻；拉丁字母的先信帖子标的，帖子没标、
+    // 浏览器猜英语 ≥90% 也算英语（实测短标题猜英语都对；猜别的会错，比如西班牙语猜成加泰罗尼亚语，就写"外语"）；界面不是拉丁字母
+    // 的照翻，界面也是拉丁字母的：认不出的不翻、浏览器头一个猜的就是界面语言的也不翻（"¡Qué bueno!" 不准、猜西班牙语）。
+    // 真 Chrome 在 X 上 766 条拉丁字母回复、HN 2809 条英文评论上量的（0.25）：不限主流语言时把界面语言的翻掉 17/751、HN 英文界面
+    // 5 条，限了以后 2/751、1 条，别的拉丁字母语言翻到 74%（认不准也照浏览器头一个猜的翻能到 84%，但误翻多三倍，没用）
     // detecting：还在认的有几条（先查缓存那一步等它们认完再一起查，见 flushPre）
     const base = (l) => String(l || "").toLowerCase().split("-")[0];
     const ALIKE = { ms: "id", nb: "no", nn: "no" }; // 浏览器分不清的：印尼文常被认成马来文
     const sameLang = (a, b) => (ALIKE[base(a)] || base(a)) === (ALIKE[base(b)] || base(b));
     const MAIN = new Set(["en", "es", "pt", "fr", "de", "it", "nl", "pl", "tr", "id", "ms", "vi"]); // 界面支持的拉丁字母语言（加马来文）
     let detecting = 0;
-    const detect = (text, hint) => new Promise((res) => {
+    const detect = (text, hint, s) => new Promise((res) => {
       detecting++;
-      const ui = target();
-      // label 写说明用；sure 用来定翻不翻（只认主流语言）；guess 是认不准时浏览器头一个猜的
-      const done = (label, sure = label, guess = null) => { detecting--; res({ label, other: !!sure && !sameLang(sure, ui) && !(guess && sameLang(guess, ui)) }); };
+      const ui = target(), ts = targetScript();
+      const done = (label, other) => { detecting--; res({ label, other }); };
+      const byScript = (r) => { // 浏览器认不准：按文字算
+        if (s !== "latin") return done(hint || LANG_OF[s] || null, scriptDiffers(s, ts));
+        const top = r && r.languages && r.languages[0], code = top ? base(top.language) : "";
+        const guess = /^[a-z]{2}$/.test(code) && !SCRIPT_OF[code] ? code : null; // 浏览器头一个猜的
+        const label = hint || (guess === "en" && top.percentage >= 90 ? "en" : null);
+        if (ts !== "latin") return done(label, true);
+        done(label, !!label && !sameLang(label, ui) && !(guess && sameLang(guess, ui)));
+      };
       try {
         chrome.i18n.detectLanguage(text.slice(0, 1000), (r) => {
           void chrome.runtime.lastError;
           const top = r && r.languages && r.languages[0], code = top ? base(top.language) : "";
-          const okCode = /^[a-z]{2}$/.test(code) && !SCRIPT_OF[code];
-          if (okCode && r.isReliable && top.percentage >= 70) return done(code, MAIN.has(code) ? code : null);
-          const guess = okCode ? code : null;
-          if (hint) return done(hint, hint, guess);
-          const en = okCode && code === "en" && top.percentage >= 90 ? "en" : null;
-          done(en, en, guess);
+          const sure = top && r.isReliable && top.percentage >= 70 && /^[a-z]{2,3}$/.test(code) && code !== "und" && !(s === "latin" && !MAIN.has(code));
+          if (sure) return done(code, !sameLang(code, ui));
+          byScript(r);
         });
-      } catch (e) { done(hint || null); } // 测试页、老浏览器没有这个接口
+      } catch (e) { byScript(null); } // 测试页、老浏览器没有这个接口
     });
-    // 界面也是拉丁字母、认出来和界面是同一种语言（或认不出）的：键 → 当时的原文，下次扫到原文没变就不再认
+    // 认出来和界面是同一种语言（或认不出、按文字也不用翻）的：键 → 当时的原文，下次扫到原文没变就不再认
     const sameUi = new Map();
 
     // ---------- 切块 ----------
@@ -313,7 +326,7 @@
       const job = { key, id, lang, el, ready: false, truncated: truncated || cutHere, chunks: split(src).map((c) => ({ src: c.text, sep: c.sep, state: "todo" })) };
       jobs.set(key, job);
       (async () => {
-        if (mainScript(src) === "latin" && !(await latin(job, src, text))) return;
+        if (!(await classify(job, src, text))) return;
         if (jobs.get(key) !== job) return;
         prefetch(job); // 先查缓存，查完才算建好（job.ready），没命中的 pump 再发
       })();
@@ -349,18 +362,18 @@
         chunks: packs.map((p) => ({ idx: p.idx, src: p.idx.map((bi, k) => `<p${k + 1}>${bl[bi].text}</p${k + 1}>`).join("\n"), state: "todo" })) };
       jobs.set(key, job);
       (async () => {
-        if (mainScript(plain) === "latin" && !(await latin(job, plain, plain))) return;
+        if (!(await classify(job, plain, plain))) return;
         if (jobs.get(key) !== job) return;
         prefetch(job);
       })();
       return true;
     }
-    // 拉丁字母的原文：认语言、写进任务；界面也是拉丁字母、认出来不是外文的，撤掉任务、记下来。返回 false：不翻了
-    async function latin(job, src, sig) {
-      const d = await detect(src, job.lang);
+    // 认语言、写进任务；认出来不用翻的，撤掉任务、记下来。返回 false：不翻了
+    async function classify(job, src, sig) {
+      const d = await detect(src, job.lang, mainScript(src));
       if (jobs.get(job.key) !== job) return false;
       job.lang = d.label;
-      if (targetScript() !== "latin" || d.other) return true;
+      if (d.other) return true;
       jobs.delete(job.key);
       sameUi.set(job.key, sig);
       return false;

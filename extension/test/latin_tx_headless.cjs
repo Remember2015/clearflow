@@ -6,6 +6,8 @@
 // ③ Hacker News 评论页，西班牙文界面：英文评论翻、中文的也翻；英文界面：英文的不翻、中文的翻。
 // ④ YouTube 视频页，英文界面：西班牙文评论翻成英文，英文评论不翻。
 // ⑤ YouTube 简介是一段英文、末尾一行日文标签"キャンプ"（0.27.5，用户 10-18 截图）：中文界面翻、原文语言不写日语；日文界面也翻（以前整段当成日文、不翻）。
+// ⑥ 所有文字都先问浏览器（0.28，用户 10-18 定）：Reddit 英文帖子页，替身浏览器把全是汉字的认成中文（认得准）、有假名的认成日文——
+//    日文界面：中文评论翻（原文语言 zh，以前全是汉字的在日文界面一律不翻），日文评论不翻；中文界面：浏览器认得准地说中文那条是日文的，照翻。
 // 目标语言是网站自己的界面语言（<html lang>），测试里和插件的界面语言一起换。
 // 用法：node test/latin_tx_headless.cjs <装了 puppeteer-core 的目录> [http://localhost:8767]（run_all.mjs 会起服务）
 const path = require("path");
@@ -127,6 +129,34 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
         m.length === 1 && m[0][0] !== "ja" && m[0][1].split("-")[0] === lang.split("-")[0], JSON.stringify(m));
       await page.close();
     }
+
+    // ⑥ 所有文字都先问浏览器
+    const cldPage = async (lang, sayJa) => {
+      const page = await browser.newPage();
+      page.on("pageerror", (e) => out.push(`PAGEERROR ${e.message}`));
+      await page.evaluateOnNewDocument((l, sayJa) => {
+        window.__ffUiLang = l;
+        window.__ffDetect = (t) => /[\u3040-\u30ff]/.test(t) ? { isReliable: true, languages: [{ language: "ja", percentage: 98 }] }
+          : /\p{Script=Han}/u.test(t) ? { isReliable: true, languages: [{ language: sayJa ? "ja" : "zh-CN", percentage: 95 }] }
+          : /[¿¡]/.test(t) ? { isReliable: true, languages: [{ language: "es", percentage: 96 }] }
+          : { isReliable: t.length >= 40, languages: [{ language: "en", percentage: 97 }] };
+        const mo = new MutationObserver(() => { if (document.documentElement) { document.documentElement.lang = l; mo.disconnect(); } });
+        mo.observe(document, { childList: true });
+      }, lang, sayJa);
+      await page.setViewport({ width: 900, height: 2400 });
+      await page.goto(`${BASE}/fakex/reddit/post_en.html`, { waitUntil: "load" });
+      await wait(4000);
+      const m = await page.evaluate(() => (window.__ffTxMsgs || []).filter((x) => x.type === "translateFill").map((x) => [x.id, x.srcLang, x.target]));
+      await page.close();
+      return m;
+    };
+    let m = await cldPage("ja", false);
+    const zhC = m.filter((x) => x[0] === "t1_e2"), jaC = m.filter((x) => x[0] === "t1_e5");
+    ok("先问浏览器，日文界面：全是汉字、浏览器认得准是中文的评论翻（原文语言 zh），日文评论不翻",
+      zhC.length === 1 && zhC[0][1] === "zh" && zhC[0][2] === "ja" && jaC.length === 0, JSON.stringify(m));
+    m = await cldPage("zh-CN", true);
+    const e2 = m.filter((x) => x[0] === "t1_e2");
+    ok("先问浏览器，中文界面：全是汉字、但浏览器认得准是日文的评论照翻（原文语言 ja）", e2.length === 1 && e2[0][1] === "ja", JSON.stringify(m));
   } catch (e) {
     out.push(`FAIL 出错 ${e.stack || e}`);
   } finally {

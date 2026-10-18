@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.28.0 — 2026-10-18
+
+- Language detection now asks the browser first: every post and comment is checked with Chrome's built-in, on-device language detector (`chrome.i18n.detectLanguage`), and ClearFlow's own script-based rules are used only when the browser isn't sure. Languages that share a script are now told apart when the browser is sure — Chinese comments get translated for a Japanese interface, Ukrainian for a Russian one. Measured on 1,118 X replies labeled by X: the language shown in the translation note didn't change for any of them, nothing extra was translated for Chinese, Korean, English, Spanish or Indonesian interfaces, and Chinese replies missed with a Japanese interface went from 115 to 47.
+
 ## 0.27.5 — 2026-10-18
 
 - Fixed: an English text with a few Japanese characters in it (such as a Japanese hashtag at the end of a YouTube video description) was labeled as Japanese, and with a Japanese interface it wasn't translated at all.
