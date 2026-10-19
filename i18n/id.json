@@ -329,5 +329,11 @@
  "heavy.abuse": "pelecehan {n}",
  "heavy.sexual": "konten seksual {n}",
  "heavy.filler": "“nice” atau “+1” {n}",
- "welcome.keysLocal": "Key Anda hanya disimpan di browser ini (di penyimpanan lokal ekstensi, tidak disinkronkan ke perangkat lain). Key hanya dikirim ke TypeSafe dan OpenRouter saat ada permintaan, tidak pernah ke pengembang."
+ "welcome.keysLocal": "Key Anda hanya disimpan di browser ini (di penyimpanan lokal ekstensi, tidak disinkronkan ke perangkat lain). Key hanya dikirim ke TypeSafe dan OpenRouter saat ada permintaan, tidak pernah ke pengembang.",
+ "err.credit": "Saldo TypeSafe tidak mencukupi",
+ "err.invalid_request": "Permintaan tidak valid",
+ "err.http": "Permintaan Jev gagal: {msg}",
+ "err.disabled": "Dinonaktifkan di pengaturan",
+ "err.batch_miss": "Item ini terlewat oleh model; akan diterjemahkan lagi",
+ "pop.alert.jevCredit": "Saldo TypeSafe habis, jadi balasan tidak bisa diperiksa."
 }

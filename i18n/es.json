@@ -329,5 +329,11 @@
  "heavy.abuse": "insultos {n}",
  "heavy.sexual": "contenido sexual {n}",
  "heavy.filler": "«me gusta» o «+1» {n}",
- "welcome.keysLocal": "Tus claves solo se guardan en este navegador (en el almacenamiento local de la extensión, no se sincronizan con tus otros dispositivos). Solo se envían a TypeSafe y OpenRouter con cada solicitud, nunca al desarrollador."
+ "welcome.keysLocal": "Tus claves solo se guardan en este navegador (en el almacenamiento local de la extensión, no se sincronizan con tus otros dispositivos). Solo se envían a TypeSafe y OpenRouter con cada solicitud, nunca al desarrollador.",
+ "err.credit": "El saldo de TypeSafe es insuficiente",
+ "err.invalid_request": "Solicitud no válida",
+ "err.http": "Error en la solicitud de Jev: {msg}",
+ "err.disabled": "Desactivado en ajustes",
+ "err.batch_miss": "El modelo omitió este elemento; se volverá a traducir",
+ "pop.alert.jevCredit": "No se pueden revisar las respuestas porque TypeSafe no tiene saldo."
 }

@@ -105,6 +105,23 @@ SEED["ff_reply_override:" + SEED.ff_recent_folds[2].id] = { label: "missed", upd
     await page.reload({ waitUntil: "load" });
     await wait(600);
     ok("OpenRouter 余额不足：提示、带去设置的链接", /OpenRouter 余额不足/.test(await txt("#alerts")) && (await page.$$eval("#alerts a", (a) => a.length)) === 1, await txt("#alerts"));
+    // 0.28.8：TypeSafe 余额不足（402）也提示；高级设置里关了 Jev 的不提 Jev key 的事
+    await page.evaluate(() => chrome.storage.local.set({ ff_health: { jev: { code: "credit", at: Date.now() } } }));
+    await page.reload({ waitUntil: "load" });
+    await wait(600);
+    ok("TypeSafe 余额不足：提示", /TypeSafe 余额不足/.test(await txt("#alerts")), await txt("#alerts"));
+    const keepSt = await page.evaluate(async () => (await chrome.storage.local.get("ff_settings")).ff_settings || {});
+    await page.evaluate((st) => chrome.storage.local.set({ ff_key: "", ff_health: {}, ff_settings: { ...st, useJev: false } }), keepSt);
+    await page.reload({ waitUntil: "load" });
+    await wait(600);
+    const noJev = await txt("#alerts");
+    await page.evaluate((st) => chrome.storage.local.set({ ff_settings: { ...st, useJev: true } }), keepSt);
+    await page.reload({ waitUntil: "load" });
+    await wait(600);
+    ok("关了 Jev：不提没填 Jev key；开着才提", !/Jev key/.test(noJev) && /Jev key/.test(await txt("#alerts")), JSON.stringify([noJev, await txt("#alerts")]));
+    await page.evaluate((st) => chrome.storage.local.set({ ff_key: "fake-jev-key", ff_settings: st, ff_health: { or: { code: "or_credit", at: Date.now() } } }), keepSt);
+    await page.reload({ waitUntil: "load" });
+    await wait(600);
     const stored = () => page.evaluate(async () => (await chrome.storage.local.get("ff_settings")).ff_settings);
     await page.click('[data-switch="fold"]');
     await wait(500);
@@ -241,6 +258,19 @@ SEED["ff_reply_override:" + SEED.ff_recent_folds[2].id] = { label: "missed", upd
     await page.click("#jevChange");
     await wait(300);
     ok("点\"更换\"出输入框和保存，换的时候能测试连接", !!(await page.$("#key")) && !!(await page.$("#saveKey")) && !!(await page.$("#jevTest")));
+    // 0.28.8：输入框空着点保存：不存（以前会把存着的 key 清掉、还说已保存）
+    await page.click("#saveKey");
+    await wait(300);
+    ok("空着点保存：说没填 key，存着的 key 不动", (await txt("#keyMsg")) === "没有填 key" && (await page.evaluate(async () => (await chrome.storage.local.get("ff_key")).ff_key)) === "fake-jev-key",
+      await txt("#keyMsg"));
+    // 0.28.8：每月估计按 7 天平均（7 天里只用了一天的，以前把那一天乘 30）
+    const keepStats = await page.evaluate(async () => (await chrome.storage.local.get("ff_stats")).ff_stats);
+    await page.evaluate((d0, d20) => chrome.storage.local.set({ ff_stats: { [d20]: { tx_usd: 0.1 }, [d0]: { tx_usd: 0.7 } } }), day(0), day(20));
+    await wait(400);
+    const cost1 = await txt("#costLine");
+    await page.evaluate((s) => chrome.storage.local.set({ ff_stats: s }), keepStats);
+    await wait(300);
+    ok("每月估计：最近 7 天只用了一天（$0.70），按 7 天平均乘 30 = $3.00", /每月约 \$3\.00/.test(cost1), cost1);
     // 高级：点开才有精确数字；评测记录的开关默认关，打开存下
     await page.click("#advTrigger");
     await wait(400);

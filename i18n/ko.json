@@ -329,5 +329,11 @@
  "heavy.abuse": "욕설 {n}개",
  "heavy.sexual": "성적 콘텐츠 {n}개",
  "heavy.filler": "‘좋아요’ 또는 ‘+1’ {n}개",
- "welcome.keysLocal": "키는 이 브라우저에만 저장됩니다(확장 프로그램의 로컬 저장소에 보관되며 다른 기기와 동기화되지 않습니다). 요청을 보낼 때 TypeSafe와 OpenRouter에만 전송되며 개발자에게는 전송되지 않습니다."
+ "welcome.keysLocal": "키는 이 브라우저에만 저장됩니다(확장 프로그램의 로컬 저장소에 보관되며 다른 기기와 동기화되지 않습니다). 요청을 보낼 때 TypeSafe와 OpenRouter에만 전송되며 개발자에게는 전송되지 않습니다.",
+ "err.credit": "TypeSafe 잔액이 부족합니다",
+ "err.invalid_request": "잘못된 요청입니다",
+ "err.http": "Jev 요청 실패: {msg}",
+ "err.disabled": "설정에서 꺼져 있습니다",
+ "err.batch_miss": "모델이 이 항목을 건너뛰었습니다. 다시 번역합니다",
+ "pop.alert.jevCredit": "TypeSafe 잔액이 부족해 답글을 확인할 수 없습니다."
 }

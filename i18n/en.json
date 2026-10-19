@@ -329,5 +329,11 @@
  "heavy.abuse": "abuse {n}",
  "heavy.sexual": "sexual {n}",
  "heavy.filler": "“nice” or “+1” {n}",
- "welcome.keysLocal": "Your keys are stored only in this browser (the extension's local storage, not synced to your other devices). They're sent only to TypeSafe and OpenRouter with each request, never to the developer."
+ "welcome.keysLocal": "Your keys are stored only in this browser (the extension's local storage, not synced to your other devices). They're sent only to TypeSafe and OpenRouter with each request, never to the developer.",
+ "err.credit": "TypeSafe balance is too low",
+ "err.invalid_request": "Invalid request",
+ "err.http": "Jev request failed: {msg}",
+ "err.disabled": "Turned off in settings",
+ "err.batch_miss": "The model skipped this item; it will be translated again",
+ "pop.alert.jevCredit": "TypeSafe is out of credit, so replies can't be checked."
 }

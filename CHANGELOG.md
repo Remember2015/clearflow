@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.28.8 — 2026-10-19
+
+- Settings: the monthly cost estimate averages the last 7 days (or the days since you installed), instead of multiplying a single busy day by 30. Money spent on a retranslation is counted even if judging it fails afterwards.
+- When TypeSafe is out of credit, the popup and Settings say so, and ClearFlow stops retrying. Error messages that used to appear untranslated are now translated.
+- X translation: TypeSafe's verdict on X's translation is cached on its own, so a retry after an error doesn't pay for it again.
+- A post seen both in a thread and on a profile or in search keeps its cached verdict in each place instead of being judged again each time you switch.
+- Changing a threshold or similar setting no longer cancels checks that are already running (they were sent again and paid for twice).
+- Settings: clicking Save with an empty key field no longer deletes your saved key; "Test" with an empty field tests the saved key. Resetting "Look at images in replies" to the default gives the image permission back when no site uses it. The popup no longer asks for a Jev key if you turned Jev off.
+- Right after you change a key, a translation queued with the old key is no longer sent with it (which made a working key show as "not working").
+- ClearFlow no longer sends its name and website to OpenRouter with each request.
+
 ## 0.28.7 — 2026-10-19
 
 - X: replies that are still being judged aren't translated or retranslated until the verdict is in (at most 6 seconds), so you don't pay to translate a reply that is about to be cleaned.

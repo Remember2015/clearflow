@@ -6,8 +6,8 @@ const out = [];
 const ok = (name, cond, extra = "") => out.push(`${cond ? "PASS" : "FAIL"} ${name} ${extra}`);
 await cache.clear();
 const sid = (i) => "19" + String(i).padStart(17, "0"); // 推文 id 是 19 位字符串，别用数字（超出浮点精度）
-const query = (i) => ({ id: sid(i), fingerprint: "context-" + i });
-const mk = (i, post) => ({ ...query(i), post, scores: { benefit: Math.random(), disguised: 0.1, promo_mention: 0.02 } });
+const query = (i, post = "P1") => ({ id: sid(i), post, fingerprint: "context-" + i });
+const mk = (i, post) => ({ ...query(i, post), scores: { benefit: Math.random(), disguised: 0.1, promo_mention: 0.02 } });
 let r = await cache.putMany([...Array(50)].map((_, i) => mk(i, "P1")), 50 * 1024 * 1024);
 ok("写入 50 条", r.count === 50, JSON.stringify(r));
 const got = await cache.getMany([query(3), query(49), query(999)]);
@@ -24,10 +24,19 @@ for (let k = 0; k < 5; k++) {
 const st = await cache.stats();
 ok("超上限会淘汰", st.bytes <= 20 * 1024 && st.count < 550, JSON.stringify(st));
 const oldest = await cache.getMany(Array.from({ length: 50 }, (_, i) => query(i)));
-const newest = await cache.getMany(Array.from({ length: 100 }, (_, i) => query(1400 + i)));
+const newest = await cache.getMany(Array.from({ length: 100 }, (_, i) => query(1400 + i, "P6")));
 ok("淘汰的是最旧的", Object.keys(oldest).length === 0 && Object.keys(newest).length > 0, `P1=${Object.keys(oldest).length} P6=${Object.keys(newest).length}`);
 await cache.clear();
 ok("清空", (await cache.stats()).count === 0);
+// 0.28.8：按"这一页 + 回复 id"存——同一条在两处（帖子页、用户主页）各存一份、互不覆盖；0.28.7 以前只按 id 存的记录照样认
+await cache.putMany([{ id: sid(7), post: "P1", fingerprint: "in-thread", scores: { benefit: 0.1 } }], 50 * 1024 * 1024);
+await cache.putMany([{ id: sid(7), post: "u:someone", fingerprint: "on-profile", scores: { benefit: 0.2 } }], 50 * 1024 * 1024);
+const both = { ...(await cache.getMany([{ id: sid(7), post: "P1", fingerprint: "in-thread" }])), two: (await cache.getMany([{ id: sid(7), post: "u:someone", fingerprint: "on-profile" }]))[sid(7)] };
+ok("同一条在两处各存一份，互不覆盖", both[sid(7)]?.benefit === 0.1 && both.two?.benefit === 0.2, JSON.stringify(both));
+await cache.putMany([{ id: sid(8), fingerprint: "old-style", scores: { benefit: 0.3 } }], 50 * 1024 * 1024); // 没给 post：旧版那样只按 id 存
+const old = await cache.getMany([{ id: sid(8), post: "P9", fingerprint: "old-style" }]);
+ok("旧版只按 id 存的记录照样认（指纹对得上）", old[sid(8)]?.benefit === 0.3, JSON.stringify(old));
+await cache.clear();
 document.getElementById("out").textContent = out.join("\n");
 window.__cacheTest = out;
 </script></body></html>

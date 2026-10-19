@@ -12,8 +12,9 @@ import { imageAsset, allowedImage } from "./images.js";
 const { DEFAULTS, forSite, siteOf, SITES, IMAGE_ORIGINS } = globalThis.FFSettings;
 // 只管翻译的设置：改了不打断评论区（不取消评论区的 Jev 请求）
 const TRANSLATE_KEYS = ["translate", "translateFill", "translateThreshold", "translateMargin", "translateModel", "translateFallback"];
-const NOT_COMMENTS = new Set(["rev", ...TRANSLATE_KEYS]);
-const COMMENT_KEYS = Object.keys(DEFAULTS).filter((k) => !NOT_COMMENTS.has(k));
+// 评论区进行中的 Jev 请求：只有改了会让请求本身不该发、或者发的内容不一样的设置才打断（关掉清理、不用 Jev、看不看图）。
+// 0.28.7 以前阈值、M1 长度、缓存上限这些改了也打断——Jev 那边已经判完、收过费了，页面再重发一次（review）
+const COMMENT_KEYS = ["enabled", "useJev", "images"];
 // 设置改了：哪个网站上（或者默认的那一份）这几项实际变了没有（0.20 起每个网站可以单独改，要一个个网站比）
 const SITE_IDS = [null, ...SITES.map((x) => x.id)];
 const changedFor = (oldRaw, newRaw, keys) => SITE_IDS.some((id) => {
@@ -130,7 +131,7 @@ function health(service, code) {
 }
 const OR_CODES = new Set(["or_badkey", "or_credit"]);
 function noteFailure(f) {
-  if (f.code === "badkey") health("jev", "badkey").catch(() => {});
+  if (f.code === "badkey" || f.code === "credit") health("jev", f.code).catch(() => {}); // TypeSafe 余额不足（402）也记下，弹窗提醒（0.28.8）
   if (OR_CODES.has(f.code)) health("or", f.code).catch(() => {});
   return f;
 }
@@ -188,6 +189,7 @@ function release() {
 function failure(e, scores = {}) {
   if (e?.name === "AbortError") return { error: "cancelled", code: "cancelled", retryable: true, scores };
   if (e instanceof JevError && e.status === 401) return { error: "badkey", code: "badkey", retryable: false, scores };
+  if (e instanceof JevError && e.status === 402) return { error: "credit", code: "credit", retryable: false, scores };
   return { error: String(e?.message || e), code: e?.code || "network", retryable: e?.retryable !== false, scores };
 }
 async function permission(key, site = null) {
@@ -309,8 +311,10 @@ async function handleJev({ postId, post, author, replies: raw, extra: wanted }, 
       if (out[q.reply]) out[q.reply] = { ...out[q.reply], marked: marked[q.reply] };
     }
     await withMarked(out);
-    bump({ jev_calls: 1, jev_replies: missing.length, tokens, ...(nImages ? { jev_images: nImages } : {}) }).catch(() => {});
-    health("jev", null).catch(() => {});
+    if (ask.length) { // 一条都不用问（没字、图也没读到）时没发请求：不算一次调用、也不能当成 key 好用（0.28.8，review）
+      bump({ jev_calls: 1, jev_replies: ask.length, tokens, ...(nImages ? { jev_images: nImages } : {}) }).catch(() => {});
+      health("jev", null).catch(() => {});
+    }
     try {
       const result = await cache.putMany(fresh, current.settings.cacheMB * 1024 * 1024);
       if (result.evicted) bump({ cache_evicted: result.evicted }).catch(() => {});
@@ -319,6 +323,7 @@ async function handleJev({ postId, post, author, replies: raw, extra: wanted }, 
     if (invalid.length) return { scores: out, error: `Jev 返回了不完整或无效的分数（${invalid.length} 条）`, code: "invalid_response", retryable: true };
     return { scores: out };
   } catch (e) {
+    if (e?.tokens) bump({ tokens: e.tokens }).catch(() => {}); // 答案全坏也收了费
     return noteFailure(failure(e, out));
   } finally {
     controllers.delete(controller);
@@ -356,7 +361,7 @@ async function handleMarked({ postId, post, author, replies }, site = null) {
       await cache.putMany(part.filter((r) => typeof scores[r.id] === "number").map((r) => ({ id: qOf.get(r.id).id, post: postId, fingerprint: qOf.get(r.id).fingerprint, scores: { marked: scores[r.id] } })),
         access.settings.cacheMB * 1024 * 1024).catch(() => {});
     } catch (e) {
-      return { ...failure(e), scores: out };
+      return { ...noteFailure(failure(e)), scores: out }; // key 无效、余额不足也记下（0.28.8 以前这里不记）
     } finally {
       controllers.delete(controller);
       if (acquired) release();
@@ -379,7 +384,7 @@ async function handlePost({ postId, post, author }, site = null) {
   let acquired = false;
   try {
     if (revision !== configRevision) throw cancelled();
-    const query = { id: `post:${postId}`, fingerprint: await postFingerprint(postId, post, author) };
+    const query = { id: `post:${postId}`, post: postId, fingerprint: await postFingerprint(postId, post, author) };
     try {
       const hit = (await cache.getMany([query]))[query.id];
       if (validPostScores(hit)) return { scores: hit };
@@ -426,6 +431,11 @@ function txRelease() {
   const w = txWaiters.shift();
   if (w) w.resolve(); else txInflight--;
 }
+// 排到翻译位置以后再看一眼 key 换没换（0.28.8，review）：读 key 和登记可取消之间换了 key 的，换 key 时取消不到它，
+// 用旧 key 发出去回 401，又把弹窗的"key 无效"记了回去（刚换上的好 key 被说成无效）
+async function sameKeys(or, jev) {
+  if ((await orKey()) !== or || (jev !== undefined && (await apiKey()) !== jev)) throw cancelled();
+}
 // target：X 把帖子翻成的语言（X 的界面语言），比如 zh、en、ja、zh-TW、pt-BR；没给就当简体中文（0.7 的页面脚本）
 const validLang = (l) => l == null || (typeof l === "string" && /^[a-z]{2,3}(-[a-z0-9]{2,8}){0,2}$/i.test(l));
 const validTx = (m) => typeof m.id === "string" && /^\d{1,25}$/.test(m.id) && typeof m.source === "string" && m.source.trim() &&
@@ -443,6 +453,7 @@ async function handleTranslate(msg, site = null) {
   try {
     await txSlot(controller.signal);
     acquired = true;
+    await sameKeys(key, jevKey);
     const r = await translator.improve({ jevKey, orKey: key, settings: st, signal: controller.signal,
       item: { id: msg.id, source: msg.source, xText: msg.xText, srcLang: msg.srcLang, target: msg.target || "zh" } });
     if (r.cached) bump({ tx_cached: 1 }).catch(() => {});
@@ -454,6 +465,8 @@ async function handleTranslate(msg, site = null) {
     }
     return r;
   } catch (e) {
+    // 已经付了费的（重译翻好了、后面判分出错）照样记进花费（0.28.8 以前整个丢掉，费用少算）
+    if (e?.spent) bump({ tx_usd: e.spent.cost || 0, tx_jev_tokens: e.spent.jevTokens || 0 }).catch(() => {});
     return noteFailure(failure(e));
   } finally {
     txControllers.delete(controller);
@@ -488,6 +501,7 @@ async function handleFill(msg, site = null) {
   try {
     await txSlot(controller.signal);
     acquired = true;
+    await sameKeys(key);
     const r = await translator.fillIn({ orKey: key, settings: fillSettings(st, msg), signal: controller.signal, item: fillItem(msg), flex: msg.flex === true });
     bump(r.cached ? { tx_fill_cached: one } : { tx_fill: one, tx_usd: r.cost || 0 }).catch(() => {});
     if (!r.cached) health("or", null).catch(() => {});
@@ -538,6 +552,7 @@ async function handleFillBatch(msg, sender, site = null) {
   try {
     await txSlot(controller.signal);
     acquired = true;
+    await sameKeys(key);
     const items = want.map((k) => fillItem(msg.items[k]));
     const push = items.length > 1 ? partSender(msg, sender) : null;
     const flex = msg.flex === true; // 页面那头说这一批都不在屏幕上（预翻译）：走 flex
@@ -594,9 +609,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       case "cacheClear":
         await cache.clear();
         return { ok: true };
-      case "stat":
-        await bump(msg.delta);
+      case "stat": { // 只收计数（0.28.8，review：以前什么都收，字符串会和数字拼起来把统计永久弄坏）
+        const d = msg.delta && typeof msg.delta === "object" ? Object.fromEntries(Object.entries(msg.delta)
+          .filter(([k, v]) => /^[a-z][a-z0-9_]{0,40}$/.test(k) && Number.isFinite(v) && v >= 0 && v <= 1e6).slice(0, 20)) : {};
+        if (Object.keys(d).length) await bump(d);
         return { ok: true };
+      }
       case "folded": // 0.28.5 起不存了；升级时还没刷新的页面照样会发，回个 ok
         return { ok: true };
       case "theme": { // 工具栏图标跟浏览器的深浅色（页面报的，见 theme.js）
@@ -613,8 +631,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         const label = await feedback.saveDecision(msg.entry, site || "");
         // 用户决定是主写入，诊断日志失败不能声称纠错也没保存。
         try {
-          await log({ ...msg.entry, text: (msg.entry.text || "").slice(0, 300) });
-          await bump({ [`fb_${msg.entry.label}`]: 1 });
+          // 日志只记认得的几项（0.28.8 以前整个 entry 原样记）
+          const e = msg.entry || {}, str = (v, n) => (typeof v === "string" ? v.slice(0, n) : "");
+          await log({ id: str(e.id, 120), postId: str(e.postId, 200), label: str(e.label, 30), kind: str(e.kind, 30), handle: str(e.handle, 60),
+            text: str(e.text, 300), ...(Number.isFinite(e.score) ? { score: e.score } : {}) });
+          if (/^[a-z_]{1,30}$/.test(e.label || "")) await bump({ [`fb_${e.label}`]: 1 });
           return { ok: true, label };
         } catch (e) { return { ok: true, label, warning: String(e) }; }
       }

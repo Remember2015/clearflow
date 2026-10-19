@@ -33,8 +33,10 @@ const KEYS = ["ff_stats", "ff_settings", "ff_key", "ff_or_key", "ff_health"];
 function Alerts({ d, st }) {
   const list = [];
   const h = d.ff_health || {};
-  if (st.enabled && !(d.ff_key || "").trim()) list.push(["warn", t("pop.alert.noKey"), true]);
-  else if (st.enabled && h.jev?.code === "badkey") list.push(["danger", t("pop.alert.badKey"), true]);
+  // 高级设置里关了 Jev 的不提 Jev key 的事（0.28.8，review）
+  if (st.enabled && st.useJev && !(d.ff_key || "").trim()) list.push(["warn", t("pop.alert.noKey"), true]);
+  else if (st.enabled && st.useJev && h.jev?.code === "badkey") list.push(["danger", t("pop.alert.badKey"), true]);
+  else if (st.enabled && st.useJev && h.jev?.code === "credit") list.push(["danger", t("pop.alert.jevCredit"), true]);
   if (st.translate && (d.ff_or_key || "").trim()) {
     if (h.or?.code === "or_credit") list.push(["danger", t("pop.alert.orCredit"), true]);
     else if (h.or?.code === "or_badkey") list.push(["danger", t("pop.alert.orBadKey"), true]);

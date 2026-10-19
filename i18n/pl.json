@@ -329,5 +329,11 @@
  "heavy.abuse": "obelgi {n}",
  "heavy.sexual": "treści seksualne {n}",
  "heavy.filler": "„fajnie” lub „+1” {n}",
- "welcome.keysLocal": "Klucze są przechowywane tylko w tej przeglądarce (w pamięci lokalnej rozszerzenia, bez synchronizacji z innymi urządzeniami). Są wysyłane tylko do TypeSafe i OpenRouter wraz z żądaniami, nigdy do twórcy rozszerzenia."
+ "welcome.keysLocal": "Klucze są przechowywane tylko w tej przeglądarce (w pamięci lokalnej rozszerzenia, bez synchronizacji z innymi urządzeniami). Są wysyłane tylko do TypeSafe i OpenRouter wraz z żądaniami, nigdy do twórcy rozszerzenia.",
+ "err.credit": "Za mało środków na koncie TypeSafe",
+ "err.invalid_request": "Nieprawidłowe żądanie",
+ "err.http": "Błąd żądania Jev: {msg}",
+ "err.disabled": "Wyłączone w ustawieniach",
+ "err.batch_miss": "Model pominął ten element; zostanie przetłumaczony ponownie",
+ "pop.alert.jevCredit": "Brak środków na koncie TypeSafe, więc nie można sprawdzać odpowiedzi."
 }

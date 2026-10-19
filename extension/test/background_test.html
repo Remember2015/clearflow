@@ -213,6 +213,21 @@ jevStatus = 200;
 r = await call({ type: "jev", postId: "P9", post: "p", replies: [{ id: "1900000000000000301", text: "health 测试 2" }] });
 await new Promise((res) => setTimeout(res, 50));
 ok("下次成功就清掉", r.scores && !store.ff_health?.jev, JSON.stringify(store.ff_health));
+// 0.28.8：TypeSafe 余额不足（402）：报 credit、不重试、留标记（弹窗提醒）
+jevStatus = 402;
+let before402 = fetchCalls;
+r = await call({ type: "jev", postId: "P9", post: "p", replies: [{ id: "1900000000000000302", text: "health 测试 3" }] });
+await new Promise((res) => setTimeout(res, 50));
+ok("TypeSafe 余额不足（402）：报 credit、只发一次、留标记", r.code === "credit" && r.retryable === false && fetchCalls === before402 + 1 && store.ff_health?.jev?.code === "credit", JSON.stringify([r.code, fetchCalls - before402, store.ff_health]));
+jevStatus = 200;
+r = await call({ type: "jev", postId: "P9", post: "p", replies: [{ id: "1900000000000000303", text: "health 测试 4" }] });
+await new Promise((res) => setTimeout(res, 50));
+// 0.28.8：统计只收计数（坏的值以前会和数字拼成字符串，把统计永久弄坏）
+const statDay = new Date().toLocaleDateString("sv-SE");
+const seenBefore = store.ff_stats?.[statDay]?.seen || 0;
+await call({ type: "stat", delta: { seen: 2, fold_jev: "3", tokens: -5, "bad key!": 1, posts: Infinity } });
+const sd = store.ff_stats?.[statDay] || {};
+ok("统计只收计数：数字照加，字符串、负数、无穷大、怪名字都不收", sd.seen === seenBefore + 2 && typeof sd.fold_jev !== "string" && !(sd.tokens < 0) && !("bad key!" in sd) && sd.posts !== Infinity, JSON.stringify(sd));
 
 // ---- 0.11 去掉首页 Feed 记录：留在存储里的键删掉 ----
 store.ff_feed_generation = 3; store["ff_feed_outbox:p:1"] = { items: [] }; store.ff_feed_session = { id: 1 };

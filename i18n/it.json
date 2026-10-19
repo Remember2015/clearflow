@@ -329,5 +329,11 @@
  "heavy.abuse": "insulti {n}",
  "heavy.sexual": "contenuti sessuali {n}",
  "heavy.filler": "“nice” o “+1” {n}",
- "welcome.keysLocal": "Le chiavi sono salvate solo in questo browser (nella memoria locale dell’estensione, senza sincronizzazione con gli altri dispositivi). Vengono inviate solo a TypeSafe e OpenRouter con ogni richiesta, mai allo sviluppatore."
+ "welcome.keysLocal": "Le chiavi sono salvate solo in questo browser (nella memoria locale dell’estensione, senza sincronizzazione con gli altri dispositivi). Vengono inviate solo a TypeSafe e OpenRouter con ogni richiesta, mai allo sviluppatore.",
+ "err.credit": "Saldo TypeSafe insufficiente",
+ "err.invalid_request": "Richiesta non valida",
+ "err.http": "Richiesta Jev non riuscita: {msg}",
+ "err.disabled": "Disattivato nelle impostazioni",
+ "err.batch_miss": "Il modello ha saltato questo elemento; verrà tradotto di nuovo",
+ "pop.alert.jevCredit": "Credito TypeSafe esaurito: impossibile controllare le risposte."
 }

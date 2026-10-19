@@ -329,5 +329,11 @@
  "heavy.abuse": "嫌がらせ {n} 件",
  "heavy.sexual": "性的な内容 {n} 件",
  "heavy.filler": "「いいね」や「+1」 {n} 件",
- "welcome.keysLocal": "キーはこのブラウザー内（拡張機能のローカルストレージ）にのみ保存され、ほかのデバイスとは同期されません。リクエスト時にTypeSafeとOpenRouterにのみ送信され、開発者に送信されることはありません。"
+ "welcome.keysLocal": "キーはこのブラウザー内（拡張機能のローカルストレージ）にのみ保存され、ほかのデバイスとは同期されません。リクエスト時にTypeSafeとOpenRouterにのみ送信され、開発者に送信されることはありません。",
+ "err.credit": "TypeSafeの残高が不足しています",
+ "err.invalid_request": "無効なリクエストです",
+ "err.http": "Jevのリクエストに失敗しました：{msg}",
+ "err.disabled": "設定でオフになっています",
+ "err.batch_miss": "モデルがこの項目を処理できませんでした。再翻訳します",
+ "pop.alert.jevCredit": "TypeSafeの残高が不足しているため、返信を判定できません。"
 }

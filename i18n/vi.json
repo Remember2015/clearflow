@@ -329,5 +329,11 @@
  "heavy.abuse": "lăng mạ {n}",
  "heavy.sexual": "khiêu dâm {n}",
  "heavy.filler": "“hay” hoặc “+1” {n}",
- "welcome.keysLocal": "Key chỉ được lưu trong trình duyệt này (trong bộ nhớ cục bộ của tiện ích, không đồng bộ với các thiết bị khác). Key chỉ được gửi kèm yêu cầu đến TypeSafe và OpenRouter, không bao giờ được gửi cho nhà phát triển."
+ "welcome.keysLocal": "Key chỉ được lưu trong trình duyệt này (trong bộ nhớ cục bộ của tiện ích, không đồng bộ với các thiết bị khác). Key chỉ được gửi kèm yêu cầu đến TypeSafe và OpenRouter, không bao giờ được gửi cho nhà phát triển.",
+ "err.credit": "Số dư TypeSafe không đủ",
+ "err.invalid_request": "Yêu cầu không hợp lệ",
+ "err.http": "Yêu cầu Jev thất bại: {msg}",
+ "err.disabled": "Đã tắt trong cài đặt",
+ "err.batch_miss": "Mô hình đã bỏ sót mục này; mục sẽ được dịch lại",
+ "pop.alert.jevCredit": "TypeSafe không còn đủ số dư, nên không thể kiểm tra các câu trả lời."
 }

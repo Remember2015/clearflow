@@ -56,7 +56,7 @@ export function imageAsset(url, { fetchImpl = fetch, signal } = {}) {
     }
   })();
   memo.set(url, job);
-  if (memo.size > 300) memo.delete(memo.keys().next().value);
+  if (memo.size > 40) memo.delete(memo.keys().next().value); // 0.28.8 以前 300（每张一两百 KB 的 base64，几十 MB 常驻）
   job.then((x) => { if (x === null && memo.get(url) === job) memo.delete(url); });
   return job;
 }

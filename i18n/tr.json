@@ -329,5 +329,11 @@
  "heavy.abuse": "hakaret {n}",
  "heavy.sexual": "cinsel içerik {n}",
  "heavy.filler": "“güzel” veya “+1” {n}",
- "welcome.keysLocal": "Key'ler yalnızca bu tarayıcıda saklanır (uzantının yerel depolama alanında; diğer cihazlarınızla eşitlenmez). Her istekle yalnızca TypeSafe ve OpenRouter'a gönderilir, geliştiriciye asla gönderilmez."
+ "welcome.keysLocal": "Key'ler yalnızca bu tarayıcıda saklanır (uzantının yerel depolama alanında; diğer cihazlarınızla eşitlenmez). Her istekle yalnızca TypeSafe ve OpenRouter'a gönderilir, geliştiriciye asla gönderilmez.",
+ "err.credit": "TypeSafe bakiyesi yetersiz",
+ "err.invalid_request": "Geçersiz istek",
+ "err.http": "Jev isteği başarısız oldu: {msg}",
+ "err.disabled": "Ayarlardan kapalı",
+ "err.batch_miss": "Model bu öğeyi atladı; yeniden çevrilecek",
+ "pop.alert.jevCredit": "TypeSafe bakiyesi yetersiz olduğundan yanıtlar denetlenemiyor."
 }

@@ -19,7 +19,8 @@ function fakeNet({ judgeScores, orPlan }) {
       return r instanceof Response ? r : json({ model: body.model, choices: [{ message: { content: r } }], usage: { cost: 0.00004, completion_tokens_details: { reasoning_tokens: 0 } } });
     }
     calls.jev.push(body);
-    const sc = judgeScores(body.state.translation);
+    const sc = judgeScores(body.state.translation, calls.jev.length);
+    if (sc instanceof Response) return sc;
     return json({ answers: Object.fromEntries(Object.entries(sc).map(([k, v]) => [k, { noul: v }])), usage: { input_tokens: 500 } });
   };
   return { fetchImpl, calls };
@@ -49,6 +50,19 @@ await ok("Grok 不合格、重译明显更好：换上，请求里不开思考",
   assert.equal(body.model, "openai/gpt-6-luna");
   assert.equal(body.messages[0].content, SYSTEM_PROMPT);
   assert.ok(body.messages[1].content.includes(item.source) && body.messages[1].content.includes("英语"));
+});
+
+// 0.28.8：重译翻好了、后面判分出错：付过的费跟着错误回去（后台照样记账）；Grok 那次判分单独存着，页面重试时不再判一次 Grok
+await ok("重译以后判分出错：花费跟着错误回去；重试时 Grok 那次判分走缓存", async () => {
+  const ours = "为什么好人这么难招？因为真正厉害的人根本不缺工作！", cache = memCache();
+  const net1 = fakeNet({ judgeScores: (t, n) => (n === 2 ? json({ error: "bad request" }, 400) : t === ours ? good : bad), orPlan: () => ours });
+  let err = null;
+  try { await improve({ jevKey: "j", orKey: "o", settings: S, item, cache, fetchImpl: net1.fetchImpl }); } catch (e) { err = e; }
+  assert.ok(err, "该出错"); assert.ok(err.spent && Math.abs(err.spent.cost - 0.00004) < 1e-12 && err.spent.jevTokens === 500, JSON.stringify(err.spent));
+  const net2 = fakeNet({ judgeScores: (t) => (t === ours ? good : bad), orPlan: () => ours });
+  const r = await improve({ jevKey: "j", orKey: "o", settings: S, item, cache, fetchImpl: net2.fetchImpl });
+  assert.equal(r.action, "replace"); assert.equal(net2.calls.jev.length, 1, "Grok 那次判分该走缓存");
+  assert.equal(net2.calls.jev[0].state.translation, ours);
 });
 
 await ok("重译分数没高出 margin：不换", async () => {

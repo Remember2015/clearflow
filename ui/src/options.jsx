@@ -123,6 +123,17 @@ function SwitchRow({ k, name, hint, hintVars, s, put = save, site, disabled }) {
 // 看回复里的图片（0.18，默认关）：打开时先向浏览器要读这几个图片网站的权限（settings.js 的 IMAGE_ORIGINS，manifest 里是可选权限），
 // 不给就不打开；关掉时、哪个网站都不看图了，把权限还回去。chrome.permissions.request 要在点击里直接调，前面不能先 await 别的。
 // raw：存着的整份设置（算"关了这一处以后还有没有网站在看图"）
+// value：false 关掉、null 恢复默认（这个网站跟着默认的走）。改完以后哪个网站都不看图了就把权限还回去
+// （0.28.8，review：以前只有拨开关时还，点"恢复默认"关掉的不还）
+function releaseImagesAfter(raw, siteId, value) {
+  const after = SETTINGS.normalize(raw);
+  if (siteId) {
+    const own = { ...(after.sites[siteId] || {}) };
+    if (value === null) delete own.images; else own.images = value;
+    after.sites = { ...after.sites, [siteId]: own };
+  } else after.images = value;
+  if (!SETTINGS.SITES.some((x) => x.rules.includes("images") && SETTINGS.forSite(after, x.id).images)) chrome.permissions.remove({ origins: [...SETTINGS.IMAGE_ORIGINS] }).catch(() => {});
+}
 function ImagesRow({ s, raw, put = save, site, siteId }) {
   const onChange = async (on) => {
     const origins = [...SETTINGS.IMAGE_ORIGINS];
@@ -130,17 +141,13 @@ function ImagesRow({ s, raw, put = save, site, siteId }) {
       let ok = false;
       try { ok = await chrome.permissions.request({ origins }); } catch (e) { ok = false; }
       if (!ok) { toast(t("opt.imagesDenied"), "err"); return; }
-    } else {
-      const after = SETTINGS.normalize(raw);
-      if (siteId) after.sites = { ...after.sites, [siteId]: { ...(after.sites[siteId] || {}), images: false } }; else after.images = false;
-      if (!SETTINGS.SITES.some((x) => x.rules.includes("images") && SETTINGS.forSite(after, x.id).images)) chrome.permissions.remove({ origins }).catch(() => {});
-    }
+    } else releaseImagesAfter(raw, siteId, false);
     put({ images: on });
   };
   const changed = site && "images" in site.over;
   return (
     <Row name={t("opt.images")} help={<P k="opt.imagesHint" />} id="row-images"
-      note={changed ? <Override base={site.base} keys={["images"]} onReset={() => put({ images: null })} /> : null}>
+      note={changed ? <Override base={site.base} keys={["images"]} onReset={() => { releaseImagesAfter(raw, siteId, null); put({ images: null }); }} /> : null}>
       <Toggle id="images" checked={!!s.images} label={t("opt.images")} disabled={site?.off} onChange={onChange} />
     </Row>
   );
@@ -296,7 +303,7 @@ function SitePage({ id, d }) {
 
 // ---------- 连接和费用 ----------
 function stateOf(hasKey, code) {
-  return !hasKey ? [MUTED_TONE, "opt.state.none"] : code === "or_credit" ? [BAD_TONE, "opt.state.credit"] : code ? [BAD_TONE, "opt.state.bad"] : [null, "opt.state.ok"];
+  return !hasKey ? [MUTED_TONE, "opt.state.none"] : code === "or_credit" || code === "credit" ? [BAD_TONE, "opt.state.credit"] : code ? [BAD_TONE, "opt.state.bad"] : [null, "opt.state.ok"];
 }
 // link：去哪里拿 key（0.23，开源前检查：界面上没有一处告诉人去哪拿）；note：名字下面常显的一句（首次设置那一页用，设置页用问号）
 function KeyRow({ id, name, hint, storeKey, saved, code, placeholder, test, link, note }) {
@@ -306,6 +313,7 @@ function KeyRow({ id, name, hint, storeKey, saved, code, placeholder, test, link
   const [tone, stateKey] = stateOf(!!saved.trim(), code);
   const open = editing || !saved.trim(), usable = stateKey === "opt.state.ok";
   const doSave = async () => {
+    if (!value.trim()) { setMsg([t("err.nokey"), "err"]); return; } // 空的不存（0.28.8 以前会把存着的 key 清掉、还说"已保存"）
     try {
       await chrome.storage.local.set({ [storeKey]: value.trim() });
       setEditing(false); setValue(""); setMsg(null); toast(t("c.saved"));
@@ -313,7 +321,7 @@ function KeyRow({ id, name, hint, storeKey, saved, code, placeholder, test, link
   };
   const doTest = async () => {
     setMsg([t("c.testing"), ""]);
-    try { setMsg([await test(open ? value.trim() : saved.trim()), "ok"]); } catch (e) { setMsg([failText(e), "err"]); }
+    try { setMsg([await test((open && value.trim()) || saved.trim()), "ok"]); } catch (e) { setMsg([failText(e), "err"]); } // 输入框空着：测存着的那个
   };
   const msgTone = msg && (msg[1] === "err" ? "text-destructive" : msg[1] === "ok" ? "text-green-700 dark:text-green-400" : "text-muted-foreground");
   return (
@@ -350,13 +358,18 @@ function KeyRow({ id, name, hint, storeKey, saved, code, placeholder, test, link
 }
 // 去哪里拿 key（用户 10-17 定：Jev 链到 TypeSafe 官网）
 const KEY_URL = { jev: "https://typesafe.ai", or: "https://openrouter.ai/keys" };
+// 按最近 7 天的花费估一个月：7 天的总花费按 7 天平均（刚装几天的按装了几天：最早有统计的那天起算）。
+// 0.28.8 以前按"7 天里有统计的天数"平均，7 天只用了一天的会把那一天乘 30，最多高估 7 倍（review）
 function costLine(stats) {
   const c = (s) => [((s.tokens || 0) + (s.tx_jev_tokens || 0)) * PRICE, s.tx_usd || 0];
   const month = day(new Date()).slice(0, 7);
-  let jev = 0, or = 0, week = 0, days = 0;
+  let jev = 0, or = 0, week = 0, used = false;
   for (const [d, s] of Object.entries(stats)) { const [a, b] = c(s); if (d.startsWith(month)) { jev += a; or += b; } }
-  for (let i = 0; i < 7; i++) { const s = stats[day(new Date(Date.now() - i * DAY))]; if (s) { week += c(s)[0] + c(s)[1]; days++; } }
-  return t(days ? "opt.cost" : "opt.costNone", { jev: usd(jev), or: usd(or), month: usd(days ? (week / days) * 30 : 0) });
+  for (let i = 0; i < 7; i++) { const s = stats[day(new Date(Date.now() - i * DAY))]; if (s) { week += c(s)[0] + c(s)[1]; used = true; } }
+  const first = Object.keys(stats).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort()[0];
+  const since = first ? Math.floor((Date.parse(day(new Date())) - Date.parse(first)) / DAY) + 1 : 7;
+  const span = Math.min(7, Math.max(1, since));
+  return t(used ? "opt.cost" : "opt.costNone", { jev: usd(jev), or: usd(or), month: usd(used ? (week / span) * 30 : 0) });
 }
 const testJev = async (key) => {
   const r = await send({ type: "testKey", key, lang: I18N.uiLang() });

@@ -123,7 +123,7 @@ export async function cacheRequests(postId, post, replies, author, extra = []) {
     const bytes = new TextEncoder().encode(JSON.stringify([...context, r.id, r.name || "", r.handle || "", r.text || "", ...imgs, ...more]));
     const hash = await crypto.subtle.digest("SHA-256", bytes);
     const fingerprint = Array.from(new Uint8Array(hash), (n) => n.toString(16).padStart(2, "0")).join("");
-    return { id: r.id, fingerprint };
+    return { id: r.id, post: postId || "", fingerprint };
   }));
 }
 
@@ -224,7 +224,8 @@ export async function scoreReplies(key, post, replies, { author = null, extra = 
         if (validScores(sc, [...extra, ...ask])) scores[r.id] = sc; else invalid.push(r.id);
       }
       if (!Object.keys(scores).length) {
-        throw Object.assign(new Error(`Jev 返回了不完整或无效的分数（${invalid.join("、")}）`), { code: "invalid_response", retryable: true });
+        // 全坏也是付过费的：带上用掉的 token（0.28.7 以前不记，费用少算）
+        throw Object.assign(new Error(`Jev 返回了不完整或无效的分数（${invalid.join("、")}）`), { code: "invalid_response", retryable: true, tokens: tokensOf(data) });
       }
       const marked = {};
       if (examples && examples.length) for (const r of replies) { const v = data?.answers?.[`${r.id}__marked`]?.noul; if (validScore(v)) marked[r.id] = v; }
@@ -266,7 +267,7 @@ export async function markedRequests(postId, post, replies, author, examples) {
   return Promise.all(replies.map(async (r) => {
     const bytes = new TextEncoder().encode(JSON.stringify([...ctx, r.id, r.name || "", r.handle || "", r.text || ""]));
     const hash = await crypto.subtle.digest("SHA-256", bytes);
-    return { id: `marked:${r.id}`, reply: r.id, fingerprint: Array.from(new Uint8Array(hash), (n) => n.toString(16).padStart(2, "0")).join("") };
+    return { id: `marked:${r.id}`, post: postId || "", reply: r.id, fingerprint: Array.from(new Uint8Array(hash), (n) => n.toString(16).padStart(2, "0")).join("") };
   }));
 }
 // 返回 {scores: {回复 id: 0–1}, tokens}

@@ -329,5 +329,11 @@
  "heavy.abuse": "Beleidigungen {n}",
  "heavy.sexual": "Sexuelles {n}",
  "heavy.filler": "„nice“ oder „+1“ {n}",
- "welcome.keysLocal": "Deine API-Schlüssel werden nur in diesem Browser gespeichert (im lokalen Speicher der Erweiterung und nicht mit deinen anderen Geräten synchronisiert). Sie werden nur bei Anfragen an TypeSafe und OpenRouter mitgesendet, niemals an den Entwickler."
+ "welcome.keysLocal": "Deine API-Schlüssel werden nur in diesem Browser gespeichert (im lokalen Speicher der Erweiterung und nicht mit deinen anderen Geräten synchronisiert). Sie werden nur bei Anfragen an TypeSafe und OpenRouter mitgesendet, niemals an den Entwickler.",
+ "err.credit": "TypeSafe-Guthaben zu niedrig",
+ "err.invalid_request": "Ungültige Anfrage",
+ "err.http": "Jev-Anfrage fehlgeschlagen: {msg}",
+ "err.disabled": "In den Einstellungen deaktiviert",
+ "err.batch_miss": "Das Modell hat diesen Eintrag ausgelassen. Er wird erneut übersetzt.",
+ "pop.alert.jevCredit": "Das TypeSafe-Guthaben ist aufgebraucht. Antworten können daher nicht geprüft werden."
 }

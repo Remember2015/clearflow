@@ -119,7 +119,8 @@ export async function translateOnce(orKey, model, { source, srcLang, truncated, 
     const resp = await fetchImpl(OR_API, {
       method: "POST",
       // OpenRouter 认应用的两个头（用量统计里显示是谁在调）：名字和主页
-      headers: { Authorization: `Bearer ${orKey}`, "Content-Type": "application/json", "X-Title": "ClearFlow", "HTTP-Referer": "https://github.com/remember2015/clearflow" },
+      // 不带 X-Title / HTTP-Referer（0.28.8，review：OpenRouter 拿它们按应用汇总用量、可能公开排名，和"什么都不发给我们"对不上）
+      headers: { Authorization: `Bearer ${orKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         // 上限给足（按实际输出计费，给大了不多花钱）：中文译文的 token 数和英文原文的字数差不多，长帖 2000 不够用
         model, temperature: 0.2, max_tokens: Math.min(8000, Math.max(400, source.length * 2 + 300)),
@@ -423,34 +424,46 @@ export async function improve({ jevKey, orKey, settings, item, cache = idbCache,
     if (hit) return { ...hit, cached: true };
   } catch { /* 缓存坏了就当没命中 */ }
   const jevOpts = { signal, fetchImpl };
-  const grok = await judge(jevKey, { source: item.source, translation: item.xText, srcLang: item.srcLang, target: item.target }, jevOpts);
+  // Grok 那次判分单独缓存（0.28.8，review）：后面重译、再判出错时整个结果写不进缓存，页面过 30 秒重试又要付一次判分
+  const gkey = await sha256(JSON.stringify([TRANSLATOR_VERSION, "grok", item.source, item.xText, item.srcLang || "", item.target || "zh"]));
+  let grok = null;
+  try { const g = await cache.get(gkey); if (g && g.scores && Number.isFinite(g.min)) grok = { ...g, tokens: 0 }; } catch { /* 当没命中 */ }
+  if (!grok) {
+    grok = await judge(jevKey, { source: item.source, translation: item.xText, srcLang: item.srcLang, target: item.target }, jevOpts);
+    try { await cache.put(gkey, { scores: grok.scores, min: grok.min }, capOf(settings)); } catch { /* 写不进也照样用 */ }
+  }
   let result;
   if (grok.min >= settings.translateThreshold) {
     result = { action: "keep", grok: grok.scores, grokMin: grok.min, cost: 0, jevTokens: grok.tokens };
   } else {
-    // 改进 Grok 的译文不急（页面上已经是 Grok 的译文了）：走 flex
-    let pick = await translate(orKey, settings, item, { signal, fetchImpl, flex: true });
-    let judged = await judge(jevKey, { source: item.source, translation: pick.text, srcLang: item.srcLang, target: item.target }, jevOpts);
-    let cost = pick.cost || 0, jevTokens = grok.tokens + judged.tokens, retried = false;
-    // 重译的反倒比 Grok 还差：换另一个模型（主模型 / 后备模型里没用过的那个）再翻一次，两份里取分高的（0.28.3，用户 10-18：
-    // 同一条韩文帖子 Luna 两次翻出来一次 0.40、一次 0.61，Grok 0.53。translate_eval 的数据上重译的 31 条里有 2 条比 Grok 还差，
-    // DeepSeek 再翻救回 1 条）。只有这种时候多花一次翻译和一次判分；再翻出错就用第一份
-    // 另一个：设置里的两个模型里没试过的那个（按 translate() 返回的 tried 认，不按 OpenRouter 回报的 model 名）
-    const other = [settings.translateModel, settings.translateFallback].find((m) => m && !(pick.tried || [pick.model]).includes(m));
-    if (judged.min < grok.min && other) {
-      try {
-        const again = await translate(orKey, { ...settings, translateModel: other, translateFallback: null }, item, { signal, fetchImpl, flex: true });
-        const j2 = await judge(jevKey, { source: item.source, translation: again.text, srcLang: item.srcLang, target: item.target }, jevOpts);
-        cost += again.cost || 0; jevTokens += j2.tokens; retried = true;
-        if (j2.min > judged.min) { pick = again; judged = j2; }
-      } catch (e) { if (signal?.aborted) throw e; }
-    }
-    const weakest = Object.entries(grok.scores).sort((a, b) => a[1] - b[1])[0][0];
-    const better = judged.min - grok.min >= settings.translateMargin - 1e-9; // 0.75 − 0.65 在浮点里比 0.1 小一点
-    result = {
-      action: better ? "replace" : "keep", tried: true, retried, text: better ? pick.text : undefined, model: pick.model,
-      weak: weakest, grok: grok.scores, grokMin: grok.min, ours: judged.scores, oursMin: judged.min, cost, jevTokens,
-    };
+    let spent = { cost: 0, jevTokens: grok.tokens };
+    try {
+      // 改进 Grok 的译文不急（页面上已经是 Grok 的译文了）：走 flex
+      let pick = await translate(orKey, settings, item, { signal, fetchImpl, flex: true });
+      spent.cost = pick.cost || 0;
+      let judged = await judge(jevKey, { source: item.source, translation: pick.text, srcLang: item.srcLang, target: item.target }, jevOpts);
+      let cost = pick.cost || 0, jevTokens = grok.tokens + judged.tokens, retried = false;
+      // 重译的反倒比 Grok 还差：换另一个模型（主模型 / 后备模型里没用过的那个）再翻一次，两份里取分高的（0.28.3，用户 10-18：
+      // 同一条韩文帖子 Luna 两次翻出来一次 0.40、一次 0.61，Grok 0.53。translate_eval 的数据上重译的 31 条里有 2 条比 Grok 还差，
+      // DeepSeek 再翻救回 1 条）。只有这种时候多花一次翻译和一次判分；再翻出错就用第一份
+      // 另一个：设置里的两个模型里没试过的那个（按 translate() 返回的 tried 认，不按 OpenRouter 回报的 model 名）
+      const other = [settings.translateModel, settings.translateFallback].find((m) => m && !(pick.tried || [pick.model]).includes(m));
+      if (judged.min < grok.min && other) {
+        try {
+          const again = await translate(orKey, { ...settings, translateModel: other, translateFallback: null }, item, { signal, fetchImpl, flex: true });
+          cost += again.cost || 0; spent.cost += again.cost || 0; retried = true; // 翻好就记（后面判分出错也付过了）
+          const j2 = await judge(jevKey, { source: item.source, translation: again.text, srcLang: item.srcLang, target: item.target }, jevOpts);
+          jevTokens += j2.tokens;
+          if (j2.min > judged.min) { pick = again; judged = j2; }
+        } catch (e) { if (signal?.aborted) throw e; }
+      }
+      const weakest = Object.entries(grok.scores).sort((a, b) => a[1] - b[1])[0][0];
+      const better = judged.min - grok.min >= settings.translateMargin - 1e-9; // 0.75 − 0.65 在浮点里比 0.1 小一点
+      result = {
+        action: better ? "replace" : "keep", tried: true, retried, text: better ? pick.text : undefined, model: pick.model,
+        weak: weakest, grok: grok.scores, grokMin: grok.min, ours: judged.scores, oursMin: judged.min, cost, jevTokens,
+      };
+    } catch (e) { if (e && typeof e === "object" && (spent.cost || spent.jevTokens)) e.spent = spent; throw e; } // 付过的费跟着错误回去记账
   }
   try { await cache.put(key, result, capOf(settings)); } catch { /* 写不进缓存也照样返回 */ }
   return { ...result, cached: false };

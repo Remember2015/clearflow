@@ -329,5 +329,11 @@
  "heavy.abuse": "辱罵 {n}",
  "heavy.sexual": "色情 {n}",
  "heavy.filler": "「讚」／「mark」類 {n}",
- "welcome.keysLocal": "金鑰只會儲存在這個瀏覽器中（擴充功能的本機儲存空間，不會同步到其他裝置），只會隨請求傳送給 TypeSafe 和 OpenRouter，不會傳送給開發者。"
+ "welcome.keysLocal": "金鑰只會儲存在這個瀏覽器中（擴充功能的本機儲存空間，不會同步到其他裝置），只會隨請求傳送給 TypeSafe 和 OpenRouter，不會傳送給開發者。",
+ "err.credit": "TypeSafe 餘額不足",
+ "err.invalid_request": "請求無效",
+ "err.http": "Jev 請求失敗：{msg}",
+ "err.disabled": "已在設定中關閉",
+ "err.batch_miss": "模型漏掉了這則內容，將再次翻譯",
+ "pop.alert.jevCredit": "TypeSafe 餘額不足，無法檢查回覆。"
 }

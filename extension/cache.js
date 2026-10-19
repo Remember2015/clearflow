@@ -28,8 +28,11 @@ function open() {
 const reqp = (r) => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
 const done = (tx) => new Promise((res, rej) => { tx.oncomplete = () => res(); tx.onerror = tx.onabort = () => rej(tx.error); });
 const sizeOf = (rec) => JSON.stringify(rec).length + 64; // 估算：JSON 长度 + 每条固定开销
+// 存的键：这一页的键 + 回复 id（0.28.8，review：以前只按回复 id 存，同一条帖子在用户主页、搜索结果、帖子页来回看——指纹里的这一页不同——
+// 互相覆盖，每换一处重判一次、付一次费）。没给 post 的照旧只按 id；0.28.7 以前按 id 存的记录照样认（指纹里有这一页，对得上就是同一处）
+const slot = (id, post) => (post ? `${post}\n${id}` : id);
 
-// [{id, fingerprint}] → {id: scores}；旧版没有指纹和评分时间，安全地当作未命中。
+// [{id, post, fingerprint}] → {id: scores}；旧版没有指纹和评分时间，安全地当作未命中。
 export async function getMany(queries) {
   const db = await open();
   const tx = db.transaction(STORE, "readwrite");
@@ -38,7 +41,8 @@ export async function getMany(queries) {
   const out = {};
   await Promise.all(queries.map(async (query) => {
     if (!query?.id || !query.fingerprint) return;
-    const rec = await reqp(st.get(query.id));
+    let rec = await reqp(st.get(slot(query.id, query.post)));
+    if (!rec && query.post) rec = await reqp(st.get(query.id)); // 0.28.7 以前的记录
     if (!rec || rec.fingerprint !== query.fingerprint || !Number.isFinite(rec.scoredAt) ||
         now - rec.scoredAt >= CACHE_TTL_MS || rec.scoredAt > now) return;
     out[query.id] = rec.scores;
@@ -59,9 +63,10 @@ export async function putMany(recs, capBytes) {
   let evicted = 0;
   const now = Date.now();
   for (const r of recs) {
-    const old = await reqp(st.get(r.id));
+    const sid = slot(r.id, r.post);
+    const old = await reqp(st.get(sid));
     if (old) { bytes -= old.size || 0; count--; }
-    const rec = { id: r.id, post: r.post || "", fingerprint: r.fingerprint, scores: r.scores, scoredAt: now, ts: now };
+    const rec = { id: sid, post: r.post || "", fingerprint: r.fingerprint, scores: r.scores, scoredAt: now, ts: now };
     rec.size = sizeOf(rec);
     st.put(rec);
     bytes += rec.size;

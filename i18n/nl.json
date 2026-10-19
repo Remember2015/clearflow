@@ -329,5 +329,11 @@
  "heavy.abuse": "beledigingen {n}",
  "heavy.sexual": "seksueel {n}",
  "heavy.filler": "‘leuk’ of ‘+1’ {n}",
- "welcome.keysLocal": "Je sleutels worden alleen in deze browser opgeslagen (in de lokale opslag van de extensie en niet gesynchroniseerd met je andere apparaten). Ze worden alleen bij verzoeken naar TypeSafe en OpenRouter meegestuurd, nooit naar de ontwikkelaar."
+ "welcome.keysLocal": "Je sleutels worden alleen in deze browser opgeslagen (in de lokale opslag van de extensie en niet gesynchroniseerd met je andere apparaten). Ze worden alleen bij verzoeken naar TypeSafe en OpenRouter meegestuurd, nooit naar de ontwikkelaar.",
+ "err.credit": "TypeSafe-saldo is te laag",
+ "err.invalid_request": "Ongeldig verzoek",
+ "err.http": "Jev-verzoek mislukt: {msg}",
+ "err.disabled": "Uitgeschakeld in instellingen",
+ "err.batch_miss": "Het model heeft dit item overgeslagen; het wordt opnieuw vertaald",
+ "pop.alert.jevCredit": "TypeSafe-saldo is op, dus reacties kunnen niet worden beoordeeld."
 }

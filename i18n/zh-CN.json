@@ -329,5 +329,11 @@
  "heavy.abuse": "辱骂 {n}",
  "heavy.sexual": "色情 {n}",
  "heavy.filler": "「赞」「mark」这类 {n}",
- "welcome.keysLocal": "key 只保存在这个浏览器里（插件的本地存储，不会同步到别的设备），只在向 TypeSafe、OpenRouter 发请求时带上，不会发给开发者。"
+ "welcome.keysLocal": "key 只保存在这个浏览器里（插件的本地存储，不会同步到别的设备），只在向 TypeSafe、OpenRouter 发请求时带上，不会发给开发者。",
+ "err.credit": "TypeSafe 余额不足",
+ "err.invalid_request": "请求无效",
+ "err.http": "Jev 请求出错：{msg}",
+ "err.disabled": "设置里关着",
+ "err.batch_miss": "模型漏了这一条，会再翻一次",
+ "pop.alert.jevCredit": "TypeSafe 余额不足，回复判不了。"
 }
