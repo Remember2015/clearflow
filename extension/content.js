@@ -1074,6 +1074,18 @@
     }
   });
 
+  // 翻译那边（translate.js，同一个隔离环境）问"这条马上要判出来吗"（0.28.7，review）：还在等判——本地标记没读完、等原文、
+  // 排着或正在问 Jev、等求推荐那一问——答 "pending"，翻译那边先等一等（最多几秒），免得给马上要清理的垃圾付翻译费。
+  // 判完了、不归这里管（主帖、首页）、Jev 关着或问不了答 null：照常翻（清理掉的看不见，那边按显示与否跳过；你点开了照样翻）
+  globalThis.FFXVerdict = (id) => {
+    if (!S.enabled || !S.settings || S.settingsLoading) return null;
+    const it = S.items.get(id);
+    if (!it || !it.started || (it.decision && it.decision.kind !== "pending")) return null;
+    const waiting = !it.overrideReady || (it.translated && it.origState !== "done") || it.queued || needJev(it) ||
+      (S.mode === "status" && !!S.postText && S.rec === null);
+    return waiting ? "pending" : null;
+  };
+
   // 弹窗问"这个页面怎么样"：这一页折了几条（按三类）、还有几条在等 Jev；翻译那边的数从 translate.js 拿（同一个隔离环境）
   try {
     chrome.runtime.onMessage.addListener((msg, _sender, reply) => {

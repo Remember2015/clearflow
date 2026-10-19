@@ -18,9 +18,12 @@
   const Y = globalThis.FFYT;
   const watching = (r) => r.kind === "watch" || r.kind === "shorts";
   const NATIVE_WAIT = 6000, NATIVE_PER_SCAN = 6;
-  const native = new Map(); // 评论 id → { at: 替你点的时候, done: 换成过译文, mine: 是插件点的, failed: 没翻成、改用插件的 }
+  const native = new Map(); // 评论 id → { at: 替你点的时候, done: 换成过译文, mine: 是插件点的, failed: 没翻成、改用插件的, btn: 那个按钮（WeakRef）, off: 你点回了原文 }
   let clicks = 0;
-  // 交给 YouTube 翻了（或者这一轮先不管、下一轮再点）：返回 true，插件不给这条建任务
+  const press = (b) => (b.querySelector("tp-yt-paper-button, [role=button], button") || b).click();
+  // 交给 YouTube 翻了（或者这一轮先不管、下一轮再点）：返回 true，插件不给这条建任务。
+  // 0.28.7（review）：只有同一个按钮从译文回到原文才算你点回了原文；按钮换了个元素（YouTube 重画了这条评论：换排序、重开 Shorts 评论面板、
+  // 回到这个视频）又是原文的，插件点过的再替你点一次——以前一律当成你点回了原文，这一整次都不再翻
   function nativeTx(c, id) {
     const st = native.get(id);
     if (st && st.failed) return false;
@@ -28,16 +31,24 @@
     if (!b) return !!st; // 按钮没了：替你点过的不再管
     const toggled = b.getAttribute("state") === "toggled";
     if (st) {
+      if (st.btn?.deref() !== b) {
+        st.btn = new WeakRef(b);
+        if (toggled) { st.done = true; return true; }
+        if (st.mine && !st.off && clicks < NATIVE_PER_SCAN) { Y.rememberOriginal(c); press(b); clicks++; st.at = Date.now(); st.done = false; }
+        return true;
+      }
       if (toggled) st.done = true;
-      else if (!st.done && Date.now() - st.at > NATIVE_WAIT) { st.failed = true; return false; }
+      else if (st.done) st.off = true; // 同一个按钮从译文回到原文：你点的，不再替你点
+      else if (Date.now() - st.at > NATIVE_WAIT) { st.failed = true; return false; }
       return true;
     }
-    if (toggled) { native.set(id, { at: Date.now(), done: true, mine: false }); return true; } // 你自己点开的
+    if (toggled) { native.set(id, { at: Date.now(), done: true, mine: false, btn: new WeakRef(b) }); return true; } // 你自己点开的
     if (clicks >= NATIVE_PER_SCAN) return true;
     Y.rememberOriginal(c); // 换成译文以前把原文记下（清理那边照原文判）
-    (b.querySelector("tp-yt-paper-button, [role=button], button") || b).click();
+    press(b);
     clicks++;
-    native.set(id, { at: Date.now(), done: false, mine: true });
+    native.set(id, { at: Date.now(), done: false, mine: true, btn: new WeakRef(b) });
+    if (native.size > 3000) native.delete(native.keys().next().value); // 最早的先丢（长时间刷不越攒越多）
     return true;
   }
   function renderListTitle(e, x) {

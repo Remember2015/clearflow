@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.28.7 — 2026-10-19
+
+- X: replies that are still being judged aren't translated or retranslated until the verdict is in (at most 6 seconds), so you don't pay to translate a reply that is about to be cleaned.
+- Very long comments (a single paragraph over 3,000 characters, which happens on YouTube) are translated in pieces; before, they were never translated. Line breaks in YouTube comments are kept in the translation.
+- YouTube: when YouTube redraws a comment that ClearFlow had translated with YouTube's own button (changing the sort order, reopening the Shorts comments), ClearFlow presses the button again. If you switched back to the original yourself, it still leaves it alone.
+- A long comment you are reading keeps using the standard translation tier for its remaining pieces (it was mistaken for off-screen once its first pieces were shown, and sent to flex).
+- Several replies translated in one request: if the model repeats or misnumbers one of them, that reply is translated again on its own instead of keeping (and caching) the wrong text.
+- "Look at images in replies": replies whose images can't be used are cached like other replies (if the image is gone or broken, or was over the 6-images-per-batch limit), so they aren't paid for again on every visit; only temporary download errors are retried. If the browser's image permission was revoked, images are treated as off.
+
 ## 0.28.6 — 2026-10-19
 
 - X: replies containing a line that just says "Ad" / "广告" / "Promoted", or from an account named "Ad", are no longer mistaken for ads (they were skipped and couldn't be cleaned by hand).

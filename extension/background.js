@@ -201,30 +201,36 @@ const validBatch = (replies) => Array.isArray(replies) && replies.length > 0 && 
   replies.every((r) => r && typeof r.id === "string" && /^[a-zA-Z0-9_.-]{1,110}$/.test(r.id) && typeof r.text === "string") &&
   new Set(replies.map((r) => r.id)).size === replies.length;
 
-// 看图片（0.18）：回复带来的图片网址只留 IMAGE_ORIGINS 里的、每条最多 2 张、一批最多 6 张；设置里关着就整个去掉
-// （没带图的回复请求、缓存指纹和以前一模一样）。缓存查询和真去问用同一份，指纹才对得上
+// 看图片（0.18）：回复带来的图片网址只留 IMAGE_ORIGINS 里的、每条最多 2 张、一批最多 6 张（按回复的先后，超出的这一批不发）；
+// 设置里关着、或者浏览器没给读图的权限就整个去掉（没带图的回复请求、缓存指纹和以前一模一样）。缓存查询和真去问用同一份，指纹才对得上。
+// 0.28.7（review）：一批 6 张的上限以前在下载时才算，超出的那几条"有图没发"，结果永远不进缓存、每次打开都重新付费判；
+// 现在在这里就去掉，指纹里只有真发了的图。权限被收回时以前还当开着，图张张下载失败、结果也都不进缓存
 const IMG_PER_REPLY = 2, IMG_PER_BATCH = 6;
-function withImages(replies, st) {
+async function imagesOn(st) {
+  if (!st.images) return false;
+  try { return await chrome.permissions.contains({ origins: [...IMAGE_ORIGINS] }); } catch { return false; }
+}
+function withImages(replies, on) {
+  let budget = IMG_PER_BATCH;
   return replies.map((r) => {
     const { images, ...rest } = r;
-    const imgs = st.images && Array.isArray(images)
-      ? [...new Set(images.filter((u) => typeof u === "string" && u.length < 2000 && allowedImage(u, IMAGE_ORIGINS)))].slice(0, IMG_PER_REPLY) : [];
+    const imgs = on && Array.isArray(images)
+      ? [...new Set(images.filter((u) => typeof u === "string" && u.length < 2000 && allowedImage(u, IMAGE_ORIGINS)))].slice(0, Math.min(IMG_PER_REPLY, budget)) : [];
+    budget -= imgs.length;
     return imgs.length ? { ...rest, images: imgs } : rest;
   });
 }
-// 把要问的回复的图下载、缩好，装进 assets（引用名 img_<回复 id>_<第几张>）；有图没读到的回复记进 noCache（这次的结果不进缓存，下次再试）。
+// 把要问的回复的图下载、缩好，装进 assets（引用名 img_<回复 id>_<第几张>）。有图一时没读到的（网络出错、超时、对方 5xx）记进 noCache：
+// 这次的结果不进缓存，下次再试；图本身没了、坏了的（4xx、解不开、太大，见 images.js）照样进缓存——下次也一样读不到，不必再付一次费。
 // 没字、图也一张没读到的回复不问（问了也只是空白）
 async function prepareImages(missing, signal) {
   const assets = {}, noCache = new Set();
-  let budget = IMG_PER_BATCH;
   const ask = await Promise.all(missing.map(async (r) => {
     if (!r.images) return r;
-    const want = r.images.slice(0, Math.max(0, budget));
-    budget -= want.length;
-    const got = await Promise.all(want.map((u) => imageAsset(u, { signal })));
+    const got = await Promise.all(r.images.map((u) => imageAsset(u, { signal })));
     const refs = [];
     got.forEach((a, i) => { if (a) { const ref = `img_${r.id}_${i}`; assets[ref] = { type: "image", format: a.format, data_base64: a.data_base64 }; refs.push(ref); } });
-    if (refs.length < r.images.length) noCache.add(r.id);
+    if (got.some((a) => a === null)) noCache.add(r.id);
     return refs.length ? { ...r, imageRefs: refs } : r;
   }));
   return { ask: ask.filter((r) => r.text.trim() || r.imageRefs), assets, noCache };
@@ -236,7 +242,7 @@ async function handleJev({ postId, post, author, replies: raw, extra: wanted }, 
   const revision = configRevision;
   const access = await permission(undefined, site);
   if (access.error) return access;
-  const replies = withImages(raw, access.settings);
+  const replies = withImages(raw, await imagesOn(access.settings));
   // 每条要齐的问题：整批的 extra，加上这一条自己多问的（0.22 的 filler 只问短回复）
   const need = new Map(replies.map((r) => [r.id, [...extra, ...askOf(r, extra)]]));
   // 你在这个网站上标记过垃圾（0.26）：要问五问的那些顺带问"是不是同一类"（并进同一个请求、不多发）；缓存里已经有这一问的分就带上，
@@ -570,7 +576,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       case "cachedForPost": {
         // 旧内容脚本只有 postId，无法验证回复正文，不能返回旧分数。
         if (!validBatch(msg.replies)) return { scores: {} };
-        const queries = await cacheRequests(msg.postId, msg.post, withImages(msg.replies, await settings(site)), msg.author, msg.extra);
+        const queries = await cacheRequests(msg.postId, msg.post, withImages(msg.replies, await imagesOn(await settings(site))), msg.author, msg.extra);
         const scores = await cache.getMany(queries);
         const ex = cleanExtra(msg.extra), need = new Map(msg.replies.map((r) => [r.id, [...ex, ...askOf(r, ex)]]));
         for (const id of Object.keys(scores)) if (!validScores(scores[id], need.get(id))) delete scores[id];

@@ -4,8 +4,10 @@
 // - 长边缩到 768（一张大约 1–2 千 token；二维码、图里的字还认得出）；
 // - 太小的放大到每边至少 256、总像素至少 78,400；太扁太长、放大后长边超过 1568 的，长边定在 1568、短边补白；
 // - createImageBitmap 默认按 EXIF 转正；WebP、GIF（取第一帧）都先解开再存成 JPEG（基线编码）。
-// 读图要用户给的权限（settings.js 的 IMAGE_ORIGINS）；没权限、下载失败、解不开都返回 null，这张图就不发，这一条照样按字判。
-// 同一个网址在这个 service worker 里只处理一次（成功的记着，失败的下次再试）。
+// 读图要用户给的权限（settings.js 的 IMAGE_ORIGINS）。读不到的这张图就不发，这一条照样按字判；读不到分两种（0.28.7）：
+// 一时读不到（网络出错、取消、超时、对方 408 / 429 / 5xx）返回 null，这一条的结果不进缓存、下次再试；
+// 图本身没了、坏了（别的 4xx、空的、太大、解不开）返回 false，结果照样进缓存（下次也一样读不到）。
+// 同一个网址在这个 service worker 里只处理一次（成功的、坏了的记着，一时读不到的下次再试）。
 export const MAX_SIDE = 768, MIN_SIDE = 256, MAX_EDGE = 1568, MIN_AREA = 78400, MAX_BYTES = 16 * 1048576;
 
 // 原图 w×h → 画布 cw×ch（Jev 收的尺寸）、图画在 (dx, dy) 的 dw×dh
@@ -32,11 +34,13 @@ const memo = new Map(); // 网址 → Promise<{format, data_base64, width, heigh
 export function imageAsset(url, { fetchImpl = fetch, signal } = {}) {
   if (memo.has(url)) return memo.get(url);
   const job = (async () => {
+    let net = true; // 还在下载（这时出错算一时读不到）
     try {
       const resp = await fetchImpl(url, { credentials: "omit", signal });
-      if (!resp.ok) return null;
+      if (!resp.ok) return resp.status === 408 || resp.status === 429 || resp.status >= 500 ? null : false;
       const blob = await resp.blob();
-      if (!blob.size || blob.size > MAX_BYTES) return null;
+      net = false;
+      if (!blob.size || blob.size > MAX_BYTES) return false;
       const bmp = await createImageBitmap(blob);
       const f = fitSize(bmp.width, bmp.height);
       const canvas = new OffscreenCanvas(f.cw, f.ch);
@@ -48,12 +52,12 @@ export function imageAsset(url, { fetchImpl = fetch, signal } = {}) {
       const out = await canvas.convertToBlob({ type: "image/jpeg", quality: 0.82 });
       return { format: "jpg", data_base64: toBase64(new Uint8Array(await out.arrayBuffer())), width: f.cw, height: f.ch };
     } catch (e) {
-      return null;
+      return net ? null : false;
     }
   })();
   memo.set(url, job);
   if (memo.size > 300) memo.delete(memo.keys().next().value);
-  job.then((x) => { if (!x && memo.get(url) === job) memo.delete(url); });
+  job.then((x) => { if (x === null && memo.get(url) === job) memo.delete(url); });
   return job;
 }
 export const forgetImages = () => memo.clear(); // 测试用

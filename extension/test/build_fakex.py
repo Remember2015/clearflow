@@ -480,7 +480,7 @@ window.__expand = (id) => {{
   a.querySelector('[data-testid="tweet-text-show-more-link"]').remove();
   fill(a, a.dataset.mode);
 }};
-history.replaceState({{}}, "", "/thread_op/status/" + (q.get("focal") || "3001"));
+history.replaceState({{}}, "", "/thread_op/status/" + (q.get("focal") || "3001") + location.search); // 留着 ?jev=…（替身 Jev 读它）
 const sc = document.createElement("script"); sc.src = "/inject_bundle.js"; document.body.appendChild(sc);
 </script></body></html>'''
 open(os.path.join(HERE, "fakex", "thread.html"), "w", encoding="utf-8").write(th_page)
@@ -946,7 +946,8 @@ YT_STYLE = ("body{font:14px/20px Roboto,Arial,sans-serif;margin:0;background:#ff
             "#header-author h3{margin:0;font-size:13px} ytd-expander{display:block} #action-buttons{display:block;font-size:12px;color:#606060} "
             "ytd-comment-replies-renderer{display:block;margin-left:56px} .lockup a.ytLockupMetadataViewModelTitle{display:flow-root;-webkit-line-clamp:3;max-height:60px;overflow:hidden;font-size:14px;line-height:20px} "
             "ytd-video-renderer{display:block;margin:12px 0} ytd-video-renderer a#video-title{display:flow-root;-webkit-line-clamp:2;max-height:52px;overflow:hidden;font-size:18px;line-height:26px;color:#0f0f0f} "
-            ".metadata-snippet-text{display:block;-webkit-line-clamp:2;max-height:36px;overflow:hidden;font-size:12px;line-height:18px;color:#606060}")
+            ".metadata-snippet-text{display:block;-webkit-line-clamp:2;max-height:36px;overflow:hidden;font-size:12px;line-height:18px;color:#606060} "
+            ".ytAttributedStringWhiteSpacePreWrap{white-space:pre-wrap}")
 def ypage(title, path, body, extra=""):
     return f"""<!doctype html><html lang="zh-Hans-CN"><head><meta charset="utf-8"><title>{title}</title><style>{YT_STYLE}</style>{extra}</head><body><ytd-app><div id="content">{body}</div></ytd-app>
 <script id="ff-inject">
@@ -1043,11 +1044,23 @@ yt_native = ypage("How Synthetic Engines Work, Explained - YouTube", f"/watch?v=
   f'<ytd-comments id="comments"><ytd-item-section-renderer id="sections"><div id="contents"></div></ytd-item-section-renderer></ytd-comments></div>'
   f'<template id="yt-comments">{"".join(f"<ytd-comment-thread-renderer>{ycomment(cid, h, t, tx)}</ytd-comment-thread-renderer>" for cid, h, t, tx in YT_NATIVE)}</template>',
   extra='<script>window.ytInitialPlayerResponse = { videoDetails: { videoId: "SYNTHVID001", channelId: "UCsynthchannel00000000000", author: "Synthetic Channel" } };</script>' + yt_native_js)
+# yt/long.html → /watch?v=SYNTHVID001（0.28.7，review）：Ugl01 英文、字里带换行（YouTube 的评论是 pre-wrap，换行是 \n 不是 <br>）；
+#   Ugl02 英文长评论（9000 多字，中间一个链接）：整段超过后台一条 5000 字的上限，要切成几截翻。全是合成文字。
+LONG_SENT = ["The first engine we built in the garage was loud, heavy and leaked oil everywhere.", "We replaced the gaskets twice before the summer was over.",
+             "Nobody in the family believed it would ever run for more than a minute.", "Then one evening it idled for an hour while we ate dinner outside.",
+             "That was the moment I decided to study mechanical engineering."]
+yt_long_body = " ".join(LONG_SENT[k % 5] for k in range(60)) + ' The notes are on <a class="yt-core-attributed-string__link" href="https://www.youtube.com/redirect?q=https%3A%2F%2Fexample.com%2Fnotes">example.com/notes</a> if you want them. ' + " ".join(LONG_SENT[(k + 2) % 5] for k in range(60)) + " Thanks for reading this far, it really is the end now."
+YT_LONG = [("Ugl01", "@linefan", "First line of my note.\nSecond line goes here.\n\nThird line after a blank one."), ("Ugl02", "@storyfan", yt_long_body)]
+yt_long = ypage("How Synthetic Engines Work, Explained - YouTube", f"/watch?v={VID}",
+  '<div id="primary"><ytd-watch-metadata><div id="title"><h1 class="style-scope ytd-watch-metadata"><yt-formatted-string class="style-scope ytd-watch-metadata">合成发动机讲解</yt-formatted-string></h1></div></ytd-watch-metadata>'
+  f'<ytd-comments id="comments"><ytd-item-section-renderer id="sections"><div id="contents"></div></ytd-item-section-renderer></ytd-comments></div>'
+  f'<template id="yt-comments">{"".join(f"<ytd-comment-thread-renderer>{ycomment(cid, h, t)}</ytd-comment-thread-renderer>" for cid, h, t in YT_LONG)}</template>',
+  extra='<script>window.ytInitialPlayerResponse = { videoDetails: { videoId: "SYNTHVID001", channelId: "UCsynthchannel00000000000", author: "Synthetic Channel" } };</script>')
 yt_results = ypage("engines - YouTube", "/results?search_query=engines", '<div id="primary"><ytd-section-list-renderer><div id="contents">'
   + yresult("SEARCHV0001", "Why synthetic engines are quieter than you think", "A long look at noise levels, materials and the tricks engineers use every day.")
   + yresult("SEARCHV0002", "合成发动机入门", "从零开始讲合成发动机。") + "</div></ytd-section-list-renderer></div>")
 os.makedirs(os.path.join(HERE, "fakex", "yt", "youtubei", "v1"), exist_ok=True)
-for name, html in [("watch", yt_watch), ("results", yt_results), ("native", yt_native)]:
+for name, html in [("watch", yt_watch), ("results", yt_results), ("native", yt_native), ("long", yt_long)]:
     open(os.path.join(HERE, "fakex", "yt", name + ".html"), "w", encoding="utf-8").write(html)
 open(os.path.join(HERE, "fakex", "yt", "youtubei", "v1", "next"), "w", encoding="utf-8").write(_json.dumps(yt_next, ensure_ascii=False))
 

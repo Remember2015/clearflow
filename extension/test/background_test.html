@@ -11,6 +11,7 @@ globalThis.chrome = {
   } },
   runtime: { onMessage: { addListener: (f) => (listener = f) } },
   action: { setIcon: async (o) => { (globalThis.__icons ||= []).push(o); } },
+  permissions: { contains: async () => globalThis.__imgPerm !== false }, // 读图的权限（__imgPerm = false：用户收回了）
 };
 let jevStatus = 200; // 设成 401 模拟 key 无效
 globalThis.fetch = async (url, init) => {
@@ -239,7 +240,8 @@ document.getElementById("out").textContent = out.join("\n");
     ic[1].path[16] === "icons/icon-16.png", JSON.stringify(ic));
 }
 // 0.18 看回复里的图片：开着时把回复里的图下载、缩成 JPEG 装进 assets，请求带 Danger Zone 头；关着整个去掉；不认识的网站不下载；
-// 下载失败的图不发、这条的结果不进缓存；Jev 因为图把整批拒了（400）就去掉图再问一次、结果不进缓存；没字的回复图又没读到就不问
+// 下载失败的图不发；Jev 因为图把整批拒了（400）就去掉图再问一次、结果不进缓存；没字的回复图又没读到就不问。
+// 0.28.7（review）：图没了（404）的结果照样进缓存，一时读不到（网络出错、503）的不进；没给读图权限当关着；一批超过 6 张的那几条不发图、结果照样进缓存
 {
   const png = await (async () => { const c = new OffscreenCanvas(1200, 800); const x = c.getContext("2d"); x.fillStyle = "#c33"; x.fillRect(0, 0, 1200, 800); return c.convertToBlob({ type: "image/png" }); })();
   const seen = [], bodies = [];
@@ -255,6 +257,8 @@ document.getElementById("out").textContent = out.join("\n");
     }
     seen.push(String(url));
     if (String(url).includes("/broken")) return new Response("no", { status: 404 });
+    if (String(url).includes("/flaky")) throw new TypeError("Failed to fetch");
+    if (String(url).includes("/busy")) return new Response("busy", { status: 503 });
     return new Response(png, { status: 200, headers: { "content-type": "image/png" } });
   };
   const ID = (n) => "19300000000000000" + String(n).padStart(2, "0");
@@ -295,7 +299,31 @@ document.getElementById("out").textContent = out.join("\n");
   ok("图下载失败：不发图、照样按字判", fetchCalls === before + 1 && !bodies.at(-1).assets && !!r.scores[ID(4)], JSON.stringify(bodies.at(-1).state.replies));
   await new Promise((res) => setTimeout(res, 300));
   r = await call(msg([RB]));
-  ok("图没读到的那次结果不进缓存（下次再试）", fetchCalls === before + 2, `fetch=${fetchCalls - before}`);
+  ok("图没了（404）的那次结果照样进缓存：下次走缓存，不再付一次费", fetchCalls === before + 1 && !!r.scores[ID(4)], `fetch=${fetchCalls - before}`);
+  const RF = { id: ID(7), text: "flaky one", images: ["https://pbs.twimg.com/flaky/1.jpg", "https://pbs.twimg.com/busy/1.jpg"] };
+  before = fetchCalls;
+  r = await call(msg([RF]));
+  await new Promise((res) => setTimeout(res, 300));
+  r = await call(msg([RF]));
+  ok("图一时读不到（网络出错、503）：那次结果不进缓存，下次再试", fetchCalls === before + 2 && !!r.scores[ID(7)] && seen.filter((u) => u.includes("/flaky/")).length === 2, `fetch=${fetchCalls - before}`);
+  globalThis.__imgPerm = false;
+  const RP = { id: ID(8), text: "no permission", images: ["https://pbs.twimg.com/media/P8.jpg"] };
+  const seenBefore = seen.length;
+  before = fetchCalls;
+  r = await call(msg([RP]));
+  await new Promise((res) => setTimeout(res, 300));
+  r = await call(msg([RP]));
+  ok("没给读图的权限：当关着（不下载、不发图），结果进缓存", fetchCalls === before + 1 && !bodies.at(-1).assets && seen.length === seenBefore && !!r.scores[ID(8)], `fetch=${fetchCalls - before} seen=${seen.length - seenBefore}`);
+  globalThis.__imgPerm = true;
+  const many = [9, 10, 11, 12].map((n) => ({ id: ID(n), text: "pics " + n, images: [`https://pbs.twimg.com/media/M${n}a.jpg`, `https://pbs.twimg.com/media/M${n}b.jpg`] }));
+  before = fetchCalls;
+  r = await call(msg(many));
+  b = bodies.at(-1);
+  ok("一批超过 6 张：前三条各 2 张，第四条不发图、照样判", fetchCalls === before + 1 && Object.keys(b.assets || {}).length === 6 && !b.state.replies.find((x) => x.id === ID(12)).images && !!r.scores[ID(12)],
+    JSON.stringify(b.state.replies.map((x) => [x.id, x.images])));
+  await new Promise((res) => setTimeout(res, 300));
+  r = await call(msg(many));
+  ok("超出 6 张没发图的那条结果也进了缓存：再来一次全走缓存", fetchCalls === before + 1 && Object.keys(r.scores).length === 4, `fetch=${fetchCalls - before}`);
   const RO = { id: ID(5), text: "", images: ["https://pbs.twimg.com/broken/2.jpg"] };
   before = fetchCalls;
   r = await call(msg([RO]));

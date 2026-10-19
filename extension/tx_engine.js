@@ -20,6 +20,7 @@
   // 10 条以上一个请求生成得久、反而慢；评论 4 条 / 1200 字一批，40 条 13 秒（一条一个、同时 8 个）→ 5 秒
   const BATCH_N = 4, BATCH_CHARS = 1200;
   const SMALL = 500, FIRST = 300, CHUNK = 800, MAX_TOTAL = 16000; // ≤500 字一次翻；超过 16000 字的只翻前面这些
+  const LONG_BLOCK = 3000; // 带格式的一段比这还长：切成 ≤ CHUNK 的几截分开翻（richtext.js 的 pieces；后台一条最多收 5000 字）
   const SCRIPTS = [["han", /\p{Script=Han}/u], ["kana", /[\p{Script=Hiragana}\p{Script=Katakana}]/u], ["hangul", /\p{Script=Hangul}/u],
     ["cyrillic", /\p{Script=Cyrillic}/u], ["arabic", /\p{Script=Arabic}/u], ["thai", /\p{Script=Thai}/u], ["devanagari", /\p{Script=Devanagari}/u],
     ["latin", /\p{Script=Latin}/u]];
@@ -181,7 +182,15 @@
       tick();
     }
     // 离视野多远：视野里的最近（从上往下排），然后是下面的（按距离），上面的距离多算一半（往下滚的多）；不在页面上、藏起来了的最后
+    // 原来那一格被插件藏起来了（换上了译文：整格克隆、标题克隆都紧跟在它后面）：量露出来的那份（0.28.7，review：
+    // 以前量藏起来的原格，量出来是 0，正在看的长评论剩下的几块排到最后、还走了 flex）
+    const visible = (e) => {
+      if (!e || !e.dataset || !e.dataset.ffTxHidden) return e;
+      const n = e.nextElementSibling;
+      return n && Dm.mine(n) && n.getClientRects().length ? n : e;
+    };
     function distanceOf(e) {
+      e = visible(e);
       if (!e || !e.isConnected) return 1e9;
       const r = e.getBoundingClientRect(), vh = innerHeight || 800;
       if (!r.width && !r.height) return 1e9 - 1;
@@ -213,7 +222,7 @@
     }
     // 在不在屏幕上：发翻译请求时一条都不在的（上下一屏内的预翻译）走 flex 通道（半价、可能慢一点，见 translator.js）；
     // 有一条在屏幕上就走标准通道（0.28.4，用户 10-19）
-    const onScreen = (el) => { if (!el || !el.isConnected) return false; const r = el.getBoundingClientRect(); return (r.width || r.height) && r.bottom > 0 && r.top < (innerHeight || 800); };
+    const onScreen = (el) => { el = visible(el); if (!el || !el.isConnected) return false; const r = el.getBoundingClientRect(); return (r.width || r.height) && r.bottom > 0 && r.top < (innerHeight || 800); };
     // 一块要发的东西（翻译和只查缓存都用它）
     const reqOf = (job, i) => ({ id: job.id, source: job.chunks[i].src, srcLang: job.lang, truncated: job.truncated && i === job.chunks.length - 1,
       part: job.chunks.length > 1 ? i : undefined, markup: job.rich || undefined, alt: job.chunks[i].alt || undefined, target: target() });
@@ -223,7 +232,7 @@
       if (!(r && r.action === "fill" && r.text)) return false;
       if (job.rich) {
         const outs = R.splitParas(r.text, c.idx.length);
-        const good = !!outs && outs.every((x, k) => R.tokens(x, job.blocks[c.idx[k]].parts, job.blocks[c.idx[k]].text).ok);
+        const good = !!outs && outs.every((x, k) => R.tokens(x, job.segs[c.idx[k]].parts, job.segs[c.idx[k]].text).ok);
         if (!good && !c.alt && hasAlt) { c.alt = true; c.state = "todo"; return false; }
         c.outs = outs || mergedOuts(r.text, c.idx.length);
       } else { c.text = r.text; c.same = sameText(r.text, c.src); }
@@ -277,7 +286,12 @@
         const results = Array.isArray(r && r.results) ? r.results : null;
         list.forEach(([job, i], k) => {
           const c = job.chunks[i], x = results ? results[k] : r;
-          if (early.has(k) || jobs.get(job.key) !== job || c.state !== "sending") return;
+          // 流式时先换上了的：最后整批说这一条不算（batch_miss，比如同一个标记出现了两次，0.28.7）就撤掉、单独再翻
+          if (early.has(k)) {
+            if (x && x.code === "batch_miss" && jobs.get(job.key) === job && c.state === "done") { c.state = "todo"; c.solo = true; delete c.outs; delete c.text; }
+            return;
+          }
+          if (jobs.get(job.key) !== job || c.state !== "sending") return;
           if (accept(job, c, x) || c.state === "todo") return;
           if (STOP.includes(x && x.code)) { on = false; jobs.delete(job.key); return; }
           c.solo = true;
@@ -357,19 +371,25 @@
       const go = bl.filter((b) => b.go);
       const plain = go.map((b) => b.plain).join("\n\n");
       if (!go.length || !foreign(plain) || sameUi.get(key) === plain) return true;
+      // 要翻的一截截（segs）：一般一段一截；太长的一段切成几截（bi 是第几段，sep 是和下一截之间的空白），拼回去时按顺序接上
+      const segs = [];
+      bl.forEach((b, i) => {
+        if (!b.go) return;
+        for (const p of b.text.length > LONG_BLOCK ? R.pieces(b.text, CHUNK) : [{ text: b.text, sep: "" }]) segs.push({ bi: i, text: p.text, sep: p.sep, parts: b.parts, plain: R.plainOf(p.text, b.parts) });
+      });
       const packs = [], all = Math.min(MAX_TOTAL, plain.length); // 一共不到 SMALL 的一块翻完
       let cur = null, total = 0;
-      bl.forEach((b, i) => {
-        if (!b.go || total + b.plain.length > MAX_TOTAL) return;
-        total += b.plain.length;
-        if (cur && all > SMALL && cur.len + b.plain.length > (packs.length ? CHUNK : FIRST)) { packs.push(cur); cur = null; }
+      segs.forEach((s, i) => {
+        if (total + s.plain.length > MAX_TOTAL) return;
+        total += s.plain.length;
+        if (cur && all > SMALL && cur.len + s.plain.length > (packs.length ? CHUNK : FIRST)) { packs.push(cur); cur = null; }
         if (!cur) cur = { idx: [], len: 0 };
         cur.idx.push(i);
-        cur.len += b.plain.length;
+        cur.len += s.plain.length;
       });
       if (cur) packs.push(cur);
-      const job = { key, id, lang, el: box, rich: true, whole, ready: false, blocks: bl,
-        chunks: packs.map((p) => ({ idx: p.idx, src: p.idx.map((bi, k) => `<p${k + 1}>${bl[bi].text}</p${k + 1}>`).join("\n"), state: "todo" })) };
+      const job = { key, id, lang, el: box, rich: true, whole, ready: false, blocks: bl, segs,
+        chunks: packs.map((p) => ({ idx: p.idx, src: p.idx.map((si, k) => `<p${k + 1}>${segs[si].text}</p${k + 1}>`).join("\n"), state: "todo" })) };
       jobs.set(key, job);
       (async () => {
         if (!(await classify(job, plain, plain))) return;
@@ -491,14 +511,24 @@
         if (n <= 2) jobs.delete(job.key);
         return false;
       }
-      for (const c of job.chunks) c.idx.forEach((bi, k) => {
-        const src = job.blocks[bi];
-        if (c.state === "done") {
-          const blk = R.holder(cb[bi]);
-          if (c.outs[k] == null) blk.style.display = "none"; // 这一块的译文整个放进了第一段（模型没按段回）
-          else { R.fill(blk, c.outs[k], src.parts, src.text); blk.lang = target(); }
-        } else if (c.state !== "gave_up") R.holder(cb[bi]).classList.add("ff-rtx-pending");
+      // 每一段的几截：翻好的用译文，没翻好的先用原文那一截，按顺序接上再放进这一段（切成几截的长段翻好一截露一截）
+      const per = new Map(); // 第几段 → [{seg, state, out}]
+      for (const c of job.chunks) c.idx.forEach((si, k) => {
+        const s = job.segs[si];
+        if (!per.has(s.bi)) per.set(s.bi, []);
+        per.get(s.bi).push({ s, si, state: c.state, out: c.state === "done" ? c.outs[k] : undefined });
       });
+      for (const [bi, xs] of per) {
+        const src = job.blocks[bi], done = xs.filter((x) => x.state === "done");
+        xs.sort((a, b) => a.si - b.si);
+        if (done.length) {
+          const blk = R.holder(cb[bi]);
+          if (xs.length === 1 && xs[0].out == null) { blk.style.display = "none"; continue; } // 这一块的译文整个放进了第一段（模型没按段回）
+          R.fill(blk, xs.map((x, k) => (x.state === "done" ? x.out ?? "" : x.s.text) + (k < xs.length - 1 ? x.s.sep || "" : "")).join(""), src.parts, src.text);
+          blk.lang = target();
+          if (done.length < xs.length && xs.some((x) => x.state !== "done" && x.state !== "gave_up")) blk.classList.add("ff-rtx-pending");
+        } else if (xs.some((x) => x.state !== "gave_up")) R.holder(cb[bi]).classList.add("ff-rtx-pending");
+      }
       return true;
     }
     const cleanClone = (c) => { c.removeAttribute("style"); c.removeAttribute("id"); delete c.dataset.ffTxHidden; for (const x of c.querySelectorAll("[id]")) x.removeAttribute("id"); return c; };

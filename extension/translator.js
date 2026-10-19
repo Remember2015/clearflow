@@ -393,11 +393,20 @@ export async function fillInBatch({ orKey, settings, items, cache = idbCache, si
     throw e;
   }
   const got = new Map();
-  for (const m of r.text.matchAll(/<u(\d+)>([\s\S]*?)<\/u\1>/g)) { const k = Number(m[1]) - 1; got.set(k, got.has(k) ? null : m[2]); }
-  const cost = r.cost / items.length;
+  let odd = false;
+  for (const m of r.text.matchAll(/<u(\d+)>([\s\S]*?)<\/u\1>/g)) {
+    const k = Number(m[1]) - 1;
+    if (k < 0 || k >= items.length) { odd = true; continue; }
+    got.set(k, got.has(k) ? null : m[2]);
+  }
+  // 同一个标记出现两次、或者冒出不该有的标记（0.28.7，review：一条评论能诱导模型给同批别人那条先回一段假的，流式时先到的就定了、
+  // 还进了 30 天缓存）：重复的那几条不认先给的、不进缓存，返回 null（页面那头撤掉先换上的、单独再翻）；有不该有的标记时整批都这样
+  const keep = items.map((it, k) => !odd && got.get(k) !== null && !!(early.get(k)?.text || unit(it, got.get(k))));
+  const n = keep.filter(Boolean).length;
+  const cost = n ? r.cost / n : 0; // 花费摊给回来了的几条（以前按总条数摊，少了的那几条的份没记上）
   return Promise.all(items.map(async (it, k) => {
+    if (!keep[k]) return null;
     const e = early.get(k), text = e ? e.text : unit(it, got.get(k));
-    if (!text) return null;
     const result = { action: "fill", text, model: e ? e.model : r.model, cost };
     await put(it, result);
     return { ...result, cached: false };

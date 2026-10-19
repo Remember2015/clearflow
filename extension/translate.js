@@ -214,6 +214,14 @@
     return arts.sort((x, y) => d.get(x) - d.get(y));
   }
 
+  // 评论区那边（content.js）还在判这条（0.28.7，review）：先不翻，判出来清理了就省下这笔；最多等 HOLD_MAX（Jev 卡住也不至于一直不翻）
+  const HOLD_MAX = 6000, held = new Map(); // 帖子 id → 第一次因为"还在判"跳过的时间
+  function judging(id) {
+    if ((globalThis.FFXVerdict ? globalThis.FFXVerdict(id) : null) !== "pending") { held.delete(id); return false; }
+    if (!held.has(id)) { held.set(id, Date.now()); if (held.size > 500) held.delete(held.keys().next().value); }
+    return Date.now() - held.get(id) < HOLD_MAX;
+  }
+
   // arts：首页是整个时间线，帖子页是这条对话（到"发现更多"为止）
   function tickImprove(arts) {
     if (!onImprove) return;
@@ -222,6 +230,7 @@
       const id = statusId(a), tt = a.querySelector(TEXT);
       if (!id || !tt || xState(a) !== "auto" || a.style.display === "none") continue; // 广告没有 id；没显示着 X 的译文；被评论区那边折叠了
       if (busy(jobs.get(jobKey("improve", id)), tt)) continue; // 译文变了才重做
+      if (judging(id)) continue;
       processImprove(a, id, tt);
     }
   }
@@ -260,6 +269,7 @@
       if (translatedByX(a) || thread.clicked.has(id)) continue;
       if (inflight >= MAX_INFLIGHT) break;
       if (!foreign(lang) || busy(jobs.get(jobKey("fill", id)), tt)) continue; // 展开"显示更多"后正文变了：重翻
+      if (judging(id)) continue;
       processFill(a, id, tt, lang);
     }
   }

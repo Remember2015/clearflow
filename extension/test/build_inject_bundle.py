@@ -84,6 +84,7 @@ stub = r'''
       r = { results: msg.items.map((m) => seed[`${m.id}|${m.alt ? "alt|" : ""}${m.source}`] || null) };
     }
     if (msg.type === "jev") {
+      if (window.__ffJevDelay) delay = window.__ffJevDelay; // 让 Jev 晚点回（测翻译那边等判）
       window.__ffLastJev = msg;
       (window.__ffJevAll ||= []).push(JSON.parse(JSON.stringify(msg))); // 发过的每一次（查有没有把译文当原文发出去）
       // ?jev={"文本片段":0.55}：回复里含这个片段时 benefit 给这个分，测阈值用；{"文本片段":{"promo_mention":0.85}}：指定哪一问给多少

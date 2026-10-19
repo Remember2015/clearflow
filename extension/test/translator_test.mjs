@@ -370,12 +370,19 @@ await ok("流式：两个模型都失败了整批报错，但先给了的照样�
   assert.equal(await fillCached({ settings: S, item: three[1], cache }), null);
 });
 
-await ok("流式：同一个标记出现两次，先给的定了（整段时重复的那条不要）", async () => {
-  const got = [];
-  const r = await fillInBatch({ orKey: "o", settings: S, items: three, cache: memCache(), onItem: (k, x) => got.push([k, x.text]),
-    fetchImpl: async () => sseResp([delta("<u1>一</u1><u2>二</u2><u2>又一个二</u2>"), endEv(0.00003)]) });
-  assert.deepEqual(got, [[0, "一"], [1, "二"]]);
-  assert.deepEqual(r.map((x) => x && x.text), ["一", "二", null]);
+await ok("流式：同一个标记出现两次（可能是别的条目里的字带偏了模型，0.28.7）：这一条最后不算、不进缓存，交给页面撤掉再单独翻", async () => {
+  const got = [], cache = memCache();
+  const r = await fillInBatch({ orKey: "o", settings: S, items: three, cache, onItem: (k, x) => got.push([k, x.text]),
+    fetchImpl: async () => sseResp([delta("<u1>一</u1><u2>假的二</u2><u2>二</u2>"), endEv(0.00003)]) });
+  assert.deepEqual(got, [[0, "一"], [1, "假的二"]], "流式时先给的照样先给（那时还不知道后面会重复）");
+  assert.deepEqual(r.map((x) => x && x.text), ["一", null, null], "重复的第二条、少了的第三条都不算");
+  assert.equal(cache.m.size, 1, "只有第一条进缓存");
+  assert.equal(r[0].cost, 0.00003, "花费摊给回来了的那一条");
+});
+await ok("批里冒出不该有的标记（<u9>）：整批都不认，交给页面单独再翻", async () => {
+  const r = await fillInBatch({ orKey: "o", settings: S, items: three, cache: memCache(), onItem: () => {},
+    fetchImpl: async () => sseResp([delta("<u1>一</u1><u2>二</u2><u3>三</u3><u9>多出来的</u9>"), endEv(0.00003)]) });
+  assert.deepEqual(r, [null, null, null]);
 });
 
 await ok("流式：输出到上限被截断（finish_reason length）：这份不算，重试", async () => {

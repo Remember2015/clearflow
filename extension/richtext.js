@@ -78,13 +78,18 @@
     span.append(...b.nodes);
     return span;
   }
-  // 一段转成带标记的文字。parts[N] 是 <tN> / <xN/> 对应的原来那个元素
+  // 一段转成带标记的文字。parts[N] 是 <tN> / <xN/> 对应的原来那个元素。
+  // 这一段的字按原样换行显示的（white-space: pre / pre-wrap / pre-line / break-spaces，YouTube 的评论就是：换行是字里的 \n，不是 <br>）：
+  // 字里的换行留着（0.28.7 以前一律压成空格，译文里的换行全丢了）
   function serialize(block, own = () => false) {
     const parts = [null];
+    const host = block.run ? block.nodes[0].parentElement : block;
+    const pre = !!host && /^(pre|pre-wrap|pre-line|break-spaces)$/.test(getComputedStyle(host).whiteSpace);
+    const ws = pre ? /[^\S\n]+/g : /\s+/g;
     const walk = (el) => {
       let s = "";
       for (const n of el.run ? el.nodes : el.childNodes) {
-        if (n.nodeType === 3) { s += n.nodeValue.replace(/\s+/g, " "); continue; }
+        if (n.nodeType === 3) { s += (pre ? n.nodeValue.replace(/\r\n?/g, "\n") : n.nodeValue).replace(ws, " "); continue; }
         if (n.nodeType !== 1 || SKIP.test(n.tagName) || own(n)) continue;
         if (n.tagName === "BR") { s += "\n"; continue; }
         const i = parts.length;
@@ -100,6 +105,41 @@
   // 带标记的文字 → 纯文字（<xN/> 换成它原来的字）：认语言、算长度、判断有没有字可翻用
   function plainOf(text, parts) {
     return text.replace(/<x(\d+)\/>/g, (_, i) => (parts[i] ? ` ${(parts[i].textContent || "").trim()} ` : " ")).replace(/<\/?t\d+>/g, "").replace(/ {2,}/g, " ").trim();
+  }
+
+  // 太长的一段切成几截（0.28.7，review：YouTube 一条评论就是一段，上万字的整段发过去超过后台一条 5000 字的上限，永远翻不出来）：
+  // 每截 ≤ max，只在 <tN>…</tN> 外面、不在标记中间切；先找换行，再找句末，再找空白，都没有就在能切的地方硬切。
+  // 返回 [{text, sep}]：sep 是切开处的空白（拼回去时放回两截中间）
+  function pieces(text, max) {
+    if (text.length <= max) return [{ text, sep: "" }];
+    const ok = new Uint8Array(text.length + 1).fill(1); // ok[p]：在 p 前面切开不会切进标记、也不在 <tN>…</tN> 里面
+    let depth = 0, from = 0;
+    for (const m of text.matchAll(/<(\/?)t\d+>|<x\d+\/>/g)) {
+      if (depth > 0) ok.fill(0, from, m.index + 1);
+      ok.fill(0, m.index + 1, m.index + m[0].length);
+      if (m[0][1] === "t") depth++; else if (m[0][1] === "/") depth--;
+      from = m.index + m[0].length;
+    }
+    if (depth > 0) ok.fill(0, from);
+    const out = [];
+    let a = 0;
+    while (text.length - a > max) {
+      const lo = a + Math.floor(max / 2), hi = a + max;
+      const pick = (test) => { for (let p = hi; p > lo; p--) if (ok[p] && test(p)) return p; return -1; };
+      let cut = pick((p) => text[p - 1] === "\n");
+      if (cut < 0) cut = pick((p) => /[。！？]/.test(text[p - 1]) || (/[.!?…]/.test(text[p - 1]) && /\s/.test(text[p])));
+      if (cut < 0) cut = pick((p) => /\s/.test(text[p]));
+      if (cut < 0) cut = pick(() => true);
+      if (cut < 0) for (let p = hi + 1; p < text.length; p++) if (ok[p]) { cut = p; break; } // 这一截全在一个链接里：切在它后面
+      if (cut < 0) break;
+      let e = cut, b = cut;
+      while (e > a && /\s/.test(text[e - 1])) e--;
+      while (b < text.length && /\s/.test(text[b])) b++;
+      out.push({ text: text.slice(a, e), sep: text.slice(e, b) });
+      a = b;
+    }
+    out.push({ text: text.slice(a), sep: "" });
+    return out.filter((x) => x.text);
   }
 
   // ---------- 读模型的输出 ----------
@@ -168,5 +208,5 @@
     blockEl.replaceChildren(frag);
     return ok;
   }
-  globalThis.FFRich = Object.freeze({ blocks, holder, serialize, plainOf, splitParas, tokens, fill });
+  globalThis.FFRich = Object.freeze({ blocks, holder, serialize, plainOf, pieces, splitParas, tokens, fill });
 })();

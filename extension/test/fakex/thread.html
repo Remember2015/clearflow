@@ -76,6 +76,6 @@ window.__expand = (id) => {
   a.querySelector('[data-testid="tweet-text-show-more-link"]').remove();
   fill(a, a.dataset.mode);
 };
-history.replaceState({}, "", "/thread_op/status/" + (q.get("focal") || "3001"));
+history.replaceState({}, "", "/thread_op/status/" + (q.get("focal") || "3001") + location.search); // 留着 ?jev=…（替身 Jev 读它）
 const sc = document.createElement("script"); sc.src = "/inject_bundle.js"; document.body.appendChild(sc);
 </script></body></html>
