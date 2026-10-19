@@ -357,7 +357,8 @@ export async function fillInBatch({ orKey, settings, items, cache = idbCache, si
   }));
 }
 
-// item: {id, source, xText, srcLang, target}；返回 {action: "keep" | "replace", text?, model?, weak?（Grok 哪一问最差）, grok, ours?, cost, jevTokens, cached}
+// item: {id, source, xText, srcLang, target}；返回 {action: "keep" | "replace", text?, model?, weak?（Grok 哪一问最差）, grok, ours?,
+// retried?（换另一个模型又翻了一次）, cost, jevTokens, cached}
 export async function improve({ jevKey, orKey, settings, item, cache = idbCache, signal, fetchImpl }) {
   const key = await sha256(JSON.stringify([TRANSLATOR_VERSION, item.id, item.source, item.xText, item.target || "zh", settings.translateModel,
     settings.translateThreshold, settings.translateMargin]));
@@ -371,14 +372,26 @@ export async function improve({ jevKey, orKey, settings, item, cache = idbCache,
   if (grok.min >= settings.translateThreshold) {
     result = { action: "keep", grok: grok.scores, grokMin: grok.min, cost: 0, jevTokens: grok.tokens };
   } else {
-    const ours = await translate(orKey, settings, item, { signal, fetchImpl });
-    const judged = await judge(jevKey, { source: item.source, translation: ours.text, srcLang: item.srcLang, target: item.target }, jevOpts);
+    let pick = await translate(orKey, settings, item, { signal, fetchImpl });
+    let judged = await judge(jevKey, { source: item.source, translation: pick.text, srcLang: item.srcLang, target: item.target }, jevOpts);
+    let cost = pick.cost || 0, jevTokens = grok.tokens + judged.tokens, retried = false;
+    // 重译的反倒比 Grok 还差：换另一个模型（主模型 / 后备模型里没用过的那个）再翻一次，两份里取分高的（0.28.3，用户 10-18：
+    // 同一条韩文帖子 Luna 两次翻出来一次 0.40、一次 0.61，Grok 0.53。translate_eval 的数据上重译的 31 条里有 2 条比 Grok 还差，
+    // DeepSeek 再翻救回 1 条）。只有这种时候多花一次翻译和一次判分；再翻出错就用第一份
+    const other = [settings.translateModel, settings.translateFallback].find((m) => m && m !== pick.model);
+    if (judged.min < grok.min && other) {
+      try {
+        const again = await translate(orKey, { ...settings, translateModel: other, translateFallback: null }, item, { signal, fetchImpl });
+        const j2 = await judge(jevKey, { source: item.source, translation: again.text, srcLang: item.srcLang, target: item.target }, jevOpts);
+        cost += again.cost || 0; jevTokens += j2.tokens; retried = true;
+        if (j2.min > judged.min) { pick = again; judged = j2; }
+      } catch (e) { if (signal?.aborted) throw e; }
+    }
     const weakest = Object.entries(grok.scores).sort((a, b) => a[1] - b[1])[0][0];
     const better = judged.min - grok.min >= settings.translateMargin - 1e-9; // 0.75 − 0.65 在浮点里比 0.1 小一点
     result = {
-      action: better ? "replace" : "keep", tried: true, text: better ? ours.text : undefined, model: ours.model,
-      weak: weakest, grok: grok.scores, grokMin: grok.min, ours: judged.scores, oursMin: judged.min,
-      cost: ours.cost, jevTokens: grok.tokens + judged.tokens,
+      action: better ? "replace" : "keep", tried: true, retried, text: better ? pick.text : undefined, model: pick.model,
+      weak: weakest, grok: grok.scores, grokMin: grok.min, ours: judged.scores, oursMin: judged.min, cost, jevTokens,
     };
   }
   try { await cache.put(key, result, capOf(settings)); } catch { /* 写不进缓存也照样返回 */ }

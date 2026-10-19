@@ -57,6 +57,36 @@ await ok("重译分数没高出 margin：不换", async () => {
   assert.equal(r.action, "keep"); assert.equal(r.tried, true); assert.equal(r.text, undefined);
 });
 
+// 0.28.3：重译的反倒比 Grok 还差，换另一个模型再翻一次、两份里取分高的
+await ok("重译的比 Grok 还差：换后备模型再翻一次，后备的够好就换上它", async () => {
+  const luna = "翻差了的译文", ds = "后备模型翻得好的译文";
+  const net = fakeNet({ judgeScores: (t) => (t === item.xText ? { faithful: 0.62, complete: 0.8, natural: 0.7 } : t === luna ? { faithful: 0.5, complete: 0.8, natural: 0.7 } : good),
+    orPlan: (body) => (body.model === S.translateModel ? luna : ds) });
+  const r = await improve({ jevKey: "j", orKey: "o", settings: S, item, cache: memCache(), fetchImpl: net.fetchImpl });
+  assert.equal(r.action, "replace"); assert.equal(r.text, ds); assert.equal(r.model, S.translateFallback); assert.equal(r.retried, true);
+  assert.deepEqual(net.calls.or.map((b) => b.model), [S.translateModel, S.translateFallback]);
+  assert.equal(net.calls.jev.length, 3); assert.ok(Math.abs(r.cost - 0.00008) < 1e-12, String(r.cost));
+});
+await ok("重译的比 Grok 还差、后备的也不行：不换（两份里取分高的那份记下）", async () => {
+  const luna = "翻差了的译文", ds = "也翻差了的译文";
+  const net = fakeNet({ judgeScores: (t) => (t === item.xText ? { faithful: 0.62, complete: 0.8, natural: 0.7 } : t === luna ? { faithful: 0.4, complete: 0.8, natural: 0.7 } : { faithful: 0.55, complete: 0.8, natural: 0.7 }),
+    orPlan: (body) => (body.model === S.translateModel ? luna : ds) });
+  const r = await improve({ jevKey: "j", orKey: "o", settings: S, item, cache: memCache(), fetchImpl: net.fetchImpl });
+  assert.equal(r.action, "keep"); assert.equal(r.retried, true); assert.equal(r.oursMin, 0.55); assert.equal(r.model, S.translateFallback);
+});
+await ok("重译的比 Grok 好、只是没高出 margin：不再翻", async () => {
+  const net = fakeNet({ judgeScores: (t) => (t === item.xText ? { ...bad, faithful: 0.62 } : { faithful: 0.65, complete: 0.9, natural: 0.9 }), orPlan: () => "差不多的译文" });
+  const r = await improve({ jevKey: "j", orKey: "o", settings: S, item, cache: memCache(), fetchImpl: net.fetchImpl });
+  assert.equal(r.action, "keep"); assert.equal(r.retried, false); assert.equal(net.calls.or.length, 1);
+});
+await ok("再翻那一次出错：照第一份判，不报错", async () => {
+  const luna = "翻差了的译文";
+  const net = fakeNet({ judgeScores: (t) => (t === item.xText ? { faithful: 0.62, complete: 0.8, natural: 0.7 } : { faithful: 0.5, complete: 0.8, natural: 0.7 }),
+    orPlan: (body) => (body.model === S.translateModel ? luna : json({ error: { message: "bad request" } }, 400)) });
+  const r = await improve({ jevKey: "j", orKey: "o", settings: S, item, cache: memCache(), fetchImpl: net.fetchImpl });
+  assert.equal(r.action, "keep"); assert.equal(r.retried, false); assert.equal(r.oursMin, 0.5);
+});
+
 await ok("主模型 400（思考关不掉之类）：换后备模型", async () => {
   const net = fakeNet({ judgeScores: (t) => (t === item.xText ? bad : good),
     orPlan: (body) => (body.model === "openai/gpt-6-luna" ? json({ error: { message: "Reasoning is mandatory" } }, 400) : "后备的译文") });

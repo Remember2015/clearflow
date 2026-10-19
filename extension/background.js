@@ -62,6 +62,8 @@ export async function migrateSettings() {
     }
     Object.assign(ff_settings, { sites, enabled: true, translate: true });
   }
+  // 0.28.3（rev 5）替换要求的分差默认 0.1 → 0.05：存着的 0.1 就是旧默认值（设置页保存时整份写进去的），换掉；自己调过的不动
+  if ((ff_settings.rev || 1) < 5 && ff_settings.translateMargin === 0.1) ff_settings.translateMargin = DEFAULTS.translateMargin;
   ff_settings.rev = DEFAULTS.rev;
   await chrome.storage.local.set({ ff_settings });
 }
@@ -450,7 +452,7 @@ async function handleTranslate(msg, site = null) {
       item: { id: msg.id, source: msg.source, xText: msg.xText, srcLang: msg.srcLang, target: msg.target || "zh" } });
     if (r.cached) bump({ tx_cached: 1 }).catch(() => {});
     else {
-      bump({ tx_judged: 1, tx_retranslated: r.tried ? 1 : 0, tx_replaced: r.action === "replace" ? 1 : 0,
+      bump({ tx_judged: 1, tx_retranslated: r.tried ? 1 : 0, tx_retried: r.retried ? 1 : 0, tx_replaced: r.action === "replace" ? 1 : 0,
         tx_usd: r.cost || 0, tx_jev_tokens: r.jevTokens || 0 }).catch(() => {});
       health("jev", null).catch(() => {});
       if (r.tried) health("or", null).catch(() => {});

@@ -152,7 +152,7 @@ async function foldPage(browser, q, shot) {
           if (r.over > 0 || r.bad.length) misfit.push(`${l} 设置页: ${r.over > 0 ? `宽出 ${r.over}px ` : ""}${r.bad.join(", ")}`);
           // 网站页（0.20）：Reddit 那一页有单独设置的提示，放不放得下
           await page.evaluate(async () => { const { ff_settings = {} } = await chrome.storage.local.get("ff_settings");
-            await chrome.storage.local.set({ ff_settings: { ...ff_settings, rev: 4, sites: { reddit: { threshold: 0.5, dup: false } } } }); });
+            await chrome.storage.local.set({ ff_settings: { ...ff_settings, rev: 5, sites: { reddit: { threshold: 0.5, dup: false } } } }); });
           await page.goto(`chrome-extension://${id}/options.html?uilang=${l}#site=reddit`, { waitUntil: "load" });
           await page.waitForSelector("#siteFold", { timeout: 4000 }).catch(() => {});
           await wait(250);

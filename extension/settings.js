@@ -2,13 +2,15 @@
 (function () {
   // enabled、translate：0.20 以前是弹窗上的总开关（暂停、翻译增强），0.20 起界面上没有了，开关在各个网站里（下面的 sites）；
   // 这两个照旧留着、默认开，升级时关着的折进每个网站（background.js 的 migrate）
-  const DEFAULTS = Object.freeze({ rev: 4, enabled: true, useJev: true, m1: true, dup: true, abuse: true, sexual: true,
+  const DEFAULTS = Object.freeze({ rev: 5, enabled: true, useJev: true, m1: true, dup: true, abuse: true, sexual: true,
     threshold: 0.6, recThreshold: 0.9, abuseThreshold: 0.7, sexualThreshold: 0.6,
     // m1MaxLen：M1 的长度上限，按汉字当量算（rules.js 的 units：大约 4 个字母算一个字）；0.15.3 以前按字符数、默认 15
     m1MaxLen: 10, bannerRatio: 0.5, cacheMB: 50, txCacheMB: 50, // 本地缓存上限（MB）：过滤结果（Jev）、译文分开算
     // 翻译增强：X 自带（Grok）的译文 Jev 判下来三问最低分低于 translateThreshold 才重译；
-    // 重译的分要比 Grok 的至少高 translateMargin 才换上。translateFill：帖子页补翻作者自己没被翻译的回复。模型调用时不开思考（见 translator.js）
-    translate: true, translateFill: true, translateThreshold: 0.7, translateMargin: 0.1,
+    // 重译的分要比 Grok 的至少高 translateMargin 才换上（0.28.3 起 0.05，以前 0.1：用户 10-18 报一条韩文帖子 Grok 翻得不好、插件没换——
+    // 重译的只高 0.08。translate_eval 的数据上 0.1 → 0.05：中文 64 条换上 20 → 24、英文 157 条 40 → 55，整批分数不降）。
+    // translateFill：帖子页补翻作者自己没被翻译的回复。模型调用时不开思考（见 translator.js）
+    translate: true, translateFill: true, translateThreshold: 0.7, translateMargin: 0.05,
     translateModel: "openai/gpt-6-luna", translateFallback: "deepseek/deepseek-v4.1-flash",
     // images：回复里的图片也交给 Jev 一起判（0.18 起，默认关；打开时要用户给 IMAGE_ORIGINS 这几个图片网站的读取权限）
     images: false,

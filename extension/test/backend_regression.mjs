@@ -15,7 +15,7 @@ const msg = (id = "1", post = "原帖") => ({ type: "jev", postId: "P1", post, a
 const settle = () => new Promise((r) => setImmediate(r));
 
 function backend({ fetchImpl, failWrite, initial = {} } = {}) {
-  const store = { ff_key: "fake-key", ff_settings: { rev: 4, enabled: true, useJev: true, cacheMB: 50 }, ...initial };
+  const store = { ff_key: "fake-key", ff_settings: { rev: 5, enabled: true, useJev: true, cacheMB: 50 }, ...initial };
   const records = new Map(), changes = [];
   let listener, calls = 0, writes = 0;
   const chrome = {
@@ -144,7 +144,7 @@ test("disabled or missing-key requests never enter the network", async () => {
 });
 
 test("a site with hiding turned off (0.20 sites.<id>.fold) never enters the network; other sites still work", async () => {
-  const h = backend({ initial: { ff_settings: { rev: 4, useJev: true, cacheMB: 50, sites: { reddit: { fold: false } } } } });
+  const h = backend({ initial: { ff_settings: { rev: 5, useJev: true, cacheMB: 50, sites: { reddit: { fold: false } } } } });
   assert.equal((await h.call(msg("1"), { url: "https://www.reddit.com/r/a/comments/b/c/" })).code, "disabled");
   assert.equal(h.calls, 0);
   const r = await h.call(msg("2"), { url: "https://x.com/a/status/1" });

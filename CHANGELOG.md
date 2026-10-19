@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.28.3 — 2026-10-19
+
+- X translation: ClearFlow's retranslation now replaces X's automatic translation when it scores at least 0.05 higher (was 0.1; existing default settings are migrated, custom values are kept). If the retranslation scores even lower than X's, the other model (the fallback, DeepSeek V4.1 Flash by default) translates it once more and the better of the two is used.
+
 ## 0.28.2 — 2026-10-18
 
 - With a Japanese interface, short all-kanji text that the browser can't identify is now treated as Chinese and translated (any kana means Japanese). Before, it was labeled Chinese but never translated.
