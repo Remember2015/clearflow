@@ -3,6 +3,8 @@
 // ② 选了"自动翻译 → 中文（简体）"、视频有人工的繁体中文字幕：换成它（转成简体，按它自己的时间），不判、不重翻。
 // ③ 没有人工中文字幕（?nohuman）、Jev 判 YouTube 的机翻差（替身给 0.4）：原文整段交给模型重翻，按原文的时间显示我们的译文；眼前这段走标准通道。
 // ④ 判下来不差（?capjudge=0.9）：照旧用 YouTube 的，不重翻。
+// ⑤ 拖进度（用户 10-19："播放器可以调进度"）：400 行的长视频（?long），翻好开头那段以后拖到 100 秒——那一段（80–119 行）走标准通道去翻，翻好后显示我们的。
+// ⑥ 一路拖过去（250、290、330 秒每 80 毫秒一下，停在 370 秒）：路过的那几段（240、280、320 行开头的）不翻，只翻停下来的那一段（360–399 行）。
 // 用法：node test/yt_captions_headless.cjs <装了 puppeteer-core 的目录> [http://localhost:8767]（run_all.mjs 会起服务）
 const path = require("path");
 const puppeteer = require(path.resolve(process.argv[2] || path.join(__dirname, "../../ui"), "node_modules/puppeteer-core"));
@@ -77,6 +79,29 @@ const at = (list, step, t) => { const i = Math.floor(t / step), r = t - i * step
     s = await sample(pg, (t) => at(MT, 1.5, t));
     const m4 = await pg.evaluate(() => window.__ffCapMsgs || []);
     ok("④ 判下来不差：照旧用 YouTube 的、不重翻、没有 ✦", s.text === s.want && !s.mark && m4.some((m) => m.type === "captionJudge") && !m4.some((m) => m.type === "captionTranslate"), JSON.stringify({ s, m4: m4.map((m) => m.type) }));
+    await pg.close();
+    // ⑤ ⑥
+    const LONG = (k) => `Line ${k} of the long synthetic talk.`;
+    const longAt = (t) => { const k = Math.floor(t), r = t - k; return r > 0.3 && r < 0.7 && k < 400 ? "【替身字幕】" + LONG(k) : undefined; };
+    const chunks = (ms) => ms.filter((m) => m.type === "captionTranslate").map((m) => [Number(m.lines[0].match(/Line (\d+)/)[1]), m.flex]);
+    pg = await open("?long");
+    await wait(600);
+    await pg.evaluate(() => window.__setTrack("en", "zh-Hans"));
+    await wait(2500);
+    s = await sample(pg, longAt);
+    ok("⑤ 长视频：开头那段翻好了、显示我们的", s.text === s.want, JSON.stringify({ s, chunks: chunks(await pg.evaluate(() => window.__ffCapMsgs || [])) }));
+    await pg.evaluate(() => window.__seek(100.4));
+    await wait(1500);
+    s = await sample(pg, longAt);
+    let c5 = chunks(await pg.evaluate(() => window.__ffCapMsgs || []));
+    ok("⑤ 拖到 100 秒：那一段（80–119 行）走标准通道翻，显示跟上", s.text === s.want && s.t > 100 && c5.some(([k, flex]) => k === 80 && flex === false), JSON.stringify({ s, c5 }));
+    const before = c5.length;
+    for (const x of [250.2, 290.2, 330.2, 370.2]) { await pg.evaluate((x) => window.__seek(x), x); await wait(80); }
+    await wait(1500);
+    s = await sample(pg, longAt);
+    const c6 = chunks(await pg.evaluate(() => window.__ffCapMsgs || [])).slice(before);
+    ok("⑥ 一路拖过去：路过的那几段不翻，只翻停下来的那段（360–399 行，标准通道），显示跟上", s.text === s.want && s.t > 370 && c6.some(([k, flex]) => k === 360 && flex === false) && !c6.some(([k]) => [240, 280, 320].includes(k)),
+      JSON.stringify({ s, c6 }));
     await pg.close();
   } catch (e) {
     out.push(`FAIL 出错 ${e.stack || e}`);

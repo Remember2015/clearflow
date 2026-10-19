@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.29.1 — 2026-10-19
+
+- YouTube captions: when you drag through the video, ClearFlow waits until you stop before retranslating, and translates only the part where you stopped (it used to translate every part you dragged past). Captions keep up with where you are.
+
 ## 0.29.0 — 2026-10-19
 
 - YouTube captions. If you pick Traditional Chinese captions and YouTube's interface is in Simplified Chinese, they're shown in Simplified characters, with Taiwan and Hong Kong wording changed to mainland wording (done locally, using OpenCC's dictionaries). If you pick YouTube's auto-translated captions: when you want Simplified Chinese and the video has human Chinese captions, those are used instead; otherwise TypeSafe checks YouTube's translation and, if it's poor, ClearFlow retranslates the captions as you watch, a sentence-aware chunk at a time. A small ✦ after the captions lets you switch back to YouTube's. Both can be turned off under YouTube → Advanced in Settings.

@@ -1129,7 +1129,9 @@ yt_shorts = ypage("Synthetic short - YouTube", "/shorts/SHORTSVID01",
 # yt/captions.html → /watch?v=CAPSVID0001（0.29.0，字幕）：仿播放器——#movie_player 上有 getOption("captions","track") / getPlayerResponse()，
 #   window.__setTrack(语言, 翻成的语言) 换字幕：照真 YouTube 用 XHR 请求 /api/timedtext?…&pot=…&fmt=json3（测试服务按 lang、tlang 给 yt/timedtext/ 下的文件），
 #   再按 <video> 的时间把那一行画进 .ytp-caption-window-container（一行一个 .ytp-caption-segment，换一行就整块重画）；<video> 接一个画布的流，时间真的在走。
-#   字幕：en 原文 6 行（每行 1.5 秒）、en.zh-Hans 是 YouTube 一行一行的机翻、zh-TW 人工繁体 4 行（每行 2.25 秒，带台湾用词）。?nohuman：没有 zh-TW 那条。全是合成文字。
+#   字幕：en 原文 6 行（每行 1.5 秒）、en.zh-Hans 是 YouTube 一行一行的机翻、zh-TW 人工繁体 4 行（每行 2.25 秒，带台湾用词）。?nohuman：没有 zh-TW 那条。
+#   ?long：一个 400 行（每行 1 秒）的长视频，只有 en（timedtext/long/）——测拖进度。全是合成文字。
+#   视频的时间是假的钟（video.currentTime 换成页面自己的），照真播放器走、能拖：window.__seek(秒) 照真的顺序发 seeking → timeupdate → seeked。
 CAP_EN = ["The researchers set out to measure", "how long people can stay focused", "on a single computer program", "before switching to another one.", "The answer they found was", "about forty seconds on average."]
 CAP_MT = ["研究人员开始测量", "人们能够保持专注多久", "在单个计算机程序上", "在切换到另一个之前。", "他们找到的答案是", "平均约四十秒。"]
 CAP_TW = ["這些研究人員想測量大家", "在一個軟體上能專心多久", "才會切換到別的程式和影片。", "答案是平均大約四十秒。"]
@@ -1138,17 +1140,27 @@ def timedtext(lines, step):
 os.makedirs(os.path.join(HERE, "fakex", "yt", "timedtext"), exist_ok=True)
 for name, lines, step in [("en", CAP_EN, 1.5), ("en.zh-Hans", CAP_MT, 1.5), ("zh-TW", CAP_TW, 2.25)]:
     open(os.path.join(HERE, "fakex", "yt", "timedtext", name + ".json"), "w", encoding="utf-8").write(_json.dumps(timedtext(lines, step), ensure_ascii=False))
+os.makedirs(os.path.join(HERE, "fakex", "yt", "timedtext", "long"), exist_ok=True)
+for name, lines in [("en", [f"Line {k} of the long synthetic talk." for k in range(400)]), ("en.zh-Hans", [f"长篇合成演讲的第 {k} 行。" for k in range(400)])]:
+    open(os.path.join(HERE, "fakex", "yt", "timedtext", "long", name + ".json"), "w", encoding="utf-8").write(_json.dumps(timedtext(lines, 1), ensure_ascii=False))
 cap_player = """<script>
 (() => {
   const q = new URLSearchParams(location.search), P = document.getElementById("movie_player"), V = P.querySelector("video"), box = P.querySelector(".ytp-caption-window-container");
-  const TRACKS = [{ languageCode: "en", kind: "" }, ...(q.has("nohuman") ? [] : [{ languageCode: "zh-TW", kind: "" }])];
+  const TRACKS = [{ languageCode: "en", kind: "" }, ...(q.has("nohuman") || q.has("long") ? [] : [{ languageCode: "zh-TW", kind: "" }])];
+  // 假的钟：照真播放器走，能拖
+  let T = 0, seeking = false;
+  Object.defineProperty(V, "currentTime", { configurable: true, get: () => T, set: (x) => window.__seek(x) });
+  Object.defineProperty(V, "seeking", { configurable: true, get: () => seeking });
+  setInterval(() => { if (!seeking) T += 0.05; }, 50);
+  setInterval(() => V.dispatchEvent(new Event("timeupdate")), 250);
+  window.__seek = (x) => { seeking = true; V.dispatchEvent(new Event("seeking")); T = x; V.dispatchEvent(new Event("timeupdate")); setTimeout(() => { seeking = false; V.dispatchEvent(new Event("seeked")); }, 20); };
   let cur = null, cues = [], shown = -2;
   P.getOption = (m, k) => (m === "captions" && k === "track" ? (cur || {}) : null);
   P.getPlayerResponse = () => ({ videoDetails: { videoId: "CAPSVID0001" }, captions: { playerCaptionsTracklistRenderer: { captionTracks: TRACKS } } });
   window.__setTrack = (lang, tlang) => {
     cur = { languageCode: lang, kind: "", ...(tlang ? { translationLanguage: { languageCode: tlang } } : {}) };
     const x = new XMLHttpRequest();
-    x.open("GET", `/api/timedtext?v=CAPSVID0001&lang=${lang}${tlang ? `&tlang=${tlang}` : ""}&pot=fakepot&fmt=json3`);
+    x.open("GET", `/api/timedtext?v=CAPSVID0001&lang=${lang}${tlang ? `&tlang=${tlang}` : ""}${q.has("long") ? "&set=long" : ""}&pot=fakepot&fmt=json3`);
     x.onload = () => { cues = JSON.parse(x.responseText).events.map((e) => ({ t: e.tStartMs / 1000, d: e.dDurationMs / 1000, text: e.segs.map((s) => s.utf8).join("") })); shown = -2; };
     x.send();
   };
@@ -1159,9 +1171,6 @@ cap_player = """<script>
     shown = i;
     box.innerHTML = i < 0 ? "" : `<div class="caption-window ytp-caption-window-bottom"><span class="captions-text">${cues[i].text.split("\\n").map((l) => `<span class="caption-visual-line"><span class="ytp-caption-segment">${esc(l)}</span></span>`).join("")}</span></div>`;
   }, 50);
-  const c = document.createElement("canvas"); c.width = 16; c.height = 9;
-  setInterval(() => { const g = c.getContext("2d"); g.fillStyle = `hsl(${Date.now() % 360},50%,50%)`; g.fillRect(0, 0, 16, 9); }, 100);
-  V.muted = true; V.srcObject = c.captureStream(10); V.play().catch(() => {});
 })();
 </script>"""
 yt_captions = ypage("Synthetic captions - YouTube", f"/watch?v=CAPSVID0001",

@@ -23,6 +23,10 @@
   const HANT = /^zh-(tw|hk|mo|hant)\b/i, HANS = /^zh(-(cn|sg|my|hans)\b.*)?$/i, ZH = /^zh\b/i;
   const schemeOf = (lang) => (/^zh-(hk|mo)\b/i.test(lang) ? "hk2sp" : /^zh-tw\b/i.test(lang) ? "tw2sp" : "t2s");
   const CHUNK = 40, SAMPLE = 40, AHEAD = 20; // 一段几行；判 YouTube 的译文用前面几行；离已经翻好的结尾还剩几行时去翻下一段
+  // 拖进度（0.29.0，用户 10-19："播放器可以调进度"）：拖的过程中时间一路在变，路过的每一段都去翻就白花钱了——停下来 SETTLE 毫秒不再拖了才翻
+  // 停在的那一段；显示不用等（每次重画、每次时间变了都按现在的时间找那一行，没翻好的那几行先用 YouTube 的）
+  const SETTLE = 600;
+  let lastSeek = 0, settleTimer = 0;
   const SPARK = '<path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4z"/>';
 
   let st = null, hasKey = false, hasOrKey = false;
@@ -101,6 +105,8 @@
   function ensureAhead() {
     const m = mode;
     if (!m || m.why !== "fixed" || m.failed) return;
+    const v = video();
+    if ((v && v.seeking) || Date.now() - lastSeek < SETTLE) return; // 还在拖：等停下来（seeked 以后 SETTLE 再来）
     const i = Math.max(0, cueIndex(m.cues, now()));
     const want = [Math.floor(i / CHUNK)];
     if ((i % CHUNK) >= CHUNK - AHEAD) want.push(want[0] + 1);
@@ -197,6 +203,15 @@
     if (!mode || mode.kind !== "replace" || !(e.target instanceof HTMLMediaElement) || !e.target.closest("#movie_player")) return;
     scheduleRender();
     ensureAhead();
+  }, true);
+  // 拖进度：每一下都记时间；停下来以后（最后一下 seeked 过了 SETTLE）翻停在的那一段
+  for (const type of ["seeking", "seeked"]) document.addEventListener(type, (e) => {
+    if (!(e.target instanceof HTMLMediaElement) || !e.target.closest("#movie_player")) return;
+    lastSeek = Date.now();
+    if (!mode) return;
+    scheduleRender();
+    clearTimeout(settleTimer);
+    settleTimer = setTimeout(() => { if (alive()) { ensureAhead(); scheduleRender(); } }, SETTLE + 30);
   }, true);
 
   // ---------- 设置 ----------

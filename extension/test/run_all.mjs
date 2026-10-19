@@ -32,7 +32,7 @@ function serve(root, port) {
     let p = decodeURIComponent(new URL(req.url, "http://x").pathname);
     if (p === "/api/timedtext") { // 仿 YouTube 的字幕接口（yt_captions_headless）：按 lang、tlang 给 fakex/yt/timedtext/ 下的文件
       const q = new URL(req.url, "http://x").searchParams;
-      p = `/fakex/yt/timedtext/${(q.get("lang") || "").replace(/[^\w-]/g, "")}${q.get("tlang") ? "." + q.get("tlang").replace(/[^\w-]/g, "") : ""}.json`;
+      p = `/fakex/yt/timedtext/${q.get("set") ? q.get("set").replace(/[^\w-]/g, "") + "/" : ""}${(q.get("lang") || "").replace(/[^\w-]/g, "")}${q.get("tlang") ? "." + q.get("tlang").replace(/[^\w-]/g, "") : ""}.json`;
     }
     let file = path.join(root, p);
     if (!file.startsWith(root)) { res.writeHead(403).end(); return; }
