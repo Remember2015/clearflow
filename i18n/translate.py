@@ -35,6 +35,7 @@ KEEP = ["ClearFlow", "Reddit", "Hacker News", "YouTube", "Jev", "Grok", "OpenRou
 PH = re.compile(r"\{(\w+)\}")
 SAME = {"app.name": "manifest.title"}  # 键 → 照抄哪个键的译文
 CJK = re.compile(r"[一-鿿]")
+KANA = re.compile(r"[\u3040-\u30ff]")
 WIDE = re.compile(r"[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]")  # 中日韩：一个字差不多两个拉丁字母宽
 
 
@@ -82,6 +83,8 @@ def problems(code, chunk, out, en):
             errs.append(f"{k}: keep the leading \"　·\"")
         if code not in ("zh-TW", "ja") and CJK.search(v):
             errs.append(f"{k}: contains Chinese characters; write it in the target language")
+        if code == "ja" and len(CJK.findall(v)) >= 6 and not KANA.search(v):  # 0.29.0 的字幕那几条照抄了中文：一长串汉字、没有一个假名
+            errs.append(f"{k}: looks like Chinese (no kana at all); write it in Japanese")
         if k.startswith(SHORT) and letters(v) > SHORT_MAX:
             errs.append(f"{k}: \"{v}\" is {letters(v)} letters; this short label must be at most about {SHORT_MAX}")
     return errs  # 简介的长度单独处理（见 shorten）：混在一大块里模型改不动

@@ -309,7 +309,8 @@ LINK = ('<a href="https://t.co/fakelink1" target="_blank" rel="noopener noreferr
         'example.com/launch-n<span style="font-size:0">otes</span><span aria-hidden="true">…</span></a>')
 MENTION = '<a href="/openai_test">@openai_test</a>'
 EMOJI = '<img alt="🎉" draggable="false" src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" style="width:1.2em;height:1.2em">'
-TAGS = '<a href="/hashtag/AI?src=hashtag_click">#AI</a> <a href="/search?q=%24NVDA&amp;src=cashtag_click">$NVDA</a>'
+TAGS = ('<a href="/hashtag/BigUpdate?src=hashtag_click">#BigUpdate</a> <a href="/hashtag/AI?src=hashtag_click">#AI</a> '
+        '<a href="/search?q=%24NVDA&amp;src=cashtag_click">$NVDA</a>')
 TX = {
     "1001": {"orig": "Why is it so hard to hire good people? Because the good ones are not for hire!",
              "tr": "为什么雇佣好人这么难？因为好人不是雇佣兵！"},

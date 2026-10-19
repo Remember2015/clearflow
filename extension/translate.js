@@ -176,6 +176,7 @@
         ({ source, srcLang } = orig);
       }
       if (!source || source === xText || source.length > MAX_LEN || xText.length > MAX_LEN) { job.state = "skip"; return; }
+      job.tags = tagsOf(source);
       finish(key, job, await send({ type: "translate", id, source, xText, srcLang, target: target() }));
     } finally {
       inflight--;
@@ -203,6 +204,7 @@
         } else truncated = true; // 点开了还是一截：只好翻露出来的这截
       }
       if (!/\p{L}/u.test(source) || source.length > MAX_LEN) { job.state = "skip"; return; }
+      job.tags = tagsOf(source);
       const ar = a.getBoundingClientRect(), shown = ar.bottom > 0 && ar.top < (innerHeight || 800); // 不在屏幕上的走 flex（见 translator.js）
       finish(key, job, await send({ type: "translateFill", id, source, srcLang: lang, truncated, target: target(), flex: !shown }));
     } finally {
@@ -318,25 +320,45 @@
     if (text != null) e.textContent = text;
     return e;
   }
-  // 我们的译文转成节点：链接、@账号、#话题、$代码能点（不用 innerHTML，模型输出当纯文字处理）
-  function linkified(text, hrefs) {
+  // 我们的译文转成节点：链接、@账号、#话题、$代码能点（不用 innerHTML，模型输出当纯文字处理）。
+  // #话题 的字和 X 认的一样（twitter-text：字母、附加符号、数字、下划线和几个连接符，全角＃也算，光是数字不算）
+  const TOKEN_RE = /(https?:\/\/[^\s<>"“”'‘’（）()]+|(?<![\w@])@[A-Za-z0-9_]{1,15}|(?<![\w#＃&])[#＃][\p{L}\p{M}\p{N}_‌‍꙾־׳״～〜゛゜゠・〃་༌·]+|(?<![\w$])\$[A-Za-z]{1,6}\b)/gu;
+  const isTag = (tok) => (tok[0] === "#" || tok[0] === "＃") && /[\p{L}\p{M}]/u.test(tok);
+  const tagsOf = (text) => [...String(text || "").matchAll(TOKEN_RE)].map((m) => m[0]).filter(isTag);
+  // 译文里的 #话题 点了要搜原文的那个话题，不是译出来的字（0.29.3，用户报：日文帖子 #アリ… 译成 #蚂蚁…，点了搜的是中文、搜不到这条）。
+  // 原样留着的（不分大小写）直接对上；剩下的按先后一一对上；剩下的个数对不上就不知道哪个是哪个，只显示字、不做成链接
+  function tagTargets(mine, orig) {
+    const key = (s) => s.slice(1).toLowerCase(), used = new Set(), out = mine.map(() => null);
+    mine.forEach((t, i) => { const j = orig.findIndex((o, j) => !used.has(j) && key(o) === key(t)); if (j >= 0) { used.add(j); out[i] = orig[j]; } });
+    const restMine = out.flatMap((o, i) => (o ? [] : [i])), restOrig = orig.filter((_, j) => !used.has(j));
+    if (restMine.length === restOrig.length) restMine.forEach((i, n) => { out[i] = restOrig[n]; });
+    return out;
+  }
+  function linkified(text, hrefs, tags) {
     const frag = document.createDocumentFragment();
-    const re = /(https?:\/\/[^\s<>"“”'‘’（）()]+|(?<![\w@])@[A-Za-z0-9_]{1,15}|(?<![\w#&])#[\p{L}\p{N}_]+|(?<![\w$])\$[A-Za-z]{1,6}\b)/gu;
-    let last = 0;
-    for (const m of text.matchAll(re)) {
+    const ms = [...text.matchAll(TOKEN_RE)];
+    const dest = tagTargets(ms.map((m) => m[0]).filter(isTag), tags || []);
+    let last = 0, k = 0;
+    for (const m of ms) {
       if (m.index > last) frag.append(text.slice(last, m.index));
-      const tok = m[0], a = el("a", "ff-tx-link", tok);
+      const tok = m[0];
+      last = m.index + tok.length;
+      let tag = null;
+      if (tok[0] === "#" || tok[0] === "＃") {
+        if (isTag(tok)) tag = dest[k++];
+        if (!tag) { frag.append(tok); continue; } // 光是数字（X 也不认）、对不上原文的话题：只显示字
+      }
+      const a = el("a", "ff-tx-link", tok);
       if (tok.startsWith("http")) {
         const key = tok.replace(/^https?:\/\//, "").replace(/…$/, "");
         const h = hrefs.get(key);
         a.href = typeof h === "string" && /^https?:\/\//i.test(h) ? h : tok.replace(/…$/, ""); // 只认 http(s)（页面数据是页面那边给的，别信别的协议）
         a.target = "_blank"; a.rel = "noopener noreferrer";
       } else if (tok[0] === "@") a.href = `/${tok.slice(1)}`;
-      else if (tok[0] === "#") a.href = `/hashtag/${encodeURIComponent(tok.slice(1))}`;
+      else if (tag) a.href = `/hashtag/${encodeURIComponent(tag.slice(1))}`;
       else a.href = `/search?q=${encodeURIComponent(tok)}`;
       a.addEventListener("click", (ev) => ev.stopPropagation(), true); // 别让 X 当成点了整条帖子
       frag.append(a);
-      last = m.index + tok.length;
     }
     if (last < text.length) frag.append(text.slice(last));
     return frag;
@@ -352,7 +374,7 @@
     body.dir = "auto"; // 和 X 的正文一样：阿拉伯语这类从右往左排，夹着的英文链接也不乱
     const cs = getComputedStyle(tt);
     for (const p of ["fontFamily", "fontSize", "lineHeight", "color", "fontWeight", "letterSpacing"]) body.style[p] = cs[p];
-    body.append(linkified(job.result.text, hrefs));
+    body.append(linkified(job.result.text, hrefs, job.tags));
     const note = el("div", "ff-tx-note");
     const model = job.result.model || t("tx.model");
     note.title = fill ? t("tx.titleFill", { model })

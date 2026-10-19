@@ -4,13 +4,13 @@
 // 用法：先 python3 test/build_inject_bundle.py && python3 test/build_fakex.py，用 launch.json 的 ext-fakex 起服务，
 // 然后 node test/translate_headless.cjs <装了 puppeteer-core 的目录> [http://localhost:8767]
 const puppeteer = require(require("path").resolve(process.argv[2] || ".", "node_modules/puppeteer-core"));
-const ORIG_1006 = "Big update from @openai_test 🎉\nRead more: https://example.com/launch-notes… #AI $NVDA";
-const TR_1006 = "来自 @openai_test 的大更新 🎉\n阅读更多：https://example.com/launch-notes… #AI $NVDA";
+const ORIG_1006 = "Big update from @openai_test 🎉\nRead more: https://example.com/launch-notes… #BigUpdate #AI $NVDA";
+const TR_1006 = "来自 @openai_test 的大更新 🎉\n阅读更多：https://example.com/launch-notes… #BigUpdate #AI $NVDA";
 const OURS = {
   "1001": "为什么好人这么难招？因为真正厉害的人根本不缺工作！",
   "1003": "这是一篇讲路线图的长文。第一，编辑器推倒重写；第二，同步快 10 倍。",
-  "1006": "@openai_test 放大招了 🎉\n详情：https://example.com/launch-notes… #AI $NVDA",
-  "1008": "说实话，这次更新真的改变了游戏规则。",
+  "1006": "@openai_test 放大招了 🎉\n详情：https://example.com/launch-notes… #AI #大更新 $NVDA", // 话题一个照抄、一个译了，先后也换了
+  "1008": "说实话，这次更新真的改变了游戏规则。 #游戏规则", // 原文没有话题，模型多出来一个
   "1012": "又一篇合成长帖，写得挺长，所以 X 在信息流里只露出开头。",
 };
 const PLAN = Object.fromEntries(Object.entries(OURS).map(([id, text]) => [id, {
@@ -81,8 +81,10 @@ PLAN["1002"] = { action: "keep", grokMin: 0.91, cached: false };
       all[2].xMore === "none" && all[2].ours === OURS["1003"], JSON.stringify(all[2]));
     ok("慢切换那条也换上了", all[5].block && all[5].hidden && all[5].ours === OURS["1008"], JSON.stringify(all[5]));
     const links = await page.evaluate(() => [...document.querySelectorAll('article[data-fid="1006"] .ff-tx-link')].map((a) => [a.textContent, a.getAttribute("href")]));
-    ok("译文里的链接、@、#、$ 能点，链接还是 X 的 t.co", JSON.stringify(links) === JSON.stringify([["@openai_test", "/openai_test"],
-      ["https://example.com/launch-notes…", "https://t.co/fakelink1"], ["#AI", "/hashtag/AI"], ["$NVDA", "/search?q=%24NVDA"]]), JSON.stringify(links));
+    ok("译文里的链接、@、#、$ 能点，链接还是 X 的 t.co；#话题 显示译文、点了搜原文的话题（照抄的先对上，剩下的按先后）", JSON.stringify(links) === JSON.stringify([["@openai_test", "/openai_test"],
+      ["https://example.com/launch-notes…", "https://t.co/fakelink1"], ["#AI", "/hashtag/AI"], ["#大更新", "/hashtag/BigUpdate"], ["$NVDA", "/search?q=%24NVDA"]]), JSON.stringify(links));
+    const links1008 = await page.evaluate(() => document.querySelectorAll('article[data-fid="1008"] .ff-tx-link').length);
+    ok("原文里对不上的话题只显示字、不做成链接", links1008 === 0 && all[5].ours === OURS["1008"], `${links1008} ${all[5].ours}`);
 
     await page.evaluate(() => { window.__ffWatch = false; });
     // 点我们的译文、说明行和点 X 自己的正文一样，交给 X（真 X 首页上会点开帖子）；点链接、切换按钮不当成点了帖子

@@ -28,6 +28,11 @@ ok("每种语言的键和英文一样、占位符一样", () => {
     for (const k of Object.keys(en)) assert.deepEqual([...d[k].matchAll(PH)].map((m) => m[1]).sort(), [...en[k].matchAll(PH)].map((m) => m[1]).sort(), `${c} ${k}`);
   }
 });
+ok("没有照抄中文的（0.29.4）：日文里没有一长串汉字、一个假名都没有的句子；简繁中文和日文以外的语言里没有汉字", () => {
+  const HAN = /[\u3400-\u9fff]/, KANA = /[\u3040-\u30ff]/;
+  for (const [k, v] of Object.entries(all.ja)) assert.ok([...v].filter((ch) => HAN.test(ch)).length < 6 || KANA.test(v), `ja ${k}：${v.slice(0, 30)}`);
+  for (const [c, d] of Object.entries(all)) if (!["zh-CN", "zh-TW", "ja"].includes(c)) for (const [k, v] of Object.entries(d)) assert.ok(!HAN.test(v), `${c} ${k}：${v.slice(0, 30)}`);
+});
 ok("内容脚本那份只带 X 页面要用的键，语言一样多", () => {
   assert.deepEqual(Object.keys(page).sort(), Object.keys(all).sort());
   for (const k of Object.keys(page.en)) assert.ok(/^(tx|reason|kind|cat|cs|bar|banner|err|filler|group|mark|heavy|app)\.|^c\.notDone$/.test(k), k);

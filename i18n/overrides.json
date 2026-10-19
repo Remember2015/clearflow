@@ -61,7 +61,14 @@
   "filler.lineShown.few": "「いいね」や「+1」などの返信{n}件",
   "kind.user": "スパムとしてマーク済み",
   "kind.slogan": "マークしたスパムと完全に一致",
-  "kind.marked_near": "マークしたスパムと同じテンプレート"
+  "kind.marked_near": "マークしたスパムと同じテンプレート",
+  "opt.captionConvert": "繁体字中国語の字幕を簡体字で表示",
+  "opt.captionFix": "自動翻訳の字幕を改善",
+  "opt.captionFixHint": "YouTubeの自動翻訳字幕を選んだとき、翻訳先が簡体字中国語で、動画に人が作成した中国語字幕があれば、そちらに切り替えます。ない場合はTypeSafeがYouTubeの翻訳を評価し、質が低ければ、視聴しながら翻訳モデルで字幕を翻訳し直します（翻訳するのは視聴した部分のみ）。両方のキーが必要です。",
+  "tx.capConverted": "ClearFlowがこの繁体字中国語の字幕を簡体字に変換しました · クリックで元の字幕を表示",
+  "tx.capHuman": "YouTubeの自動翻訳の代わりに、この動画の人が作成した中国語字幕（簡体字で表示）を使っています · クリックでYouTubeの翻訳を表示",
+  "tx.capFixed": "この字幕のYouTubeによる自動翻訳は質が低かったため、ClearFlowが翻訳し直しました · クリックでYouTubeの翻訳を表示",
+  "tx.capOriginal": "元の字幕を表示しています · クリックで戻す"
  },
  "zh-TW": {
   "pop.unsupportedHint": "清流只在這幾個網站上運作：",

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.29.4 — 2026-10-19
+
+- Japanese: the YouTube caption settings and the notes behind the ✦ after captions were shown in Chinese; they're in Japanese now.
+
+## 0.29.3 — 2026-10-19
+
+- X: in ClearFlow's translations of posts and replies, hashtags now show the translated words but still link to the original hashtag, so clicking one finds the post (it used to search for the translated words). If the translation's hashtags can't be matched to the original's, they're shown as plain text instead of links.
+
 ## 0.29.2 — 2026-10-19
 
 - YouTube captions: if the video also has its own Simplified Chinese captions, Traditional Chinese captions you pick are shown as they are instead of being converted. (Auto-generated Simplified captions don't count.)
