@@ -35,8 +35,8 @@
     for (const cmp of demo.querySelectorAll(".cmp")) {
       for (const b of cmp.querySelectorAll(".flip button")) b.addEventListener("click", () => { touched = true; show(cmp, b.dataset.show); });
     }
-    // only matters at phone width, where one side is shown at a time
-    if (!still && "IntersectionObserver" in window && matchMedia("(max-width: 759px)").matches) {
+    // only matters below 1000px, where one side is shown at a time
+    if (!still && "IntersectionObserver" in window && matchMedia("(max-width: 999px)").matches) {
       const io = new IntersectionObserver((entries) => {
         for (const e of entries) {
           if (!e.isIntersecting) continue;

@@ -178,9 +178,10 @@ button { font: inherit; color: inherit; }
 :lang(zh) .box-tag { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
 :lang(ja) .box-tag { font-family: -apple-system, "Hiragino Sans", "Yu Gothic UI", sans-serif; }
 .demo .note { text-align: center; font-size: 13px; color: var(--ink-3); margin-top: 18px; }
-/* phones: one side at a time, with a switch */
-@media (max-width: 759px) {
+/* narrower than two readable shots side by side: one side at a time, with a switch */
+@media (max-width: 999px) {
   .cmp { display: block; }
+  .cmp .side { max-width: 680px; margin: 0 auto; }
   .flip { display: flex; width: max-content; margin: 0 auto 14px; padding: 3px; border-radius: 12px; background: var(--seg); }
   .flip button { border: 0; background: transparent; padding: 6px 16px; border-radius: 9px; font-size: 14px; font-weight: 500; color: var(--ink-2); cursor: pointer; transition-property: background-color, color, box-shadow; transition-duration: 200ms; transition-timing-function: var(--ease); }
   .flip button[aria-pressed="true"] { background: var(--seg-on); color: var(--ink); box-shadow: 0 0.5px 1px rgba(11, 27, 63, 0.12), 0 2px 6px rgba(11, 27, 63, 0.08); }
