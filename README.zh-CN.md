@@ -1,6 +1,6 @@
 # 清流 ClearFlow
 
-[English](README.md)
+[English](README.md) · [官网](https://clearflow.ohmyai.app/zh/)
 
 清流（英文名 ClearFlow）是一个 Chrome 插件，让 **X、Reddit、YouTube、小红书和 Hacker News** 的评论区重新好读：
 
@@ -33,7 +33,7 @@
 
 ## 安装
 
-- **Chrome 应用商店**：即将上架。
+- **Chrome 应用商店**：[清流](https://chromewebstore.google.com/detail/clearflow/dfojglbldlneaogknbphkiifmaagjjle)。Edge、Arc、Brave 等 Chromium 浏览器也从这里装。
 - **从源码装**：下载或 clone 这个仓库，打开 `chrome://extensions`，打开「开发者模式」，点「加载已解压的扩展程序」，选 `extension` 文件夹。打包好的文件已经提交在仓库里，只是试用不用构建。支持 Chrome 120 以上和其他 Chromium 内核的浏览器（Edge、Arc、Brave……）。
 
 ## 开发
@@ -56,6 +56,7 @@ Chrome 不在 macOS 默认位置时设 `CHROME_PATH`（Linux 上一般是 `/usr/
 - `ui/`：弹窗和设置页（React、基于 Base UI 的 shadcn/ui、Tailwind），打包进 `extension/ui/`。
 - `i18n/`：界面文字。`en.json`、`zh-CN.json` 是人写的，另外 17 种用 `i18n/translate.py` 机翻，人工改的放 `overrides.json`。
 - `docs/`：[架构说明](docs/architecture.md)和上架 Chrome 应用商店的材料。
+- `site/`：官网 https://clearflow.ohmyai.app（`node site/build.mjs` 构建；图片由 `node scripts/site-assets.mjs` 生成；`site/deploy.sh` 部署到 Cloudflare）。
 
 代码注释大多是中文，写的是为什么这条规则、这个门槛是这样，常带着背后的数字。定门槛用的评测数据和脚本不在这个仓库里（里面有采来的第三方内容）。
 

@@ -1,0 +1,18 @@
+// Cloudflare Worker for https://clearflow.ohmyai.app: static files from dist/ (node build.mjs), worker.js only for "/"
+// (and /keys, /privacy without a language) to pick the visitor's language. Deploy with ./deploy.sh.
+{
+  "$schema": "https://unpkg.com/wrangler@4.129.0/config-schema.json",
+  "name": "clearflow-site",
+  "main": "worker.js",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page",
+    "run_worker_first": ["/", "/keys", "/keys/", "/privacy", "/privacy/"]
+  },
+  "routes": [{ "pattern": "clearflow.ohmyai.app", "custom_domain": true }],
+  "workers_dev": false,
+  "preview_urls": false
+}

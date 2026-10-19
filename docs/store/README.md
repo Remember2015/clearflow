@@ -4,7 +4,7 @@ Everything needed to fill in the Chrome Web Store dashboard and Microsoft Partne
 
 - **Name:** ClearFlow (shown as 清流 in Simplified and Traditional Chinese, from `_locales/zh_CN` and `zh_TW`)
 - **Category:** Chrome: Lifestyle → Social Networking. Edge: Social.
-- **Homepage / support URL:** https://github.com/remember2015/clearflow
+- **Homepage URL:** https://clearflow.ohmyai.app (the website, `site/`). **Support URL:** https://github.com/remember2015/clearflow/issues
 - **Privacy policy URL:** https://github.com/remember2015/clearflow/blob/main/PRIVACY.md
 - **Contact:** developer@ohmyai.app
 - **Detailed descriptions:** one plain-text file per language in `descriptions/` (paste as is; the dashboards keep line breaks and the "•" bullets). `en`, `zh-CN`, `zh-TW`, `ja` and `ko` are written by hand; the other 14 are translated from `en.txt` by `python3 scripts/store-desc.py` (checked for length, bullets, names and the URL). After changing `en.txt`, update the four hand-written ones by hand and re-run the script with `--force`.

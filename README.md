@@ -1,6 +1,6 @@
 # ClearFlow
 
-[中文说明](README.zh-CN.md)
+[中文说明](README.zh-CN.md) · [Website](https://clearflow.ohmyai.app)
 
 ClearFlow (Chinese name 清流, “a clear stream”) is a Chrome extension that makes comment sections readable again on **X, Reddit, YouTube, Xiaohongshu (RedNote) and Hacker News**:
 
@@ -33,7 +33,7 @@ Comments and posts you're looking at are sent to TypeSafe and OpenRouter using y
 
 ## Install
 
-- **Chrome Web Store:** coming soon.
+- **Chrome Web Store:** [ClearFlow](https://chromewebstore.google.com/detail/clearflow/dfojglbldlneaogknbphkiifmaagjjle). The same listing installs in Edge, Arc, Brave and other Chromium browsers.
 - **From source:** download or clone this repository, open `chrome://extensions`, turn on *Developer mode*, click *Load unpacked* and choose the `extension` folder. The built files are committed, so no build step is needed just to try it. Works in Chrome 120+ and other Chromium browsers (Edge, Arc, Brave…).
 
 ## Develop
@@ -56,6 +56,7 @@ Layout:
 - `ui/` — the popup and settings pages (React, shadcn/ui on Base UI, Tailwind), built into `extension/ui/`.
 - `i18n/` — UI strings. `en.json` and `zh-CN.json` are written by hand; the other 17 languages are machine-translated with `i18n/translate.py` and fixed by hand in `overrides.json`.
 - `docs/` — [architecture](docs/architecture.md) and the Chrome Web Store listing material.
+- `site/` — the website, https://clearflow.ohmyai.app (`node site/build.mjs`; images from `node scripts/site-assets.mjs`; deployed to Cloudflare with `site/deploy.sh`).
 
 Code comments are mostly in Chinese; they explain *why* a rule or threshold is what it is, often with the numbers behind it. The evaluation datasets and scripts used to tune thresholds are not part of this repository (they contain collected third-party content).
 

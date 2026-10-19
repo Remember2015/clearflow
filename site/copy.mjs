@@ -1,0 +1,378 @@
+// Website copy, one object per language. Strings may contain HTML (written here, never from users).
+// Keep every claim true for the version on the Chrome Web Store, and keep the wording in line with the store descriptions
+// (public/docs/store/descriptions/) and README. The cost figure is the developer's own usage, measured 2026-10-12 (extension/README.md).
+
+export const STORE = "https://chromewebstore.google.com/detail/clearflow/dfojglbldlneaogknbphkiifmaagjjle";
+export const REPO = "https://github.com/remember2015/clearflow";
+export const MAIL = "developer@ohmyai.app";
+
+export const LANGS = {
+  zh: { html: "zh-CN", assets: "zh-CN", name: "中文", og: "zh_CN" },
+  en: { html: "en", assets: "en", name: "English", og: "en_US" },
+  ja: { html: "ja", assets: "ja", name: "日本語", og: "ja_JP" },
+};
+
+export const COPY = {
+  zh: {
+    brand: "清流",
+    title: "清流 · 自动清理评论区垃圾回复、原地翻译外文评论的 Chrome 扩展",
+    description: "清流（ClearFlow）是开源的 Chrome 扩展：自动清理 X、YouTube、Reddit、小红书、Hacker News 评论区的垃圾回复，每条写明原因；外文帖子和评论原地翻成中文。用你自己的 key，不发任何东西给我们。",
+    nav: { features: "功能", cost: "费用", privacy: "隐私", faq: "常见问题" },
+    skip: "跳到正文",
+    hero: {
+      eyebrow: "开源 Chrome 扩展",
+      h1: "评论区，清清爽爽",
+      lede: "X、YouTube、Reddit、小红书和 Hacker News 上，机器人刷屏、引流拉人、辱骂和色情回复自动清理掉，每条写明为什么。外文帖子和评论原地翻成中文。",
+      cta: "添加到 Chrome",
+      ctaNote: "免费",
+      repo: "GitHub 源码",
+      fine: "Edge、Arc、Brave 等 Chromium 浏览器也能从 Chrome 应用商店安装。",
+    },
+    demo: {
+      label: "装上清流前后对比",
+      before: "装之前",
+      after: "装之后",
+      tabs: { x: "X 回复", reddit: "Reddit 翻译", yt: "YouTube 评论" },
+      captions: {
+        x: "三个账号刷同一句「交易导师」，合成一条；「赞」「+1」收到最上面一行；@ 陌生账号拉人的、辱骂的，各写明原因。",
+        reddit: "德语、西班牙语、法语、葡萄牙语、韩语、日语的评论原地翻成中文，点一下看原文；机票广告清理掉。",
+        yt: "冒充「导师」的托儿评论清理掉；葡萄牙语、印地语、韩语、西班牙语、日语的评论翻成中文。",
+      },
+      note: "示意页面和评论都是编的，跑的是真插件。",
+    },
+    features: {
+      h2: "该清的清掉，想看的照样能看",
+      items: [
+        ["reason", "每条都写明原因", "「3 个账号发了同一句话」「@了一个不在本帖的账号」「像是骗局的套路」。点开照样能看，判错了能标。"],
+        ["filler", "「赞」「mark」也收起来", "只有几个字、没内容的回复收到评论区最上面一行，想看就点开。"],
+        ["merge", "连着的合成一条", "一串被清理的回复合成一行；垃圾太多的帖子干脆全藏起来，最上面写清理了几条。"],
+        ["learn", "标一条，同类都清理", "自己清理掉一条垃圾，换了说法、换了账号、推同一套骗局的回复，以后也清理掉。随时能撤销。"],
+        ["translate", "外文原地翻译", "帖子和评论翻成你的语言，链接和格式都在，随时切回原文。X 上只在明显比 X 自带的译文好时才换上。"],
+        ["sites", "每个网站各自做主", "按网站开关，清理和翻译分开选，每一类清理得多严自己定：宽松、标准、严格。"],
+      ],
+    },
+    mark: {
+      h2: "标一条，同类都清理",
+      body: "在一条骗局回复上点漏斗，清流就记住它。另外两个账号换了说法推同一个「交易老师」，也一起清理掉，写明「和你标记过的垃圾是同一类」。标错了随时撤销。",
+      alt: "Reddit 评论区：标了一条骗局回复后，另外两条同类回复也被清理",
+    },
+    control: {
+      h2: "这一页清理了什么，一眼看清",
+      body: "点工具栏上的清流图标，看当前页清理了几条、翻译了几条，今天和最近 7 天一共多少。设置页按网站分开，每一类清理得多严、翻不翻译，自己定。",
+      altPopup: "清流弹窗：当前页清理和翻译的条数",
+      altSettings: "清流设置页：Reddit 的清理规则和翻译",
+    },
+    how: {
+      h2: "怎么判断的",
+      steps: [
+        ["本地规则先过一遍", "推广码和邀请链接、藏起来的联系方式、几个账号发同一句话、看不见的字符……只看结构不看关键词，换个话题、换种语言照样管用。不要 key，不花钱。"],
+        ["剩下的交给 AI", "本地判断不了的回复，连同它回复的那条帖子，发给 TypeSafe 的 Jev 模型回答几个是非题：是不是在拉人？是不是辱骂？是不是色情？过了线才清理。"],
+        ["翻译走 OpenRouter", "要翻的文字发给你在 OpenRouter 上选的模型（默认 OpenAI 的，DeepSeek 做后备）。只发文字，不发作者和帖子 ID。"],
+      ],
+    },
+    cost: {
+      h2: "用你自己的 key，每月 1 美元左右",
+      body: "清流不经过我们的服务器：判断和翻译直接用你自己在 TypeSafe 和 OpenRouter 的账号，按用量付费，钱直接付给它们。",
+      stat: "$0.10",
+      statLabel: "作者自己 2.4 天刷 X、看了约 5000 条回复的花费（清理加翻译），折合每月约 $1.3。同样的内容 7 天内不会重复付钱判断。",
+      points: [
+        "设置页能看到本月花了多少，和照最近 7 天估的每月花费。",
+        "OpenRouter 的 key 可以设额度上限、按月重置，花不超。",
+        "不填 key 也能用：本地规则照样清理。",
+      ],
+      cta: "怎么拿 key",
+    },
+    privacy: {
+      h2: "不发任何东西给我们",
+      items: [
+        ["没有统计、没有追踪", "插件里没有统计、崩溃上报和广告代码，所有代码都在安装包里，不下载远程代码。"],
+        ["只发给你选的两家", "你正在看的评论和帖子，发给 TypeSafe 判断、OpenRouter 翻译，用的是你自己的 key。"],
+        ["key 和记录留在浏览器里", "key 存在插件自己的数据库里，网页读不到；卸载插件，存的东西全删掉。"],
+        ["开源，随时能查", "代码以 MIT 许可开源在 GitHub 上，发给谁、发什么，都写在代码里。"],
+      ],
+      more: "隐私政策全文",
+    },
+    faq: {
+      h2: "常见问题",
+      items: [
+        ["为什么要我自己去申请 key？", "这样你看的内容不经过我们的服务器，我们也不用收订阅费、养服务器。代价是第一次要花几分钟注册两个账号。<a href=\"keys/\">怎么拿 key</a>"],
+        ["不填 key 能用吗？", "能。本地规则照样清理推广码、藏起来的联系方式、几个账号刷同一句话这类回复。判断辱骂、色情、「赞」这类回复，以及翻译，要填 key。"],
+        ["会误伤正常评论吗？", "会有。所以每条都写明原因、点开就能看，判错了标一下。阈值是在每个网站自己的数据上调的，嫌严可以在设置里调成「宽松」。"],
+        ["支持哪些网站和浏览器？", "X、Reddit、YouTube、小红书、Hacker News。Chrome 120 以上，以及 Edge、Arc、Brave 等 Chromium 浏览器。"],
+        ["界面是中文的吗？", "是。界面有 19 种语言，跟着浏览器的语言走；翻译也翻成浏览器的语言。"],
+        ["和 X、YouTube 这些平台有关系吗？", "没有。清流是独立的开源项目，与 X、Reddit、YouTube（Google）、小红书、Y Combinator 均无关联。"],
+        ["发现问题怎么反馈？", `插件设置页里有「反馈」；也可以在 <a href="${REPO}/issues">GitHub</a> 提 issue，或者写信到 <a href="mailto:${MAIL}">${MAIL}</a>。`],
+      ],
+    },
+    final: { h2: "让评论区重新好读", cta: "添加到 Chrome" },
+    footer: { privacy: "隐私政策", keys: "怎么拿 key", license: "MIT 许可", disclaimer: "清流与 X、Reddit、YouTube、小红书、Y Combinator 均无关联。" },
+    keys: {
+      title: "怎么拿 key · 清流",
+      description: "清流用 TypeSafe 判断回复、OpenRouter 翻译，各要一个你自己的 key。几分钟就能弄好。",
+      h1: "怎么拿 key",
+      lede: "清流用两个按用量付费的服务，各要一个 key。都是你自己的账号，钱直接付给它们。装好清流后会打开引导页，把 key 粘进去就行；以后在设置的「连接和费用」里换。",
+      sections: [
+        { h2: "TypeSafe：判断回复", tag: "清理用", steps: [
+          "打开 <a href=\"https://console.typesafe.ai/\">TypeSafe 控制台</a>，注册并登录。",
+          "进 <a href=\"https://console.typesafe.ai/keys\">Keys</a> 页，新建一个 key，复制下来。",
+          "粘到清流设置里「Jev (TypeSafe)」那一栏。",
+        ], note: "按 token 计费。清流每条回复只问几个是非题，同样的内容 7 天内不重复问。" },
+        { h2: "OpenRouter：翻译", tag: "翻译用", steps: [
+          "打开 <a href=\"https://openrouter.ai/\">openrouter.ai</a>，注册并登录，在 Credits 页充值。",
+          "进 <a href=\"https://openrouter.ai/keys\">Keys</a> 页，点 Create Key。建议设一个额度上限（比如每月 $2，按月重置），花多少心里有数。",
+          "复制 sk-or- 开头的 key，粘到清流设置里「OpenRouter」那一栏。",
+        ], note: "默认用 OpenAI 的模型翻译，DeepSeek 做后备；可以在设置里换。" },
+      ],
+      after: [
+        ["填完以后", "key 能用就打一个勾；用不了会写原因，旁边有「测试连接」。"],
+        ["只填一个也行", "只填 TypeSafe：只清理不翻译。只填 OpenRouter：只翻译，清理只跑本地规则。都不填：只跑本地规则。"],
+        ["保管好 key", "key 只存在你的浏览器里。不要把 key 发给任何人，包括我们。觉得泄露了，就在对应的后台删掉重建。"],
+      ],
+      back: "回首页",
+    },
+    privacyPage: { title: "隐私政策 · 清流", description: "清流读什么、发什么给谁、在你的设备上存什么。", source: "隐私政策的原文在 GitHub 上，以那里的为准：" },
+    notFound: { title: "找不到这个页面", body: "链接可能写错了。", home: "回首页" },
+  },
+
+  en: {
+    brand: "ClearFlow",
+    title: "ClearFlow · Clean up junk replies and translate comments — Chrome extension",
+    description: "ClearFlow is an open-source Chrome extension that cleans up spam, bot and abusive replies on X, YouTube, Reddit, Xiaohongshu and Hacker News — each one says why — and translates foreign-language comments in place. Uses your own API keys; nothing is sent to us.",
+    nav: { features: "Features", cost: "Cost", privacy: "Privacy", faq: "FAQ" },
+    skip: "Skip to content",
+    hero: {
+      eyebrow: "Open-source Chrome extension",
+      h1: "Comment sections, minus the junk",
+      lede: "Bot spam, scams, abuse and sexual replies are cleaned up on X, YouTube, Reddit, Xiaohongshu and Hacker News — and each one says why. Foreign-language posts and comments are translated in place.",
+      cta: "Add to Chrome",
+      ctaNote: "Free",
+      repo: "Source on GitHub",
+      fine: "Also installs from the Chrome Web Store in Edge, Arc, Brave and other Chromium browsers.",
+    },
+    demo: {
+      label: "The same comments, without and with ClearFlow",
+      before: "Without",
+      after: "With ClearFlow",
+      tabs: { x: "X replies", reddit: "Reddit translation", yt: "YouTube comments" },
+      captions: {
+        x: "Three accounts posting the same “trading mentor” line become one notice; “nice” and “+1” move to one line at the top; the reply pulling people to another account and the abusive one each say why they were hidden.",
+        reddit: "German, Spanish, French, Portuguese, Korean and Japanese comments are translated in place — one click shows the original. The cheap-flights spam is gone.",
+        yt: "Fake “mentor” testimonials are cleaned up; comments in Portuguese, Hindi, Korean, Arabic and Japanese are translated.",
+      },
+      note: "The pages and comments are made up; the extension is real.",
+    },
+    features: {
+      h2: "Junk out of the way, still there if you want it",
+      items: [
+        ["reason", "Every hide says why", "“3 accounts posted the same line”, “mentions an account that isn't in this thread”, “looks like a scam”. Click to see it anyway, and mark it when it got one wrong."],
+        ["filler", "“nice” and “+1” tucked away", "Content-free replies move to one line at the top of the comments. Open it whenever you like."],
+        ["merge", "Runs merge into one line", "Consecutive hidden replies become a single line. When a thread is mostly junk, it's all tucked behind one summary at the top."],
+        ["learn", "Mark one, the rest go", "Hide a spam reply yourself and replies of the same kind — reworded, from other accounts, pushing the same scheme — are hidden too. Undo anytime."],
+        ["translate", "Translated in place", "Posts and comments in your language, links and formatting intact, with a switch back to the original. On X it replaces X's own translation only when it can do clearly better."],
+        ["sites", "Your sites, your rules", "Turn it on per site, choose cleaning and translation separately, and pick how strict each category is: relaxed, standard or strict."],
+      ],
+    },
+    mark: {
+      h2: "Mark one, the rest go",
+      body: "Click the funnel on one scam reply and ClearFlow remembers it. Two other accounts pushing the same “trading mentor” in different words are cleaned up too, labelled “same kind as spam you marked”. Undo anytime.",
+      alt: "Reddit comments: after marking one scam reply, two similar replies are cleaned up too",
+    },
+    control: {
+      h2: "See what was cleaned, at a glance",
+      body: "Click the ClearFlow icon to see how many replies were cleaned and translated on this page, today and over the last 7 days. Settings are per site: how strict each category is, and whether to translate.",
+      altPopup: "ClearFlow popup: replies cleaned and translated on the current page",
+      altSettings: "ClearFlow settings: Reddit's cleaning rules and translation",
+    },
+    how: {
+      h2: "How it decides",
+      steps: [
+        ["Local rules first", "Referral links, hidden contact details, the same line from several accounts, invisible characters… The rules look at structure, never keyword lists, so they work across topics and languages. No key needed, no cost."],
+        ["AI for the rest", "Replies the rules can't decide are sent, with the post they answer, to TypeSafe's Jev model, which answers a few yes/no questions: Is it recruiting? Abusive? Sexual? Only replies over the line are hidden."],
+        ["Translation via OpenRouter", "Text to translate goes to the model you pick on OpenRouter (an OpenAI model by default, DeepSeek as fallback). Only the text — no author, no post ID."],
+      ],
+    },
+    cost: {
+      h2: "Your own keys, about a dollar a month",
+      body: "Nothing goes through our servers: judging and translation use your own TypeSafe and OpenRouter accounts, billed by usage, paid to them directly.",
+      stat: "$0.10",
+      statLabel: "The developer's own cost for 2.4 days on X, about 5,000 replies viewed (cleaning and translation) — roughly $1.30 a month. The same content isn't paid for twice within 7 days.",
+      points: [
+        "Settings show this month's spend and a monthly estimate from the last 7 days.",
+        "OpenRouter keys can have a credit limit that resets monthly, so you never spend more than you set.",
+        "No keys? The local rules still run.",
+      ],
+      cta: "How to get the keys",
+    },
+    privacy: {
+      h2: "Nothing is sent to us",
+      items: [
+        ["No analytics, no tracking", "No analytics, crash reporting or ad code. All code is in the package; nothing is downloaded and run later."],
+        ["Only the two services you choose", "The comments and posts you're looking at go to TypeSafe to be judged and OpenRouter to be translated, with your own keys."],
+        ["Keys and history stay in your browser", "Keys are kept in the extension's own database, out of reach of the sites you visit. Uninstalling deletes everything."],
+        ["Open source", "MIT-licensed on GitHub. What is sent, and to whom, is in the code."],
+      ],
+      more: "Read the privacy policy",
+    },
+    faq: {
+      h2: "FAQ",
+      items: [
+        ["Why do I need my own API keys?", "So what you read never passes through our servers, and there's no subscription to pay or server for us to run. The cost is a few minutes signing up for two services. <a href=\"keys/\">How to get the keys</a>"],
+        ["Does it work without keys?", "Yes. The local rules still clean up referral links, hidden contact details and the same line posted by several accounts. Judging abuse, sexual content and replies like “nice”, and translation, need keys."],
+        ["Will it hide good comments?", "Sometimes. That's why every hide says why, opens with a click, and can be marked as wrong. Thresholds were tuned on each site's own data; if it feels too strict, choose “relaxed” in Settings."],
+        ["Which sites and browsers?", "X, Reddit, YouTube, Xiaohongshu (RedNote) and Hacker News. Chrome 120 or later, plus Edge, Arc, Brave and other Chromium browsers."],
+        ["Which languages?", "The interface is in 19 languages and follows your browser's language; translations go into that language too."],
+        ["Is it affiliated with X or YouTube?", "No. ClearFlow is an independent open-source project, not affiliated with X, Reddit, YouTube (Google), Xiaohongshu or Y Combinator."],
+        ["How do I report a problem?", `Use Feedback in the extension's settings, open an issue on <a href="${REPO}/issues">GitHub</a>, or write to <a href="mailto:${MAIL}">${MAIL}</a>.`],
+      ],
+    },
+    final: { h2: "Make comment sections readable again", cta: "Add to Chrome" },
+    footer: { privacy: "Privacy policy", keys: "Getting keys", license: "MIT license", disclaimer: "ClearFlow is not affiliated with X, Reddit, YouTube, Xiaohongshu or Y Combinator." },
+    keys: {
+      title: "How to get the keys · ClearFlow",
+      description: "ClearFlow uses TypeSafe to judge replies and OpenRouter to translate, each with your own key. It takes a few minutes.",
+      h1: "How to get the keys",
+      lede: "ClearFlow uses two pay-as-you-go services, one key each. Both are your own accounts, paid to them directly. After installing, a setup page opens where you paste the keys; later you can change them under Settings → Connections and cost.",
+      sections: [
+        { h2: "TypeSafe: judging replies", tag: "For cleaning", steps: [
+          "Open the <a href=\"https://console.typesafe.ai/\">TypeSafe console</a>, sign up and sign in.",
+          "On the <a href=\"https://console.typesafe.ai/keys\">Keys</a> page, create a key and copy it.",
+          "Paste it into the “Jev (TypeSafe)” field in ClearFlow's settings.",
+        ], note: "Billed by tokens. ClearFlow asks only a few yes/no questions per reply, and doesn't ask about the same content again for 7 days." },
+        { h2: "OpenRouter: translation", tag: "For translation", steps: [
+          "Open <a href=\"https://openrouter.ai/\">openrouter.ai</a>, sign up and sign in, and add credits on the Credits page.",
+          "On the <a href=\"https://openrouter.ai/keys\">Keys</a> page, click Create Key. Setting a credit limit (say $2, resetting monthly) is a good idea.",
+          "Copy the key (it starts with sk-or-) into the “OpenRouter” field in ClearFlow's settings.",
+        ], note: "Translation uses an OpenAI model by default, with DeepSeek as fallback; you can change it in Settings." },
+      ],
+      after: [
+        ["Once they're in", "A working key gets a check mark. If one doesn't work, Settings says why and offers “Test connection”."],
+        ["One key is fine too", "TypeSafe only: cleaning, no translation. OpenRouter only: translation, and cleaning uses the local rules. Neither: local rules only."],
+        ["Keep your keys safe", "Keys are stored only in your browser. Don't send them to anyone, including us. If one may have leaked, delete it in that service's dashboard and create a new one."],
+      ],
+      back: "Back to home",
+    },
+    privacyPage: { title: "Privacy policy · ClearFlow", description: "What ClearFlow reads, what it sends and to whom, and what it keeps on your device.", source: "The policy is maintained on GitHub, and that version prevails:" },
+    notFound: { title: "Page not found", body: "The link may be mistyped.", home: "Back to home" },
+  },
+
+  ja: {
+    brand: "ClearFlow",
+    title: "ClearFlow · スパム返信を片付け、コメントを翻訳する Chrome 拡張機能",
+    description: "ClearFlow は、X・YouTube・Reddit・小紅書・Hacker News の返信欄からスパムやボット、誹謗中傷を理由つきで片付け、外国語のコメントをその場で翻訳するオープンソースの Chrome 拡張機能です。ご自身の API キーで動き、開発者には何も送りません。",
+    nav: { features: "機能", cost: "料金", privacy: "プライバシー", faq: "よくある質問" },
+    skip: "本文へスキップ",
+    hero: {
+      eyebrow: "オープンソースの Chrome 拡張機能",
+      h1: "返信欄を、すっきりと",
+      lede: "X・YouTube・Reddit・小紅書・Hacker News で、ボットのスパムや勧誘、誹謗中傷、性的な返信を自動で片付け、それぞれ理由を表示します。外国語の投稿やコメントは、その場で日本語に。",
+      cta: "Chrome に追加",
+      ctaNote: "無料",
+      repo: "GitHub のソース",
+      fine: "Edge・Arc・Brave などの Chromium 系ブラウザでも、Chrome ウェブストアからインストールできます。",
+    },
+    demo: {
+      label: "ClearFlow なしとありの比較",
+      before: "なし",
+      after: "あり",
+      tabs: { x: "X の返信", reddit: "Reddit の翻訳", yt: "YouTube のコメント" },
+      captions: {
+        x: "3 つのアカウントが同じ文を投稿した返信は 1 行に。「いいね」「+1」だけの返信は上部の 1 行へ。別アカウントへの勧誘や誹謗中傷は、理由を表示して片付けます。",
+        reddit: "英語・ドイツ語・スペイン語・韓国語・フランス語・ポルトガル語のコメントをその場で日本語に。ワンクリックで原文に戻せます。格安航空券の宣伝は片付けます。",
+        yt: "「メンター」を装ったサクラのコメントを片付け、韓国語・ポルトガル語・ヒンディー語・スペイン語・英語のコメントは日本語に翻訳します。",
+      },
+      note: "ページとコメントは架空のものですが、動いているのは本物の拡張機能です。",
+    },
+    features: {
+      h2: "片付けても、見たいときは見られる",
+      items: [
+        ["reason", "片付けた理由を表示", "「3 つのアカウントが同じ文を投稿」「このスレッドにいないアカウントへのメンション」「詐欺の手口に見える」。クリックすれば中身を見られて、判定ミスも報告できます。"],
+        ["filler", "「いいね」「+1」もたたむ", "中身のない短い返信は、返信欄の一番上の 1 行にまとめます。見たいときは開けます。"],
+        ["merge", "続いたものは 1 行に", "非表示が続く部分は 1 行にまとめ、スパムだらけのスレッドは全部隠して、上部に件数を表示します。インプレゾンビのコピペ返信もまとめて片付きます。"],
+        ["learn", "マークすれば、同類も片付く", "スパムを自分で非表示にすると、言い回しやアカウントを変えて同じ手口を勧める返信も、今後は片付けます。いつでも取り消せます。"],
+        ["translate", "その場で翻訳", "投稿やコメントを、リンクや書式はそのままに日本語へ。いつでも原文に戻せます。X では、X 自身の翻訳より明らかに良いときだけ置き換えます。"],
+        ["sites", "サイトごとに、自分で決める", "サイトごとにオン・オフ、片付けと翻訳は別々に。項目ごとの厳しさも「ゆるめ・標準・厳しめ」から選べます。"],
+      ],
+    },
+    mark: {
+      h2: "マークすれば、同類も片付く",
+      body: "詐欺の返信にあるじょうごのアイコンを押すと、ClearFlow が覚えます。別の 2 つのアカウントが言い回しを変えて同じ「トレードの先生」を勧める返信も、「マークしたスパムと同じ種類」として片付けます。いつでも取り消せます。",
+      alt: "Reddit のコメント欄：詐欺の返信を 1 つマークすると、似た返信 2 つも片付く",
+    },
+    control: {
+      h2: "何を片付けたか、ひと目でわかる",
+      body: "ツールバーの ClearFlow アイコンから、このページで片付けた件数と翻訳した件数、今日と過去 7 日間の合計を確認できます。設定はサイトごとに、項目ごとの厳しさと翻訳するかどうかを選べます。",
+      altPopup: "ClearFlow のポップアップ：このページで片付け・翻訳した件数",
+      altSettings: "ClearFlow の設定ページ：Reddit の片付けルールと翻訳",
+    },
+    how: {
+      h2: "判定のしくみ",
+      steps: [
+        ["まずローカルルール", "紹介リンク、隠した連絡先、複数アカウントによる同じ文、見えない文字……。キーワードではなく構造だけを見るので、話題や言語が変わっても効きます。キー不要、費用もかかりません。"],
+        ["残りは AI が判定", "ルールで決められない返信は、返信先の投稿と一緒に TypeSafe の Jev モデルへ送り、いくつかの Yes/No の質問に答えてもらいます。勧誘か、誹謗中傷か、性的か。基準を超えたものだけを片付けます。"],
+        ["翻訳は OpenRouter で", "翻訳する文章は、OpenRouter で選んだモデル（標準は OpenAI、予備に DeepSeek）へ送ります。送るのは文章だけで、投稿者や投稿 ID は送りません。"],
+      ],
+    },
+    cost: {
+      h2: "ご自身のキーで、月 1 ドル前後",
+      body: "ClearFlow は私たちのサーバーを通りません。判定と翻訳は、ご自身の TypeSafe と OpenRouter のアカウントで、使った分だけ各サービスに直接支払います。",
+      stat: "$0.10",
+      statLabel: "開発者自身が X を 2.4 日使い、返信を約 5,000 件見たときの費用（片付けと翻訳）。月にすると約 1.3 ドルです。同じ内容は 7 日間、二重に支払いません。",
+      points: [
+        "設定ページで、今月の利用額と過去 7 日間から見積もった月額を確認できます。",
+        "OpenRouter のキーには、毎月リセットされる利用上限を設定できます。",
+        "キーがなくても、ローカルルールは動きます。",
+      ],
+      cta: "キーの取り方",
+    },
+    privacy: {
+      h2: "開発者には何も送りません",
+      items: [
+        ["解析もトラッキングもなし", "解析、クラッシュレポート、広告のコードはありません。コードはすべてパッケージ内にあり、あとからダウンロードして実行することもありません。"],
+        ["送り先は、選んだ 2 つだけ", "表示中のコメントや投稿を、判定のために TypeSafe へ、翻訳のために OpenRouter へ、ご自身のキーで送ります。"],
+        ["キーと履歴はブラウザの中に", "キーは拡張機能専用のデータベースに保存され、閲覧中のサイトからは読めません。アンインストールすると、すべて削除されます。"],
+        ["オープンソース", "MIT ライセンスで GitHub に公開しています。何をどこへ送るかは、コードに書いてあります。"],
+      ],
+      more: "プライバシーポリシーを読む",
+    },
+    faq: {
+      h2: "よくある質問",
+      items: [
+        ["なぜ自分で API キーを用意するのですか？", "読んでいる内容が私たちのサーバーを通らず、サブスクリプションも不要にするためです。そのかわり、最初に 2 つのサービスへの登録に数分かかります。<a href=\"keys/\">キーの取り方</a>"],
+        ["キーがなくても使えますか？", "使えます。紹介リンク、隠した連絡先、複数アカウントによる同じ文などは、ローカルルールで片付けます。誹謗中傷・性的な返信・「いいね」だけの返信の判定と、翻訳にはキーが必要です。"],
+        ["普通のコメントまで隠れませんか？", "ときどきあります。そのため、理由を表示し、クリックで中身を見られて、判定ミスを報告できるようにしています。しきい値は各サイトのデータで調整済みで、厳しすぎると感じたら設定で「ゆるめ」を選べます。"],
+        ["対応サイトとブラウザは？", "X・Reddit・YouTube・小紅書（RedNote）・Hacker News。Chrome 120 以降と、Edge・Arc・Brave などの Chromium 系ブラウザです。"],
+        ["表示言語は？", "画面は 19 言語に対応し、ブラウザの言語に合わせて表示します。翻訳先もブラウザの言語です。"],
+        ["X や YouTube の公式ですか？", "いいえ。ClearFlow は独立したオープンソースプロジェクトで、X・Reddit・YouTube（Google）・小紅書・Y Combinator とは関係ありません。"],
+        ["問題を見つけたら？", `拡張機能の設定ページの「フィードバック」、<a href="${REPO}/issues">GitHub</a> の issue、または <a href="mailto:${MAIL}">${MAIL}</a> までお知らせください。`],
+      ],
+    },
+    final: { h2: "返信欄を、もう一度読みやすく", cta: "Chrome に追加" },
+    footer: { privacy: "プライバシーポリシー", keys: "キーの取り方", license: "MIT ライセンス", disclaimer: "ClearFlow は X・Reddit・YouTube・小紅書・Y Combinator とは関係ありません。" },
+    keys: {
+      title: "キーの取り方 · ClearFlow",
+      description: "ClearFlow は返信の判定に TypeSafe、翻訳に OpenRouter を使い、それぞれご自身のキーが必要です。数分で準備できます。",
+      h1: "キーの取り方",
+      lede: "ClearFlow は従量課金の 2 つのサービスを使い、それぞれキーが 1 つ必要です。どちらもご自身のアカウントで、支払いは各サービスへ直接です。インストール後に開く設定ページにキーを貼り付けるだけ。あとから設定の「接続と費用」で変更できます。",
+      sections: [
+        { h2: "TypeSafe：返信の判定", tag: "片付け用", steps: [
+          "<a href=\"https://console.typesafe.ai/\">TypeSafe のコンソール</a>を開き、登録してサインインします。",
+          "<a href=\"https://console.typesafe.ai/keys\">Keys</a> ページでキーを作成し、コピーします。",
+          "ClearFlow の設定の「Jev (TypeSafe)」欄に貼り付けます。",
+        ], note: "トークン単位の従量課金です。ClearFlow は返信ごとにいくつかの Yes/No の質問をするだけで、同じ内容を 7 日間は聞き直しません。" },
+        { h2: "OpenRouter：翻訳", tag: "翻訳用", steps: [
+          "<a href=\"https://openrouter.ai/\">openrouter.ai</a> を開いて登録・サインインし、Credits ページでクレジットを追加します。",
+          "<a href=\"https://openrouter.ai/keys\">Keys</a> ページで Create Key を押します。利用上限（たとえば毎月リセットの 2 ドル）を設定しておくと安心です。",
+          "sk-or- で始まるキーをコピーし、ClearFlow の設定の「OpenRouter」欄に貼り付けます。",
+        ], note: "翻訳は標準で OpenAI のモデル、予備に DeepSeek を使います。設定で変更できます。" },
+      ],
+      after: [
+        ["入力したら", "使えるキーにはチェックマークが付きます。使えないときは理由が表示され、「接続をテスト」で確かめられます。"],
+        ["片方だけでも", "TypeSafe だけ：片付けのみ、翻訳なし。OpenRouter だけ：翻訳あり、片付けはローカルルールのみ。どちらもなし：ローカルルールのみ。"],
+        ["キーは大切に", "キーはブラウザの中にだけ保存されます。私たちを含め、誰にも送らないでください。漏れたかもしれないときは、各サービスの管理画面で削除して作り直してください。"],
+      ],
+      back: "トップへ戻る",
+    },
+    privacyPage: { title: "プライバシーポリシー · ClearFlow", description: "ClearFlow が何を読み、何をどこへ送り、端末に何を保存するか。", source: "日本語版は準備中です。以下は英語版で、GitHub 上の版が優先します：" },
+    notFound: { title: "ページが見つかりません", body: "リンクが間違っているかもしれません。", home: "トップへ戻る" },
+  },
+};
