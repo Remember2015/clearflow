@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.28.13 — 2026-10-19
+
+- CI: the browser tests pass on Linux and are no longer allowed to fail. No changes to the extension itself.
+
 ## 0.28.12 — 2026-10-19
 
 - Your API keys moved out of the extension's general storage into its own database, which the scripts ClearFlow runs on websites can't read. Existing keys are moved automatically; nothing to do.

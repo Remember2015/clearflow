@@ -37,13 +37,14 @@ const JEV = encodeURIComponent(JSON.stringify({ "Does anyone know if this works"
         r[id] = { mark: !!mark, markOpacity: mark ? getComputedStyle(mark).opacity : null, reason: bar?.querySelector(".ff-reason")?.textContent || null, tag: bar?.querySelector(".ff-tag")?.textContent || null };
       }
       const toast = document.querySelector(".ff-toast");
-      return { c: r, toast: toast && toast.classList.contains("ff-toast-on") ? toast.textContent : null, undo: !!toast?.querySelector(".ff-toast-act"),
+      return { c: r, noHover: matchMedia("(hover: none)").matches, toast: toast && toast.classList.contains("ff-toast-on") ? toast.textContent : null, undo: !!toast?.querySelector(".ff-toast-act"),
         saved: (chrome.storage.local._d.ff_confirmed_slogans || []).map((x) => [x.source?.id, x.raw]), checks: (window.__ffMarkedCheck || []).map((m) => m.replies.map((x) => x.id).sort()),
         override: chrome.storage.local._d["ff_reply_override:t1_e1"]?.label || null };
     });
     let s = await st();
     ok("没清理的评论作者那一行有漏斗，折了的（辱骂）没有", s.c.t1_e1.mark && s.c.t1_e3.mark && s.c.t1_e6.mark && !s.c.t1_e4.mark && !!s.c.t1_e4.reason, JSON.stringify(s.c));
-    ok("漏斗平时看不见", s.c.t1_e1.markOpacity === "0", s.c.t1_e1.markOpacity);
+    // 鼠标能悬停的设备上平时看不见、悬停才出来；没法悬停的（触屏，CI 上 Linux 的无头 Chrome 也报这个）一直半透明地露着（content.css 的 hover: none）
+    ok("漏斗平时看不见（没法悬停的设备上半透明露着）", s.c.t1_e1.markOpacity === (s.noHover ? "0.6" : "0"), JSON.stringify({ opacity: s.c.t1_e1.markOpacity, noHover: s.noHover }));
     await page.hover('shreddit-comment[thingid="t1_e1"] [slot="comment"]');
     await wait(250);
     const hovered = await page.evaluate(() => getComputedStyle(document.querySelector('shreddit-comment[thingid="t1_e1"] .ff-mark')).opacity);
