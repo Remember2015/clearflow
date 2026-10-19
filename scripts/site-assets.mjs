@@ -1,7 +1,7 @@
-// Renders the images for the website (site/, https://clearflow.ohmyai.app) into site/assets/<locale>/: the same showcase pages as the
-// store screenshots (scripts/showcase.mjs, every post and comment invented), each shot twice — without the extension and with it — so the
-// page can switch between "before" and "after"; the "mark one, the rest go" page after marking; the real popup and settings page;
-// and a 1200×630 link-preview image per language.
+// Renders the images for the website (site/, https://clearflow.ohmyai.app) into site/assets/<locale>/: the showcase pages of
+// scripts/showcase.mjs (every post and comment invented) with the real extension, each shot without and with it; the boxes the website
+// draws over each pair and small before/after crops of single comments for the case walls (marks.json); the "mark one, the rest go"
+// pages before and after marking; the real popup and settings page; and a 1200×630 link-preview image per language.
 // Needs Google Chrome (CHROME_PATH) and `npm run setup`.
 // Usage: node scripts/site-assets.mjs [--locales en,zh-CN,ja]
 import { execFileSync } from "node:child_process";
@@ -21,8 +21,9 @@ const puppeteer = createRequire(import.meta.url)(path.join(UI, "node_modules/pup
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 execFileSync("python3", ["test/build_inject_bundle.py"], { cwd: EXT, stdio: "ignore" });
 
-// how much of each page the before/after pair shows (CSS px): both shots get the same height so they line up when switching
-const CROP = { x: 860, xnews: 980, xhs: 980, reddit: 980, yt: 980, hn: 900 };
+// how much of each page the before/after pair shows (CSS px): both shots get the same height so they line up side by side
+const CROP = { x: 860, xnews: 980, xsex: 980, xhs: 980, reddit: 980, yt: 980, hn: 900 };
+const MAX_CASES = { clean: 5, tx: 5 }; // crops per page for the case walls
 // "before": the same page without the line that loads the extension
 const unplug = (html) => html.replace(/const sc = document\.createElement\("script"\);[^<]*/, "");
 const OG = {
@@ -30,64 +31,110 @@ const OG = {
   "zh-CN": ["评论区，清清爽爽", "垃圾回复自动清理、写明原因；外文评论原地翻成中文。"],
   ja: ["返信欄を、すっきりと", "スパムやボットの返信を理由つきで片付け、外国語のコメントはその場で日本語に。"],
 };
-// Boxes the website draws over the before/after pair (CSS px from the top left of the shot, cut at its height), plus counts for the
-// whole page. Before: each junk comment (its whole item: spam / filler / abuse / sexual) and each foreign text (just the text).
-// After: the extension's own notices (.ff-bar, the "nice"/"+1" line) and each translation (its note plus the translated text under it).
-function findBefore({ marks, foreign, item, height }) {
+// ---- run inside the page ----
+// Before: a box per junk comment (its own part: spam / filler / abuse / sexual; target / same on the marking pages) and per foreign
+// text (just the text), counts for the whole page, and the rectangles of the comments the case crops need.
+function findBefore({ marks, foreign, item, own, height, need }) {
   const norm = (t) => String(t).replace(/\s+/g, " ").trim();
   const block = (e) => { while (e && getComputedStyle(e).display.startsWith("inline")) e = e.parentElement; return e; };
+  const items = [...document.querySelectorAll(item)];
+  const parts = (it) => own ? [...it.querySelectorAll(own)].filter((e) => e.closest(item) === it) : [it];
+  const rectOf = (els) => { const rs = els.map((e) => e.getBoundingClientRect()).filter((r) => r.height >= 1); if (!rs.length) return null;
+    const l = Math.min(...rs.map((r) => r.left)), t = Math.min(...rs.map((r) => r.top)), r = Math.max(...rs.map((x) => x.right)), b = Math.max(...rs.map((x) => x.bottom));
+    return { x: Math.round(l), y: Math.round(t + scrollY), w: Math.round(r - l), h: Math.round(b - t) }; };
   const els = [...document.body.querySelectorAll("*")].filter((e) => !["SCRIPT", "STYLE"].includes(e.tagName));
-  // elements whose own text is this text (the innermost one), every occurrence
   const find = (t) => { const want = norm(t); return els.filter((e) => norm(e.textContent) === want && ![...e.children].some((c) => norm(c.textContent) === want)); };
-  const box = (e, kind) => { const r = e.getBoundingClientRect(); return { x: Math.round(r.left), y: Math.round(r.top + scrollY), w: Math.round(r.width), h: Math.round(r.height), kind }; };
   const out = [], counts = { clean: 0, filler: 0, tx: 0 }, seen = new Set();
-  const add = (e, kind, key) => { if (!e || seen.has(e)) return; seen.add(e); out.push(box(e, kind)); counts[key]++; };
-  for (const [t, kind] of marks) for (const e of find(t)) add(e.closest(item) || block(e), kind, kind === "filler" ? "filler" : "clean");
-  // a foreign text that is a bare text node (the first paragraph of an HN comment, the words around a code block): box the text itself
-  const bare = (t) => { const want = norm(t), w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), out = []; let n;
-    while ((n = w.nextNode())) if (norm(n.nodeValue) === want) out.push(n);
-    return out; };
+  const add = (e, kind, key) => { if (!e || seen.has(e)) return; seen.add(e); const r = rectOf([e]); if (r) out.push({ ...r, kind }); if (key) counts[key]++; };
+  for (const [t, kind] of marks) for (const e of find(t)) {
+    const it = e.closest(item);
+    const r = it ? rectOf(parts(it)) : null;
+    if (it && seen.has(it)) continue;
+    if (it && r) { seen.add(it); out.push({ ...r, kind }); counts[kind === "filler" ? "filler" : kind === "target" || kind === "same" ? "clean" : "clean"]++; }
+    else add(block(e), kind, "clean");
+  }
+  const bare = (t) => { const want = norm(t), w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), res = []; let n;
+    while ((n = w.nextNode())) if (norm(n.nodeValue) === want) res.push(n);
+    return res; };
   for (const t of foreign) {
-    const els = find(t);
-    for (const e of els) add(block(e), "foreign", "tx");
-    if (els.length) continue;
-    for (const n of bare(t)) {
-      if (seen.has(n)) continue;
-      seen.add(n);
+    const hits = find(t);
+    for (const e of hits) add(block(e), "foreign", "tx");
+    if (hits.length) continue;
+    for (const n of bare(t)) { // a foreign text that is a bare text node (first paragraph of an HN comment, words around a code block)
       const rg = document.createRange(); rg.selectNodeContents(n);
       const r = rg.getBoundingClientRect();
       out.push({ x: Math.round(r.left - 2), y: Math.round(r.top + scrollY - 2), w: Math.round(r.width + 4), h: Math.round(r.height + 4), kind: "foreign" });
       counts.tx++;
     }
   }
-  return { boxes: out.filter((b) => b.h > 0 && b.y < height).map((b) => ({ ...b, h: Math.min(b.h, height - b.y) })), counts };
+  const crops = Object.fromEntries((need || []).map((i) => [i, items[i] ? rectOf(parts(items[i])) : null]));
+  return { boxes: out.filter((b) => b.h > 0 && b.y < height).map((b) => ({ ...b, h: Math.min(b.h, height - b.y) })), counts, crops };
 }
-function findAfter({ height }) {
-  const box = (r, kind) => ({ x: Math.round(r.left), y: Math.round(r.top + scrollY), w: Math.round(r.right - r.left), h: Math.round(r.bottom - r.top), kind });
-  const out = [];
-  for (const e of document.querySelectorAll(".ff-bar")) {
-    const r = e.getBoundingClientRect();
-    if (r.height >= 1) out.push(box(r, e.querySelector(".ff-tag-abuse") && !e.querySelector(".ff-tag:not(.ff-tag-abuse)") ? "abuse" : "spam"));
-  }
-  for (const e of document.querySelectorAll(".ff-fill-line")) { const r = e.getBoundingClientRect(); if (r.height >= 1) out.push(box(r, "filler")); }
-  // a translation: its note, and the first visible text after it that isn't part of a note
+// After: a box per notice the extension put up (.ff-bar, the "nice"/"+1" line) and per translation (its note and the translated text),
+// the undo notice on the marking pages, and the cases: which comments each notice stands for (by their index among the page's
+// comments, the same index in the "before" page) and what to crop.
+function findAfter({ marks, item, own, height, learn }) {
+  const norm = (t) => String(t).replace(/\s+/g, " ").trim();
+  const items = [...document.querySelectorAll(item)];
+  const parts = (it) => own ? [...it.querySelectorAll(own)].filter((e) => e.closest(item) === it) : [it];
+  const rectOf = (els, pad = 0) => { const rs = els.map((e) => e.getBoundingClientRect()).filter((r) => r.height >= 1); if (!rs.length) return null;
+    const l = Math.min(...rs.map((r) => r.left)) - pad, t = Math.min(...rs.map((r) => r.top)) - pad, r = Math.max(...rs.map((x) => x.right)) + pad, b = Math.max(...rs.map((x) => x.bottom)) + pad;
+    return { x: Math.round(Math.max(0, l)), y: Math.round(t + scrollY), w: Math.round(Math.min(innerWidth, r) - Math.max(0, l)), h: Math.round(b - t) }; };
+  const vis = (e) => e.getBoundingClientRect().height >= 1;
+  const ownText = (it) => norm(parts(it).map((e) => e.textContent).join(" "));
+  const kindOf = (it) => { const t = ownText(it); const m = marks.find(([s]) => t.includes(norm(s))); return m ? m[1] : null; };
+  const bars = [...document.querySelectorAll(".ff-bar")].filter(vis);
+  const tagsOf = (b) => [...b.querySelectorAll(".ff-tag")].map((t) => norm(t.textContent));
+  const boxes = [];
+  bars.forEach((b, k) => {
+    const r = rectOf([b]);
+    const kind = learn ? (k === 0 ? "marked" : "learned") : b.querySelector(".ff-tag-abuse") && !b.querySelector(".ff-tag:not(.ff-tag-abuse)") ? "abuse" : "spam";
+    boxes.push({ ...r, kind });
+  });
+  const line = [...document.querySelectorAll(".ff-fill-line")].find(vis);
+  if (line) boxes.push({ ...rectOf([line]), kind: "filler" });
+  const toast = [...document.querySelectorAll(".ff-toast-on")].find(vis);
+  if (toast) boxes.push({ ...rectOf([toast], 2), kind: "undo" });
+  // translations: the note and the first visible text after it that isn't part of a note
+  const txItems = [];
   for (const note of document.querySelectorAll(".ff-tx-note")) {
-    const nr = note.getBoundingClientRect();
-    if (nr.height < 1) continue;
+    if (!vis(note)) continue;
     const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
     w.currentNode = note;
     let n, tb = null;
     while ((n = w.nextNode())) {
       const el = n.parentElement;
       if (!n.nodeValue.trim() || note.contains(el) || el.closest(".ff-tx-note, .ff-bar")) continue;
-      if (el.getBoundingClientRect().height < 1) continue;
+      if (!vis(el)) continue;
       let b = el; while (b && getComputedStyle(b).display.startsWith("inline")) b = b.parentElement;
-      tb = b.getBoundingClientRect(); break;
+      tb = b; break;
     }
-    const r = tb ? { left: Math.min(nr.left, tb.left), top: Math.min(nr.top, tb.top), right: Math.max(nr.right, tb.right), bottom: Math.max(nr.bottom, tb.bottom) } : nr;
-    out.push(box(r, "tx"));
+    boxes.push({ ...rectOf(tb ? [note, tb] : [note]), kind: "tx" });
+    const it = note.closest(item);
+    if (it && parts(it).some((p) => p.contains(note))) txItems.push({ i: items.indexOf(it), note: norm(note.textContent) });
   }
-  return { boxes: out.filter((b) => b.h > 0 && b.y < height).map((b) => ({ ...b, h: Math.min(b.h, height - b.y) })) };
+  // cleaning cases: walk the notices and the comments in page order. A notice inside a comment stands for that comment; one outside
+  // (X's, or a merged run) stands for the hidden junk comments after it, up to the next comment that is still shown.
+  const nodes = [...bars.map((b) => ({ b })), ...items.map((it, i) => ({ it, i }))]
+    .sort((p, q) => { const a = p.b || p.it, c = q.b || q.it; return a === c ? 0 : a.compareDocumentPosition(c) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1; });
+  const clean = [], byBar = new Map(), filler = [];
+  let cur = null;
+  for (const n of nodes) {
+    if (n.b) { if (!n.b.closest(item)) cur = n.b; continue; }
+    const it = n.it, k = kindOf(it), inner = bars.find((b) => b.closest(item) === it);
+    if (k === "filler") { filler.push(n.i); continue; }
+    if (!k) { if (vis(it) && !inner) cur = null; continue; }
+    const bar = inner || cur;
+    if (!bar) continue;
+    if (!byBar.has(bar)) { const c = { items: [], rect: inner ? rectOf(parts(it), 4) : rectOf([bar], 6), tags: tagsOf(bar) }; byBar.set(bar, c); clean.push(c); }
+    byBar.get(bar).items.push(n.i);
+  }
+  const cases = learn ? [] : [
+    ...clean.map((c) => ({ type: "clean", items: c.items, rect: c.rect, tags: c.tags })),
+    ...(line && filler.length ? [{ type: "filler", items: filler, rect: rectOf([line], 6), tags: [] }] : []),
+    ...txItems.map((t) => ({ type: "tx", items: [t.i], rect: rectOf(parts(items[t.i]), 4), note: t.note })),
+  ];
+  return { boxes: boxes.filter((b) => b.h > 0 && b.y < height).map((b) => ({ ...b, h: Math.min(b.h, height - b.y) })), cases };
 }
 const b64 = (buf, type = "png") => `data:image/${type};base64,${Buffer.from(buf).toString("base64")}`;
 const ICON = b64(fs.readFileSync(path.join(EXT, "icons/icon-128.png")));
@@ -118,41 +165,70 @@ for (const loc of ONLY) {
     sizes[file] = [clip.width, clip.height];
   };
   try {
+    const open = async (sc, off) => {
+      const page = await browser.newPage();
+      await light(page);
+      page.on("console", (m) => { if (m.type() === "warning" && /no translation/.test(m.text())) console.warn(`${loc} ${sc.key}${off ? " (before)" : ""}:`, m.text().slice(0, 120)); });
+      page.on("pageerror", (e) => console.warn(`${loc} ${sc.key}: page error`, e.message));
+      await page.evaluateOnNewDocument((l) => { window.__ffUiLang = l; }, loc);
+      await page.setViewport({ width: sc.width, height: 1300, deviceScaleFactor: 2 });
+      await page.goto(BASE + sc.path + (off ? "/off" : ""), { waitUntil: "load" });
+      await wait(off ? 600 : 4500);
+      return page;
+    };
+    // the lowest comment still shown (X's main is min-height 100vh, cleaned posts are display:none)
+    const bottomOf = (page, sc) => page.evaluate((item) => Math.ceil(Math.max(...[...document.querySelectorAll(item)].map((e) => e.getBoundingClientRect()).filter((r) => r.height > 0).map((r) => r.bottom)) + scrollY), sc.item);
+    const crop = async (page, file, r, width) => {
+      const clip = { x: Math.max(0, r.x), y: Math.max(0, r.y), width: Math.min(width, r.x + r.w) - Math.max(0, r.x), height: r.h };
+      await page.screenshot({ path: path.join(dir, file), type: "webp", quality: 85, clip, captureBeyondViewport: true });
+      sizes[file] = [Math.round(clip.width), Math.round(clip.height)];
+      return file;
+    };
     for (const sc of list) {
-      let cropH = 0; // the before/after pair: as tall as the cleaned page's content (at most CROP), "after" goes first
-      for (const off of sc.markTarget ? [false] : [false, true]) {
-        const page = await browser.newPage();
-        await light(page);
-        const warns = [];
-        page.on("console", (m) => { if (m.type() === "warning" && /no translation/.test(m.text())) warns.push(m.text()); });
-        page.on("pageerror", (e) => console.warn(`${loc} ${sc.key}: page error`, e.message));
-        // the page's own address (the stand-in route) is rewritten by the page itself, so load /off first and let it replaceState
-        await page.evaluateOnNewDocument((l) => { window.__ffUiLang = l; }, loc);
-        await page.setViewport({ width: sc.width, height: 1300, deviceScaleFactor: 2 });
-        await page.goto(BASE + sc.path + (off ? "/off" : ""), { waitUntil: "load" });
-        await wait(off ? 600 : 4500);
-        if (sc.markTarget) {
-          await page.hover(`shreddit-comment[thingid="${sc.markTarget}"] [slot="comment"]`);
-          await page.click(`shreddit-comment[thingid="${sc.markTarget}"] .ff-mark`);
-          await wait(1500);
-          await page.hover(`shreddit-comment[thingid="${sc.hoverAfter}"] [slot="comment"]`);
-          await page.hover(`shreddit-comment[thingid="${sc.hoverAfter}"] .ff-mark`);
-          await wait(400);
-        }
-        const h = sc.markTarget ? await page.evaluate(() => Math.ceil(document.querySelector("shreddit-comment-tree").getBoundingClientRect().bottom) + 16)
-          : await page.evaluate(() => {
-            // X: main is min-height 100vh, so measure the lowest post that is still shown (cleaned ones are display:none)
-            const cells = [...document.querySelectorAll('main [data-testid="cellInnerDiv"]')].map((c) => c.getBoundingClientRect()).filter((r) => r.height > 0);
-            if (cells.length) return Math.ceil(Math.max(...cells.map((r) => r.bottom)) + scrollY) + 1;
-            return Math.ceil(Math.max(...[...document.body.children].filter((e) => e.tagName !== "SCRIPT").map((e) => e.getBoundingClientRect().bottom))) + 12;
-          });
-        const height = sc.markTarget ? Math.min(h, 1150) : off ? cropH : (cropH = Math.min(h, CROP[sc.key]));
-        await page.setViewport({ width: sc.width, height: Math.max(height, 1300), deviceScaleFactor: 2 });
-        await shot(`${sc.key}-${sc.markTarget ? "after" : off ? "before" : "after"}.webp`, page, { x: 0, y: 0, width: sc.width, height });
-        if (sc.marks) (MARKS[sc.key] ||= {})[off ? "before" : "after"] = await page.evaluate(off ? findBefore : findAfter, { marks: sc.marks, foreign: sc.foreign, item: sc.item, height });
-        if (warns.length) console.warn(`${loc} ${sc.key}${off ? " (before)" : ""}: ${warns.length} texts had no stand-in translation`, warns.slice(0, 4));
+      const M = (MARKS[sc.key] = {});
+      if (sc.markUi) {
+        // marking: one page with the extension — hover the first scam comment (its funnel shows), shoot, click the funnel, shoot again
+        // with the undo notice (the viewport ends just under the comments, so the notice sits right below them)
+        const page = await open(sc, false), U = sc.markUi;
+        await page.hover(U.hover); await wait(400);
+        const hB = (await bottomOf(page, sc)) + 76; // room for a sticky footer (Xiaohongshu's comment bar) under the last comment
+        await page.setViewport({ width: sc.width, height: hB, deviceScaleFactor: 2 }); await page.hover(U.hover); await wait(300);
+        await shot(`${sc.key}-before.webp`, page, { x: 0, y: 0, width: sc.width, height: hB });
+        M.before = await page.evaluate(findBefore, { marks: sc.marks, foreign: [], item: sc.item, own: sc.own, height: hB });
+        await page.click(U.click); await wait(1600);
+        const hA = (await bottomOf(page, sc)) + 76;
+        await page.setViewport({ width: sc.width, height: hA, deviceScaleFactor: 2 });
+        await page.hover(U.after); await page.hover(U.afterIcon).catch(() => {}); await wait(500);
+        await shot(`${sc.key}-after.webp`, page, { x: 0, y: 0, width: sc.width, height: hA });
+        M.after = await page.evaluate(findAfter, { marks: sc.marks, item: sc.item, own: sc.own, height: hA, learn: true });
         await page.close();
+        continue;
       }
+      // the pair: "after" first (its height sets both), then "before"
+      const after = await open(sc, false);
+      const cropH = Math.min((await bottomOf(after, sc)) + 1, CROP[sc.key]);
+      await after.setViewport({ width: sc.width, height: Math.max(cropH, 1300), deviceScaleFactor: 2 });
+      await shot(`${sc.key}-after.webp`, after, { x: 0, y: 0, width: sc.width, height: cropH });
+      const A = await after.evaluate(findAfter, { marks: sc.marks, item: sc.item, own: sc.own, height: cropH, learn: false });
+      M.after = { boxes: A.boxes };
+      // the case crops: up to MAX_CASES of each kind per page (cleaning: the notices; translation: one per source language)
+      const picked = [...A.cases.filter((c) => c.type !== "tx").slice(0, MAX_CASES.clean), ...A.cases.filter((c) => c.type === "tx").slice(0, MAX_CASES.tx)].filter((c) => c.rect && c.rect.h > 0);
+      M.cases = [];
+      for (const [n, c] of picked.entries()) M.cases.push({ type: c.type, tags: c.tags || [], note: c.note || "", items: c.items.slice(0, 3), after: await crop(after, `case-${sc.key}-${n}-after.webp`, c.rect, sc.width) });
+      await after.close();
+      const before = await open(sc, true);
+      await before.setViewport({ width: sc.width, height: Math.max(cropH, 1300), deviceScaleFactor: 2 });
+      await shot(`${sc.key}-before.webp`, before, { x: 0, y: 0, width: sc.width, height: cropH });
+      const need = [...new Set(M.cases.flatMap((c) => c.items))];
+      const B = await before.evaluate(findBefore, { marks: sc.marks, foreign: sc.foreign, item: sc.item, own: sc.own, height: cropH, need });
+      M.before = { boxes: B.boxes, counts: B.counts };
+      for (const [n, c] of M.cases.entries()) {
+        c.before = [];
+        for (const [j, i] of c.items.entries()) if (B.crops[i]) c.before.push(await crop(before, `case-${sc.key}-${n}-b${j}.webp`, { ...B.crops[i], x: B.crops[i].x - 4, y: B.crops[i].y - 4, w: B.crops[i].w + 8, h: B.crops[i].h + 8 }, sc.width));
+        delete c.items;
+      }
+      M.cases = M.cases.filter((c) => c.before.length);
+      await before.close();
     }
     // the real popup and the Reddit settings page (same seed as the store screenshots)
     const { id } = await (await browser.target().createCDPSession()).send("Extensions.loadUnpacked", { path: EXT });

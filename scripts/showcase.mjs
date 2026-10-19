@@ -437,6 +437,7 @@ article::before{content:"";position:absolute;left:16px;top:14px;width:40px;heigh
 // ---------- Xiaohongshu: a dessert note; lead-generation comments ("see my profile", "add me on WeChat"), one template posted by
 // three accounts and "码住"-type replies cleaned; for English and Japanese readers the whole note is translated ----------
 const XHS = {
+  noteId: "6f20000000000000000a0001", cover: ["桂花酒酿", "小圆子", "10 分钟搞定"], coverBg: "linear-gradient(165deg,#fff3d6 0%,#ffd79a 45%,#f6a65e 100%)", coverInk: "#c96a1c",
   author: "一只小满",
   title: "10 分钟搞定｜桂花酒酿小圆子，甜到心里🌼",
   desc: "周末在家试了一下，比外面卖的还好吃～小圆子用糯米粉加温水揉，酒酿最后再放，煮久了会酸。配方都在图里啦",
@@ -473,15 +474,15 @@ const XHS = {
     "蹲一个": { en: "following", ja: "待機" },
   },
 };
-function xhsPage(loc) {
-  const dict = Object.fromEntries(Object.entries(XHS.tx).map(([k, v]) => [k, v[loc] ?? k]));
+function xhsNote(loc, D, key, base) {
+  const dict = Object.fromEntries(Object.entries(D.tx).map(([k, v]) => [k, v[loc] ?? k]));
   const X = { en: { follow: "Follow", total: (n) => `${n} comments`, edited: "Edited", reply: "Reply", author: "Author", say: "Say something…" },
     "zh-CN": { follow: "关注", total: (n) => `共 ${n} 条评论`, edited: "编辑于", reply: "回复", author: "作者", say: "说点什么…" },
     ja: { follow: "フォロー", total: (n) => `コメント ${n} 件`, edited: "編集日", reply: "返信", author: "作者", say: "コメントする…" } }[loc] || {};
   let n = 0;
   const one = (name, text, place, likes, sub) => {
-    const id = (0x6f20 + n).toString(16).padStart(24, "0"), uid = (0x5f20 + n).toString(16).padStart(24, "0"), av = AV[(n++ * 7 + 1) % AV.length];
-    const isAuthor = name === XHS.author;
+    const id = (base + n).toString(16).padStart(24, "0"), uid = (base - 0x1000 + n).toString(16).padStart(24, "0"), av = AV[(n++ * 7 + 1) % AV.length];
+    const isAuthor = name === D.author;
     return `<div id="comment-${id}" class="comment-item${sub ? " comment-item-sub" : ""}"><div class="comment-inner-container">`
       + `<div class="avatar"><a href="/user/profile/${uid}?xsec_source=pc_comment" data-user-id="${uid}"><span class="avatar-item" style="background:${av}"></span></a></div>`
       + `<div class="right"><div class="author-wrapper"><div class="author"><a href="/user/profile/${uid}?xsec_source=pc_comment" class="name" data-user-id="${uid}">${esc(name)}</a>${isAuthor ? `<span class="tag">${X.author}</span>` : ""}</div>`
@@ -489,22 +490,22 @@ function xhsPage(loc) {
       + `<div class="content"><span class="note-text"><span>${esc(text)}</span></span></div>`
       + `<div class="info"><div class="date"><span>10-12</span><span class="location">${esc(place)}</span></div><div class="interactions"><div class="like"><span class="like-i">♡</span><span class="count">${likes || ""}</span></div><div class="reply icon-container"><span class="count">${X.reply}</span></div></div></div></div></div></div>`;
   };
-  const list = XHS.comments.map(([name, text, place, likes, , replies]) => `<div class="parent-comment">${one(name, text, place, likes, false)}`
+  const list = D.comments.map(([name, text, place, likes, , replies]) => `<div class="parent-comment">${one(name, text, place, likes, false)}`
     + (replies ? `<div class="reply-container"><div class="list-container">${replies.map(([rn, rt, rp]) => one(rn, rt, rp, 5, true)).join("")}</div></div>` : "") + `</div>`).join("");
-  const desc = `<span class="note-text"><span>${esc(XHS.desc)}</span> ${XHS.tags.map((t) => `<a class="tag" href="/search_result?keyword=${encodeURIComponent(t.slice(1))}&amp;type=54">${esc(t)}</a>`).join(" ")}</span>`;
+  const desc = `<span class="note-text"><span>${esc(D.desc)}</span> ${D.tags.map((t) => `<a class="tag" href="/search_result?keyword=${encodeURIComponent(t.slice(1))}&amp;type=54">${esc(t)}</a>`).join(" ")}</span>`;
   const body = `<div id="app"><div id="global" class="layout"><div class="note-detail-mask"><div id="noteContainer" class="note-container">
-  <div class="media-container"><div class="cover"><span class="c1">桂花酒酿</span><span class="c2">小圆子</span><span class="c3">10 分钟搞定</span></div></div>
+  <div class="media-container"><div class="cover"><span class="c1">${esc(D.cover[0])}</span><span class="c2">${esc(D.cover[1])}</span><span class="c3">${esc(D.cover[2])}</span></div></div>
   <div class="interaction-container"><div class="author-container"><div class="author-wrapper"><div class="info"><div class="avatar-click"><div class="avatar-container"><a href="/user/profile/5f20000000000000000a0001"><span class="avatar-item" style="background:#f4b183"></span></a></div></div>
-  <a href="/user/profile/5f20000000000000000a0001?channel_type=explore_feed&amp;xsec_source=pc_user" class="name"><span class="username">${esc(XHS.author)}</span></a></div>
+  <a href="/user/profile/5f20000000000000000a0001?channel_type=explore_feed&amp;xsec_source=pc_user" class="name"><span class="username">${esc(D.author)}</span></a></div>
   <div class="note-detail-follow-btn"><button class="follow-button">${X.follow}</button></div></div></div>
-  <div class="note-scroller"><div class="note-content"><h1 id="detail-title" class="title">${esc(XHS.title)}</h1><div id="detail-desc" class="desc">${desc}</div>
+  <div class="note-scroller"><div class="note-content"><h1 id="detail-title" class="title">${esc(D.title)}</h1><div id="detail-desc" class="desc">${desc}</div>
   <div class="bottom-container"><span class="date">${X.edited} 10-12 上海</span></div></div><div class="divider"></div>
   <div class="comments-el"><div class="comments-container"><div class="total">${X.total(128)}</div><div class="list-container">${list}</div></div></div></div>
   <div class="engage-bar"><span class="say">${X.say}</span><span>♡ 2.1万</span><span>☆ 9862</span><span>💬 128</span></div></div></div></div></div></div>`;
-  const jev = Object.fromEntries(XHS.comments.filter((c) => c[4]).map(([, text, , , sc]) => [[...text].slice(0, 10).join(""), sc]));
+  const jev = Object.fromEntries(D.comments.filter((c) => c[4]).map(([, text, , , sc]) => [[...text].slice(0, 10).join(""), sc]));
   const css = `body{margin:0;font:14px/1.5 -apple-system,"PingFang SC","Hiragino Sans GB",${fontOf(loc)},sans-serif;color:#333;background:#fff;-webkit-font-smoothing:antialiased}
-#noteContainer{display:flex;width:100%;background:#fff} .media-container{width:210px;flex:none;position:relative;background:linear-gradient(165deg,#fff3d6 0%,#ffd79a 45%,#f6a65e 100%)}
-.cover{position:sticky;top:0;height:640px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;color:#fff;font-weight:800;text-shadow:0 2px 0 #c96a1c,0 6px 18px rgba(150,70,0,.35)}
+#noteContainer{display:flex;width:100%;background:#fff} .media-container{width:210px;flex:none;position:relative;background:${D.coverBg}}
+.cover{position:sticky;top:0;height:640px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;color:#fff;font-weight:800;text-shadow:0 2px 0 ${D.coverInk},0 6px 18px rgba(0,0,0,.25)}
 .cover .c1{font-size:32px;letter-spacing:2px} .cover .c2{font-size:40px;letter-spacing:4px} .cover .c3{margin-top:14px;font-size:14px;font-weight:700;padding:6px 16px;border-radius:999px;background:#ff2442;text-shadow:none;letter-spacing:1px}
 .interaction-container{flex:1;min-width:0;padding:20px 20px 0;display:flex;flex-direction:column}
 .author-container .author-wrapper{display:flex;align-items:center;justify-content:space-between} .author-container .info{display:flex;align-items:center;gap:10px}
@@ -519,9 +520,11 @@ function xhsPage(loc) {
 .location{margin-left:8px} .interactions{display:flex;gap:16px} .like-i{margin-right:3px} .reply-container{margin-left:44px}
 .engage-bar{margin-top:auto;position:sticky;bottom:0;background:#fff;border-top:1px solid #eee;display:flex;gap:18px;align-items:center;padding:12px 0;color:#333;font-size:14px}
 .engage-bar .say{flex:1;background:#f5f5f5;border-radius:999px;padding:8px 14px;color:#999}`;
-  return { key: "xhs", width: 700, path: `/sc/${loc}/xhs`, dict,
-    html: shell(loc, XHS.title, css, body, `${txScript(dict)}\n${NO_EMOJI_DETECT}\n${route("/explore/6f20000000000000000a0001?xsec_token=DEMO&xsec_source=pc_feed", jev)}`, "inject_xhs.js") };
+  const ids = D.comments.map((c, i) => `comment-${(base + D.comments.slice(0, i).reduce((k, x) => k + 1 + (x[5] ? x[5].length : 0), 0)).toString(16).padStart(24, "0")}`);
+  return { key, width: 700, path: `/sc/${loc}/${key}`, dict, ids,
+    html: shell(loc, D.title, css, body, `${txScript(dict)}\n${NO_EMOJI_DETECT}\n${route(`/explore/${D.noteId}?xsec_token=DEMO&xsec_source=pc_feed`, jev)}`, "inject_xhs.js") };
 }
+const xhsPage = (loc) => xhsNote(loc, XHS, "xhs", 0x6f20);
 
 // ---------- Hacker News: an English "Show HN" thread translated for Chinese and Japanese readers, links and code kept ----------
 const HN = {
@@ -578,28 +581,139 @@ pre{white-space:pre-wrap;font-size:9pt;background:#efefe6;padding:6px 8px;border
     html: shell(loc, "Hacker News", css, body, `${txScript(dict)}\n${route("/item?id=9300", {})}`, "inject_hn.js") };
 }
 
-const SITE_ORDER = { en: ["x", "xhs", "reddit", "yt", "mark"], "zh-CN": ["xnews", "x", "xhs", "reddit", "yt", "hn", "mark"], ja: ["xnews", "x", "xhs", "reddit", "yt", "hn", "mark"] };
-// what the website marks on the "before" shot: [text, kind] (spam / filler / abuse / sexual), the element around each comment
-// (`item`), and the texts that get translated (`foreign`); narrower pages than the store's so two fit side by side
+// ---------- X: a gadget post with sexual bots and an airdrop bot under it, in each locale's own language ----------
+const XS = {
+  "zh-CN": {
+    post: ["数码小林", "@lin_gadgets", "新入手的降噪耳机，地铁上基本听不到报站了。续航标称 30 小时，实测 27 小时左右。有什么想问的可以留言。"],
+    rows: [
+      ["阿凯", "@akai_audio", "降噪和 AirPods Pro 比怎么样？", null],
+      ["糖糖", "@tangtang_9921", "一个人好无聊，主页有我的私密照片，想看的来💋", { sexual: 0.96 }],
+      ["小鹿", "@xiaolu_8820", "同城寂寞的哥哥看我主页，有惊喜哦～", { sexual: 0.94, benefit: 0.8 }],
+      ["空投助手", "@airdrop_bot_77", "🎁 新币空投进行中，前 1000 名免费领，链接在置顶推文", { benefit: 0.95 }],
+      ["Momo", "@momo_listens", "实测 27 小时已经很良心了，我那副标 24 实际 18。", null],
+      ["Vivi", "@vivi_x_0412", "哥哥，私信我看完整版视频🔥", { sexual: 0.95 }],
+      ["路人甲", "@passby_09", "赞", { filler: 0.94 }],
+      ["老周", "@laozhou_tech", "戴久了耳朵会疼吗？", null],
+    ],
+  },
+  en: {
+    post: ["Lin's Gadgets", "@lin_gadgets", "Got new noise-cancelling headphones. On the subway I can barely hear the station announcements now. Rated 30 hours of battery, I'm getting about 27. Ask me anything."],
+    rows: [
+      ["Kai", "@kai_audio", "How does the noise cancelling compare with AirPods Pro?", null],
+      ["Candy", "@candy_x_9921", "so bored alone tonight… my private pics are on my profile 💋", { sexual: 0.96 }],
+      ["Lulu", "@lulu_x_8820", "lonely guys near me, check my profile for a surprise 😘", { sexual: 0.94, benefit: 0.8 }],
+      ["Airdrop Alerts", "@airdrop_bot_77", "🎁 New token airdrop is live — first 1,000 wallets claim free, link in my pinned post", { benefit: 0.95 }],
+      ["Momo", "@momo_listens", "27 hours is honestly great. Mine are rated 24 and I get 18.", null],
+      ["Vivi", "@vivi_x_0412", "DM me for the full video 🔥", { sexual: 0.95 }],
+      ["Sam", "@sam_r_09", "nice", { filler: 0.94 }],
+      ["Joe", "@joe_tech", "Do your ears hurt after a few hours?", null],
+    ],
+  },
+  ja: {
+    post: ["ガジェット林", "@lin_gadgets", "新しいノイキャンヘッドホンを買いました。電車の中だと駅のアナウンスもほとんど聞こえないくらい。電池は公称30時間、実測で27時間くらい。質問あればどうぞ。"],
+    rows: [
+      ["カイ", "@kai_audio", "ノイキャンは AirPods Pro と比べてどうですか？", null],
+      ["あや", "@aya_x_9921", "ひとりで暇してる…プロフに秘密の写真あるよ💋", { sexual: 0.96 }],
+      ["るる", "@ruru_x_8820", "近くの寂しいお兄さん、プロフ見てね、いいことあるかも😘", { sexual: 0.94, benefit: 0.8 }],
+      ["エアドロ速報", "@airdrop_bot_77", "🎁 新トークンのエアドロップ実施中、先着1000名無料、リンクは固定ポストから", { benefit: 0.95 }],
+      ["もも", "@momo_listens", "27時間なら十分優秀。自分のは公称24時間で実際18時間。", null],
+      ["ビビ", "@vivi_x_0412", "フル動画はDMでね🔥", { sexual: 0.95 }],
+      ["通りすがり", "@pass_by_09", "草", { filler: 0.94 }],
+      ["ジョー", "@joe_tech", "長時間つけてると耳が痛くなりませんか？", null],
+    ],
+  },
+};
+function xSexPage(loc) {
+  const u = UI[loc], src = XS[loc] || XS.en;
+  let n = 0;
+  const art = (name, handle, text, mins) => {
+    const id = 9400 + n, av = AV[(n++ * 3 + 4) % AV.length];
+    return `<div data-testid="cellInnerDiv"><div><article data-testid="tweet" style="--av:${av}">
+  <div data-testid="User-Name">${esc(name)}\n${handle}</div>
+  <a href="/${handle.slice(1)}/status/${id}"><time datetime="2026-10-10T00:00:00.000Z">${u.min(mins)}</time></a>
+  <div data-testid="tweetText">${esc(text)}</div>
+  <button data-testid="caret" aria-label="More" type="button">…</button></article></div></div>`;
+  };
+  const posts = [art(...src.post, 90), ...src.rows.map(([name, handle, text], i) => art(name, handle, text, 70 - i * 6))];
+  const jev = Object.fromEntries(src.rows.filter((r) => r[3]).map(([, , text, sc]) => [[...text].slice(0, 14).join(""), sc]));
+  const css = `body{font:15px/1.45 -apple-system,"Segoe UI",Roboto,${fontOf(loc)},sans-serif;max-width:600px;margin:0 auto;background:#fff;color:#0f1419;-webkit-font-smoothing:antialiased}
+main{border-inline:1px solid #eff3f4;min-height:100vh} article{position:relative;padding:12px 16px 12px 68px;border-bottom:1px solid #eff3f4;display:flow-root}
+article::before{content:"";position:absolute;left:16px;top:14px;width:40px;height:40px;border-radius:50%;background:var(--av)}
+[data-testid=User-Name]{white-space:pre;font-weight:700;line-height:1.25} time{color:#536471;font-size:13px} a{text-decoration:none}
+[data-testid=tweetText]{margin-top:4px} [data-testid=caret]{display:none} main > div:first-child article{padding-top:18px} main > div:first-child [data-testid=tweetText]{font-size:17px}`;
+  return { key: "xsex", width: 600, path: `/sc/${loc}/xsex`, rows: src.rows,
+    html: shell(loc, "X", css, `<main>${posts.join("")}</main>`, `${NO_EMOJI_DETECT}\n${route(`/${src.post[1].slice(1)}/status/9400`, jev)}`, "inject_bundle.js") };
+}
+
+// ---------- Xiaohongshu, "mark one, the rest go": three comments pull people into the same "deals group" in different words;
+// none is caught on its own, marking the first cleans up the other two ----------
+const XHM = {
+  noteId: "6f30000000000000000a0001", cover: ["出租屋", "大变样", "只花 500 块"], coverBg: "linear-gradient(165deg,#e3f0ff 0%,#a9cdfa 45%,#5b8def 100%)", coverInk: "#2d5fb8",
+  author: "租房的小周",
+  title: "租房改造｜500 块让出租屋变温馨🏠",
+  desc: "换了窗帘、加了一块地毯和几盏小灯，整个屋子都不一样了。清单放在图里～",
+  tags: ["#租房改造", "#出租屋", "#家居好物"],
+  comments: [
+    ["奶茶不加糖", "窗帘在哪里买的呀？颜色好温柔", "上海", 52, null],
+    ["好物分享家", "想要同款好物清单的姐妹，私我拉你进群，群里每天都有优惠～", "广东", 2, null],
+    ["一只喵", "地毯是什么尺寸的？想买一样的", "北京", 18, null],
+    ["家居小助手", "我也是在群里找到的，想进群的姐妹找我就行，免费的💕", "浙江", 1, { marked: 0.91 }],
+    ["阿柚", "灯串好可爱，晚上开着肯定很有氛围", "成都", 9, null],
+    ["生活小百科", "有个家居好物群特别好，好多宝藏小物，想进的扣 1 我拉你", "江苏", 0, { marked: 0.88 }],
+    ["小白兔", "退租的时候这些能带走吗？", "杭州", 6, null],
+  ],
+  tx: {
+    "租房改造｜500 块让出租屋变温馨🏠": { en: "Rental makeover | Making my rented flat cosy for 500 yuan 🏠", ja: "賃貸アレンジ｜500元で賃貸の部屋が居心地よく🏠" },
+    "换了窗帘、加了一块地毯和几盏小灯，整个屋子都不一样了。清单放在图里～": { en: "New curtains, a rug and a few small lamps, and the whole room feels different. The list is in the pictures~", ja: "カーテンを替えて、ラグと小さなライトをいくつか足しただけで部屋が見違えました。リストは画像にあります～" },
+    "#租房改造": { en: "#rentalmakeover", ja: "#賃貸アレンジ" }, "#出租屋": { en: "#rentedflat", ja: "#賃貸" }, "#家居好物": { en: "#homefinds", ja: "#インテリア" },
+    "窗帘在哪里买的呀？颜色好温柔": { en: "Where did you get the curtains? Such a soft colour", ja: "カーテンはどこで買ったの？色がやさしくて素敵" },
+    "想要同款好物清单的姐妹，私我拉你进群，群里每天都有优惠～": { en: "Girls who want the same shopping list, DM me and I'll add you to the group, there are deals every day~", ja: "同じアイテムのリストが欲しい人はDMしてね、グループに招待するよ、毎日お得情報あり～" },
+    "地毯是什么尺寸的？想买一样的": { en: "What size is the rug? I want the same one", ja: "ラグのサイズは？同じのが欲しい" },
+    "我也是在群里找到的，想进群的姐妹找我就行，免费的💕": { en: "I found mine in the group too, message me if you want to join, it's free💕", ja: "私もグループで見つけたよ、入りたい人は私に声かけてね、無料だよ💕" },
+    "灯串好可爱，晚上开着肯定很有氛围": { en: "The string lights are so cute, it must look lovely at night", ja: "ライトがかわいい、夜につけたら雰囲気ありそう" },
+    "有个家居好物群特别好，好多宝藏小物，想进的扣 1 我拉你": { en: "There's a great home-finds group with lots of gems, reply 1 and I'll add you", ja: "すごくいいインテリアグループがあるよ、掘り出し物だらけ、入りたい人は1って返信して" },
+    "退租的时候这些能带走吗？": { en: "Can you take these with you when you move out?", ja: "退去するときにこれ全部持っていける？" },
+  },
+};
+const xhsMarkPage = (loc) => xhsNote(loc, XHM, "xhsmark", 0x6f40);
+
+// ======================= what the website shows =======================
+// One render per page; build.mjs puts the pages into the sections (clean / learn / translate).
+const SITE_ORDER = {
+  en: ["x", "xsex", "xhs", "reddit", "yt", "mark", "xhsmark"],
+  "zh-CN": ["xnews", "xsex", "x", "xhs", "reddit", "yt", "hn", "mark", "xhsmark"],
+  ja: ["xnews", "xsex", "x", "xhs", "reddit", "yt", "hn", "mark", "xhsmark"],
+};
+// what the website marks on the "before" shot: [text, kind] — spam / filler / abuse / sexual for cleaning; target / same for marking
 const SITE_MARKS = {
   x: (loc) => { const C = XC[loc]; return [...[C.spamVar[0], C.spam, C.spamVar[1], C.m1].map((t) => [t, "spam"]), ...C.fill.map((t) => [t, "filler"]), [C.abuse, "abuse"]]; },
   xnews: (loc) => XN[loc === "en" ? "ja" : "en"].rows.filter((r) => r[3]).map(([, , t, sc]) => [t, sc.sexual ? "sexual" : sc.filler ? "filler" : "spam"]),
+  xsex: (loc) => (XS[loc] || XS.en).rows.filter((r) => r[3]).map(([, , t, sc]) => [t, sc.sexual ? "sexual" : sc.filler ? "filler" : "spam"]),
   xhs: () => XHS.comments.filter((c) => c[4]).map(([, t, , , sc]) => [t, sc.filler ? "filler" : "spam"]),
   reddit: () => [[RT.spam[0], "spam"], [RT.nice[0], "filler"]],
   yt: () => [[YT.scam[0], "spam"], [YT.scam2[0], "spam"], ["🔥🔥🔥", "filler"]],
   hn: () => [],
+  mark: (loc) => { const C = MK[loc]; return [[C.a, "target"], [C.b, "same"], [C.c, "same"]]; },
+  xhsmark: () => [[XHM.comments[1][1], "target"], [XHM.comments[3][1], "same"], [XHM.comments[5][1], "same"]],
 };
-const SITE_ITEM = { x: "article", xnews: "article", xhs: ".comment-item", reddit: "shreddit-comment", yt: "ytd-comment-view-model", hn: "tr.athing" };
-const SITE_WIDTH = { reddit: 640, yt: 680 };
+// the element around one comment, and the part of it that is that comment (not its replies), for the case crops
+const SITE_ITEM = { x: "article", xnews: "article", xsex: "article", xhs: ".comment-item", xhsmark: ".comment-item", reddit: "shreddit-comment", mark: "shreddit-comment", yt: "ytd-comment-view-model", hn: "tr.athing.comtr" };
+const SITE_OWN = { reddit: ":scope > details > summary, :scope > details > .rgrid > .min-w-0", mark: ":scope > details > summary, :scope > details > .rgrid > .min-w-0", xhs: ":scope > .comment-inner-container", xhsmark: ":scope > .comment-inner-container", yt: ":scope > #body" };
+const SITE_WIDTH = { reddit: 640, yt: 680, mark: 640 };
+// marking: hover the comment, click its funnel; afterwards hover another comment so its funnel shows
+const SITE_MARK_UI = {
+  mark: () => ({ hover: 'shreddit-comment[thingid="t1_m2"] [slot="comment"]', click: 'shreddit-comment[thingid="t1_m2"] .ff-mark', after: 'shreddit-comment[thingid="t1_m5"] [slot="comment"]', afterIcon: 'shreddit-comment[thingid="t1_m5"] .ff-mark' }),
+  xhsmark: (p) => ({ hover: `#${p.ids[1]} .content`, click: `#${p.ids[1]} .ff-mark`, after: `#${p.ids[4]} .content`, afterIcon: `#${p.ids[4]} .ff-mark` }),
+};
 export function sitePages(locale) {
   const loc = SITE_ORDER[locale] ? locale : "en";
-  const all = { x: xPage, xnews: xNewsPage, xhs: xhsPage, reddit: redditPage, yt: ytPage, hn: hnPage, mark: markPage };
+  const all = { x: xPage, xnews: xNewsPage, xsex: xSexPage, xhs: xhsPage, reddit: redditPage, yt: ytPage, hn: hnPage, mark: markPage, xhsmark: xhsMarkPage };
   return SITE_ORDER[loc].map((k) => {
     const p = all[k](loc);
-    if (!SITE_MARKS[k]) return p;
     const marks = SITE_MARKS[k](loc), marked = new Set(marks.map((m) => m[0]));
     const skip = new Set(k === "hn" ? HN.fragments : []);
     const foreign = [...Object.entries(p.dict || {}).filter(([src, tx]) => tx !== src && !marked.has(src) && !skip.has(src)).map(([src]) => src), ...(k === "hn" ? HN.sentences : [])];
-    return { ...p, width: SITE_WIDTH[k] || p.width, marks, foreign, item: SITE_ITEM[k] };
+    const ui = SITE_MARK_UI[k] ? SITE_MARK_UI[k](p) : null;
+    return { ...p, width: SITE_WIDTH[k] || p.width, marks, foreign, item: SITE_ITEM[k], own: SITE_OWN[k] || null, markUi: ui, markTarget: undefined };
   });
 }

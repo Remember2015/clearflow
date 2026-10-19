@@ -69,6 +69,8 @@ const I = {
   check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
   chevron: '<path d="M6 9l6 6 6-6"/>',
   gh: '<path d="M8 8l-4 4 4 4M16 8l4 4-4 4"/>',
+  eye: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>',
+  spark: '<path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4z"/>',
 };
 const icon = (k, cls = "i") => `<svg class="${cls}" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${I[k]}</svg>`;
 
@@ -111,7 +113,8 @@ function shell({ lang, C, title, description, pathFor, body, extraCss }) {
   <div class="wrap bar">
     <a class="logo" href="${home}"><img src="/icon.svg" alt="" width="28" height="28"><span>${esc(C.brand)}</span></a>
     <nav class="nav" aria-label="${esc(C.brand)}">
-      <a href="${home}#features">${esc(C.nav.features)}</a>
+      <a href="${home}#clean">${esc(C.nav.clean)}</a>
+      <a href="${home}#translate">${esc(C.nav.tx)}</a>
       <a href="${home}#cost">${esc(C.nav.cost)}</a>
       <a href="${home}#privacy">${esc(C.nav.privacy)}</a>
       <a href="${home}#faq">${esc(C.nav.faq)}</a>
@@ -152,76 +155,109 @@ const img = (loc, file, alt, { eager = false, cls = "" } = {}) => {
 };
 
 // ---------- home ----------
-// the before/after pairs: scenes in the order they were rendered, boxes from scripts/site-assets.mjs (marks.json)
+// pages rendered by scripts/site-assets.mjs: boxes for each before/after pair and the case crops (marks.json)
 const MARKS = Object.fromEntries(Object.values(LANGS).map((l) => [l.assets, JSON.parse(fs.readFileSync(path.join(SITE, "assets", l.assets, "marks.json"), "utf8"))]));
-// the extension's own words for the little pictures on the feature cards (so they read exactly like the extension)
 const UI_STR = Object.fromEntries(Object.values(LANGS).map((l) => [l.assets, JSON.parse(fs.readFileSync(path.join(ROOT, "i18n", `${l.assets}.json`), "utf8"))]));
-const DOMAIN = { x: "x.com", xnews: "x.com", xhs: "xiaohongshu.com", reddit: "reddit.com", yt: "youtube.com", hn: "news.ycombinator.com" };
+const DOMAIN = { x: "x.com", xnews: "x.com", xsex: "x.com", xhs: "xiaohongshu.com", xhsmark: "xiaohongshu.com", reddit: "reddit.com", mark: "reddit.com", yt: "youtube.com", hn: "news.ycombinator.com" };
+const dom = (lang, k) => (lang === "en" && DOMAIN[k] === "xiaohongshu.com" ? "rednote.com" : DOMAIN[k]);
 const fmt = (t, vars) => String(t).replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m));
-// the CSP has no 'unsafe-inline' for styles, so per-element positions and widths go into a small stylesheet per language (home.css)
+// the CSP has no 'unsafe-inline' for styles, so per-element positions go into a small stylesheet per language (home.css)
 let RULES = [];
 const rule = (decl) => { const i = RULES.indexOf(decl); return `r${i < 0 ? RULES.push(decl) - 1 : i}`; };
 
-// one side of a pair: the shot and its boxes (positions in % of the shot, so they scale with it)
-function side(lang, loc, key, which) {
-  const C = COPY[lang], file = `${key}-${which}.webp`, [w, h] = SIZES[loc][file];
-  const T = C.demo.tags;
-  const label = (k) => which === "before" ? T[k] : k === "tx" ? T.tx : k === "filler" ? T.tucked : T.cleaned;
-  const boxes = MARKS[loc][key][which].boxes.map((b) => {
+// which boxes each section draws, their colour and their label
+const SHOW = {
+  clean: { before: ["spam", "abuse", "sexual", "filler"], after: ["spam", "abuse", "filler"] },
+  tx: { before: ["foreign"], after: ["tx"] },
+  learn: { before: ["target", "same"], after: ["marked", "learned", "undo"] },
+};
+const TONE = { before: { foreign: "warn", same: "warn", target: "info" }, after: { tx: "info", undo: "info" } };
+const LABEL = { after: { spam: "cleaned", abuse: "cleaned", filler: "tucked", tx: "tx", marked: "marked", learned: "learned", undo: "undo" } };
+
+function side(lang, loc, sec, key, which, head, eager) {
+  const C = COPY[lang], file = `${key}-${which}.webp`, [w, h] = SIZES[loc][file], T = C.demo.tags;
+  const boxes = MARKS[loc][key][which].boxes.filter((b) => SHOW[sec][which].includes(b.kind)).map((b) => {
     const inset = 3, x = Math.max(b.x, inset), r = Math.min(b.x + b.w, w - inset);
-    const tone = which === "before" ? (b.kind === "foreign" ? "warn" : "bad") : b.kind === "tx" ? "info" : "good";
+    const tone = TONE[which][b.kind] || (which === "before" ? "bad" : "good");
     const pos = rule(`left:${(x / w * 100).toFixed(2)}%;top:${(b.y / h * 100).toFixed(2)}%;width:${((r - x) / w * 100).toFixed(2)}%;height:${(b.h / h * 100).toFixed(2)}%`);
-    return `<span class="box ${tone} ${pos}"><span class="box-tag">${esc(label(b.kind))}</span></span>`;
+    return `<span class="box ${tone} ${pos}"><span class="box-tag">${esc(T[(LABEL[which] || {})[b.kind] || b.kind])}</span></span>`;
   }).join("");
-  return `<div class="side ${which}"><div class="side-head"><span class="dot"></span>${esc(which === "before" ? C.demo.before : C.demo.after)}</div>`
-    + `<div class="shot-wrap">${img(loc, file, `${C.demo.tabs[key]} · ${which === "before" ? C.demo.before : C.demo.after}`, { eager: key === Object.keys(MARKS[loc])[0] })}<div class="boxes" aria-hidden="true">${boxes}</div></div></div>`;
+  return `<div class="side ${which}"><div class="side-head"><span class="dot"></span>${esc(head)}</div>`
+    + `<div class="shot-wrap">${img(loc, file, `${C.demo.tabs[key]} · ${head}`, { eager })}<div class="boxes" aria-hidden="true">${boxes}</div></div></div>`;
 }
 
-// the little pictures on the feature cards, drawn like the extension's own notices
-function illustration(lang, loc, kind) {
-  const S = UI_STR[loc], I2 = COPY[lang].ill;
-  const eye = '<svg class="fb-eye" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>';
-  const bar = (tag, text, cls = "") => `<div class="fb"><span class="fb-tag ${cls}">${esc(tag)}</span><span class="fb-text">${esc(text)}</span>${eye}</div>`;
-  const skel = (wide) => `<div class="sk"><span class="sk-av"></span><span class="sk-lines"><span class="${rule(`width:${wide}%`)}"></span><span class="${rule(`width:${wide - 22}%`)}"></span></span></div>`;
-  switch (kind) {
-    case "reason": return `<div class="ill">${bar(S["cat.spam.tag"], fmt(S["reason.dup"], { n: 3 }))}${bar(S["cat.spam.tag"], S["kind.m1"])}${bar(S["cat.abuse.tag"], `${S["kind.abuse"]} 0.93`, "abuse")}</div>`;
-    case "filler": return `<div class="ill">${skel(70)}<div class="fl"><img src="/icon.svg" alt="" width="16" height="16"><span>${esc(fmt(S["filler.line"], { n: 4 }))}</span><span class="fl-link">${esc(S["filler.show"])}</span></div>${skel(84)}</div>`;
-    case "merge": return `<div class="ill ill-merge"><div class="ghosts">${skel(78)}${skel(78)}${skel(78)}</div><div class="merge-arrow">↓</div><div class="stack">${bar(`${S["cat.spam.tag"]} 3`, fmt(S["reason.dup"], { n: 3 }))}</div></div>`;
-    case "learn": return `<div class="ill"><div class="sk sk-mark"><span class="sk-av"></span><span class="sk-lines"><span class="${rule("width:80%")}"></span><span class="${rule("width:56%")}"></span></span><span class="mark-btn"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h13l-5 6.2V18l-3-1.6v-5.2z"/><path d="M19 4v6M16 7h6"/></svg></span></div>${bar(S["cat.spam.tag"], S["kind.marked"])}${bar(S["cat.spam.tag"], S["kind.marked"])}</div>`;
-    case "translate": return `<div class="ill ill-tx"><p class="tx-orig">${esc(I2.orig)}</p><p class="tx-note">✦ ${esc(fmt(S["tx.from"], { lang: I2.lang }))} · <span>${esc(S["tx.seeOriginal"])}</span></p><p class="tx-out">${esc(I2.tx)}</p></div>`;
-    case "sites": return `<div class="ill ill-sites"><div class="seg-mini"><span>${esc(S["opt.level.less"])}</span><span class="on">${esc(S["opt.level.default"])}</span><span>${esc(S["opt.level.more"])}</span></div><div class="tg"><span>${esc(S["c.siteFold"])}</span><span class="sw"></span></div><div class="tg"><span>${esc(S["c.siteTx"])}</span><span class="sw"></span></div></div>`;
+// the whole-page before/after, one scene at a time
+function viewer(lang, loc, sec, scenes, captions, heads) {
+  const C = COPY[lang];
+  const tabs = scenes.map((k, i) => `<button type="button" role="tab" id="${sec}-tab-${k}" aria-controls="${sec}-scene-${k}" aria-selected="${i === 0}" tabindex="${i === 0 ? 0 : -1}" data-scene="${k}"><span class="tab-name">${esc(C.demo.tabs[k])}</span><span class="tab-dom">${dom(lang, k)}</span></button>`).join("");
+  const panels = scenes.map((k, i) => {
+    const n = MARKS[loc][k].before.counts || {};
+    const keys = sec === "tx" ? ["tx"] : sec === "clean" ? ["clean", "filler"] : [];
+    const sum = keys.filter((x) => n[x]).map((x) => `<span class="chip ${x}">${esc(fmt(C.demo.sum[x], { n: n[x] }))}</span>`).join("");
+    return `<div class="scene" role="tabpanel" id="${sec}-scene-${k}" aria-labelledby="${sec}-tab-${k}" data-scene="${k}"${i ? " hidden" : ""}>
+        <p class="scene-cap">${phrases(lang, captions[k])}</p>
+        ${sum ? `<div class="chips">${sum}</div>` : ""}
+        <div class="cmp" data-show="before">
+          <div class="flip" role="group" aria-label="${esc(C.demo.label)}"><button type="button" data-show="before" aria-pressed="true">${esc(heads[0])}</button><button type="button" data-show="after" aria-pressed="false">${esc(heads[1])}</button></div>
+          ${side(lang, loc, sec, k, "before", heads[0], false)}
+          ${side(lang, loc, sec, k, "after", heads[1], false)}
+        </div>
+      </div>`;
+  }).join("\n      ");
+  return `<div class="demo" aria-label="${esc(C.demo.label)}">
+      <div class="scenes" role="tablist" aria-label="${esc(C.demo.label)}">${tabs}</div>
+      ${panels}
+      <p class="note">${esc(C.demo.note)}</p>
+    </div>`;
+}
+
+// many small examples: one comment (or a run of them) as it was, and what ClearFlow made of it — crops of the same shots
+const SHOWN_CASES = 6;
+function caseWall(lang, loc, sec, scenes) {
+  const C = COPY[lang], S = UI_STR[loc];
+  const lists = scenes.map((k) => (MARKS[loc][k].cases || []).filter((c) => (sec === "tx" ? c.type === "tx" : c.type !== "tx")).map((c) => ({ ...c, k })));
+  const all = [];
+  let fillers = 0;
+  for (let r = 0; lists.some((l) => l.length > r); r++) for (const l of lists) {
+    const c = l[r];
+    if (!c || (c.type === "filler" && ++fillers > 2)) continue;
+    all.push(c);
   }
-  return "";
+  const strip = (t) => String(t).replace(S["tx.seeOriginal"], "").replace(/[✦·\s]+$/u, "").replace(/^[✦·\s]+/u, "").trim();
+  const card = (c, i) => {
+    const what = c.type === "tx" ? strip(c.note) : c.type === "filler" ? S["opt.filler"] : c.tags.join(" · ");
+    const tone = c.type === "tx" ? "info" : "good";
+    return `<figure class="case${i >= SHOWN_CASES ? " extra" : ""}">
+        <figcaption class="case-head"><span class="case-site">${esc(C.demo.site[c.k])}</span><span class="case-what">${esc(what)}</span></figcaption>
+        <div class="case-shot before"><span class="case-lbl ${c.type === "tx" ? "warn" : "bad"}">${esc(C.demo.caseBefore)}</span>${c.before.map((f) => img(loc, f, `${C.demo.site[c.k]} · ${C.demo.caseBefore}`)).join("")}</div>
+        <div class="case-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg></div>
+        <div class="case-shot after"><span class="case-lbl ${tone}">${esc(C.demo.caseAfter)}</span>${img(loc, c.after, `${C.demo.site[c.k]} · ${C.demo.caseAfter}`)}</div>
+      </figure>`;
+  };
+  const extra = all.length - SHOWN_CASES;
+  return `<div class="cases" data-more="${extra > 0 ? "closed" : "none"}">
+      ${all.map(card).join("\n      ")}
+    </div>${extra > 0 ? `<button type="button" class="btn ghost more-btn" data-more-label="${esc(fmt(C.demo.more, { n: extra }))}" data-less-label="${esc(C.demo.less)}">${esc(fmt(C.demo.more, { n: extra }))}</button>` : ""}`;
 }
 
 function home(lang) {
   const C = COPY[lang], loc = LANGS[lang].assets;
   RULES = [];
-  const scenes = Object.keys(MARKS[loc]);
-  const tabs = scenes.map((k, i) => `<button type="button" role="tab" id="tab-${k}" aria-controls="scene-${k}" aria-selected="${i === 0}" tabindex="${i === 0 ? 0 : -1}" data-scene="${k}"><span class="tab-name">${esc(C.demo.tabs[k])}</span><span class="tab-dom">${lang === "en" && k === "xhs" ? "rednote.com" : DOMAIN[k]}</span></button>`).join("");
-  const panels = scenes.map((k, i) => {
-    const n = MARKS[loc][k].before.counts;
-    const sum = ["clean", "filler", "tx"].filter((x) => n[x]).map((x) => `<span class="chip ${x}">${esc(fmt(C.demo.sum[x], { n: n[x] }))}</span>`).join("");
-    return `<div class="scene" role="tabpanel" id="scene-${k}" aria-labelledby="tab-${k}" data-scene="${k}"${i ? " hidden" : ""}>
-        <p class="scene-cap">${phrases(lang, C.demo.captions[k])}</p>
-        <div class="chips">${sum}</div>
-        <div class="cmp" data-show="before">
-          <div class="flip" role="group" aria-label="${esc(C.demo.label)}"><button type="button" data-show="before" aria-pressed="true">${esc(C.demo.before)}</button><button type="button" data-show="after" aria-pressed="false">${esc(C.demo.after)}</button></div>
-          ${side(lang, loc, k, "before")}
-          ${side(lang, loc, k, "after")}
-        </div>
-      </div>`;
-  }).join("\n      ");
-  const SPAN = { reason: "wide", learn: "wide", translate: "wide" };
-  const feats = C.features.items.map(([k, h, p]) => `<li class="feat ${SPAN[k] || ""}">${illustration(lang, loc, k)}<div class="feat-copy">${icon(k, "i feat-i")}<h3>${phrases(lang, h)}</h3><p>${esc(p)}</p></div></li>`).join("\n      ");
+  const have = (list) => list.filter((k) => MARKS[loc][k]);
+  const pointsOf = (items, icons) => `<ul class="mod-points">${items.map(([h, p], i) => `<li>${icon(icons[i], "i mp-i")}<div><h3>${phrases(lang, h)}</h3><p>${esc(p)}</p></div></li>`).join("")}</ul>`;
   const steps = C.how.steps.map(([h, p], i) => `<li class="step"><span class="step-n">${i + 1}</span><h3>${phrases(lang, h)}</h3><p>${esc(p)}</p></li>`).join("\n      ");
+  const learnSteps = C.learn.steps.map(([h, p], i) => `<li><span class="ls-n">${i + 1}</span><div><h3>${phrases(lang, h)}</h3><p>${esc(p)}</p></div></li>`).join("");
   const PRIV_ICON = ["eyeOff", "send", "key", "code"];
   const priv = C.privacy.items.map(([h, p], i) => `<li class="pv">${icon(PRIV_ICON[i], "i pv-i")}<div><h3>${phrases(lang, h)}</h3><p>${esc(p)}</p></div></li>`).join("\n      ");
   const faq = C.faq.items.map(([q, a]) => `<details class="qa"><summary>${esc(q)}${icon("chevron", "i qa-i")}</summary><p>${a}</p></details>`).join("\n      ");
   const points = C.cost.points.map((p) => `<li>${icon("check", "i ok")}<span>${esc(p)}</span></li>`).join("");
   const trust = C.hero.trust.map((t) => `<li>${icon("check", "i ok")}<span>${esc(t)}</span></li>`).join("");
+  const ENTRY_ICON = { clean: "reason", learn: "learn", translate: "translate" };
+  const entries = C.hero.entries.map(([id, h, p]) => `<a class="entry ${id}" href="#${id}">${icon(ENTRY_ICON[id], "i entry-i")}<span class="entry-t">${esc(h)}</span><span class="entry-p">${esc(p)}</span><span class="entry-go">${icon("chevron", "i")}</span></a>`).join("");
   const [h1a, h1b] = C.hero.h1Parts;
   const eb = (k) => `<p class="sec-eyebrow">${esc(C.eyebrow[k])}</p>`;
+  const cleanScenes = have(C.clean.scenes), txScenes = have(C.tx.scenes), learnScenes = have(C.learn.scenes);
+  const ctrl = C.control.points.map((t) => `<li>${icon("check", "i ok")}<span>${esc(t)}</span></li>`).join("");
   const body = `
 <section class="hero">
   <div class="hero-bg" aria-hidden="true"></div>
@@ -236,36 +272,42 @@ function home(lang) {
     <ul class="trust">${trust}</ul>
     <p class="fine">${esc(C.hero.fine)}</p>
   </div>
-  <div class="wrap demo-wrap">
-    <div class="demo" aria-label="${esc(C.demo.label)}">
-      <h2 class="demo-h">${phrases(lang, C.demo.h2)}</h2>
-      <div class="scenes" role="tablist" aria-label="${esc(C.demo.label)}">${tabs}</div>
-      ${panels}
-      <p class="note">${esc(C.demo.note)}</p>
-    </div>
+  <div class="wrap"><nav class="entries" aria-label="${esc(C.brand)}">${entries}</nav></div>
+</section>
+
+<section id="clean" class="sec mod">
+  <div class="wrap">
+    <div class="mod-head">${eb("clean")}<h2>${phrases(lang, C.clean.h2)}</h2><p class="mod-lede">${esc(C.clean.lede)}</p></div>
+    ${pointsOf(C.clean.points, ["reason", "filler", "merge"])}
+    <h3 class="mod-sub">${esc(C.clean.casesH)}</h3>
+    ${caseWall(lang, loc, "clean", cleanScenes)}
+    <h3 class="mod-sub">${esc(C.demo.whole)}</h3>
+    ${viewer(lang, loc, "clean", cleanScenes, C.clean.captions, [C.demo.before, C.demo.after])}
   </div>
 </section>
 
-<section id="features" class="sec">
+<section id="learn" class="sec mod alt">
   <div class="wrap">
-    ${eb("features")}
-    <h2>${phrases(lang, C.features.h2)}</h2>
-    <ul class="feats">
-      ${feats}
-    </ul>
+    <div class="mod-head">${eb("learn")}<h2>${phrases(lang, C.learn.h2)}</h2><p class="mod-lede">${esc(C.learn.lede)}</p></div>
+    <ol class="learn-steps">${learnSteps}</ol>
+    ${viewer(lang, loc, "learn", learnScenes, C.learn.captions, [C.learn.before, C.learn.after])}
+  </div>
+</section>
+
+<section id="translate" class="sec mod">
+  <div class="wrap">
+    <div class="mod-head">${eb("tx")}<h2>${phrases(lang, C.tx.h2)}</h2><p class="mod-lede">${esc(C.tx.lede)}</p></div>
+    ${pointsOf(C.tx.points, ["translate", "eye", "spark"])}
+    <h3 class="mod-sub">${esc(C.tx.casesH)}</h3>
+    ${caseWall(lang, loc, "tx", txScenes)}
+    <h3 class="mod-sub">${esc(C.demo.whole)}</h3>
+    ${viewer(lang, loc, "tx", txScenes, C.tx.captions, [C.demo.before, C.demo.after])}
   </div>
 </section>
 
 <section class="sec spot">
   <div class="wrap spot-grid">
-    <div class="spot-copy"><h2>${phrases(lang, C.mark.h2)}</h2><p>${esc(C.mark.body)}</p></div>
-    <div class="stage">${img(loc, "mark-after.webp", C.mark.alt)}</div>
-  </div>
-</section>
-
-<section class="sec spot rev">
-  <div class="wrap spot-grid">
-    <div class="spot-copy"><h2>${phrases(lang, C.control.h2)}</h2><p>${esc(C.control.body)}</p></div>
+    <div class="spot-copy"><h2>${phrases(lang, C.control.h2)}</h2><p>${esc(C.control.body)}</p><ul class="points">${ctrl}</ul></div>
     <div class="stage pair">${img(loc, "popup.webp", C.control.altPopup, { cls: "popup" })}${img(loc, "settings.webp", C.control.altSettings, { cls: "settings" })}</div>
   </div>
 </section>
