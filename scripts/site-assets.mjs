@@ -9,7 +9,7 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { createRequire } from "node:module";
-import { pages, fontOf } from "./showcase.mjs";
+import { sitePages, fontOf } from "./showcase.mjs";
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
 const EXT = path.join(ROOT, "extension"), UI = path.join(ROOT, "ui"), OUT = path.join(ROOT, "site/assets");
@@ -22,7 +22,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 execFileSync("python3", ["test/build_inject_bundle.py"], { cwd: EXT, stdio: "ignore" });
 
 // how much of each page the before/after pair shows (CSS px): both shots get the same height so they line up when switching
-const CROP = { x: 860, reddit: 980, yt: 980 };
+const CROP = { x: 860, xnews: 980, xhs: 980, reddit: 980, yt: 980, hn: 900 };
 // "before": the same page without the line that loads the extension
 const unplug = (html) => html.replace(/const sc = document\.createElement\("script"\);[^<]*/, "");
 const OG = {
@@ -30,13 +30,72 @@ const OG = {
   "zh-CN": ["评论区，清清爽爽", "垃圾回复自动清理、写明原因；外文评论原地翻成中文。"],
   ja: ["返信欄を、すっきりと", "スパムやボットの返信を理由つきで片付け、外国語のコメントはその場で日本語に。"],
 };
+// Boxes the website draws over the before/after pair (CSS px from the top left of the shot, cut at its height), plus counts for the
+// whole page. Before: each junk comment (its whole item: spam / filler / abuse / sexual) and each foreign text (just the text).
+// After: the extension's own notices (.ff-bar, the "nice"/"+1" line) and each translation (its note plus the translated text under it).
+function findBefore({ marks, foreign, item, height }) {
+  const norm = (t) => String(t).replace(/\s+/g, " ").trim();
+  const block = (e) => { while (e && getComputedStyle(e).display.startsWith("inline")) e = e.parentElement; return e; };
+  const els = [...document.body.querySelectorAll("*")].filter((e) => !["SCRIPT", "STYLE"].includes(e.tagName));
+  // elements whose own text is this text (the innermost one), every occurrence
+  const find = (t) => { const want = norm(t); return els.filter((e) => norm(e.textContent) === want && ![...e.children].some((c) => norm(c.textContent) === want)); };
+  const box = (e, kind) => { const r = e.getBoundingClientRect(); return { x: Math.round(r.left), y: Math.round(r.top + scrollY), w: Math.round(r.width), h: Math.round(r.height), kind }; };
+  const out = [], counts = { clean: 0, filler: 0, tx: 0 }, seen = new Set();
+  const add = (e, kind, key) => { if (!e || seen.has(e)) return; seen.add(e); out.push(box(e, kind)); counts[key]++; };
+  for (const [t, kind] of marks) for (const e of find(t)) add(e.closest(item) || block(e), kind, kind === "filler" ? "filler" : "clean");
+  // a foreign text that is a bare text node (the first paragraph of an HN comment, the words around a code block): box the text itself
+  const bare = (t) => { const want = norm(t), w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), out = []; let n;
+    while ((n = w.nextNode())) if (norm(n.nodeValue) === want) out.push(n);
+    return out; };
+  for (const t of foreign) {
+    const els = find(t);
+    for (const e of els) add(block(e), "foreign", "tx");
+    if (els.length) continue;
+    for (const n of bare(t)) {
+      if (seen.has(n)) continue;
+      seen.add(n);
+      const rg = document.createRange(); rg.selectNodeContents(n);
+      const r = rg.getBoundingClientRect();
+      out.push({ x: Math.round(r.left - 2), y: Math.round(r.top + scrollY - 2), w: Math.round(r.width + 4), h: Math.round(r.height + 4), kind: "foreign" });
+      counts.tx++;
+    }
+  }
+  return { boxes: out.filter((b) => b.h > 0 && b.y < height).map((b) => ({ ...b, h: Math.min(b.h, height - b.y) })), counts };
+}
+function findAfter({ height }) {
+  const box = (r, kind) => ({ x: Math.round(r.left), y: Math.round(r.top + scrollY), w: Math.round(r.right - r.left), h: Math.round(r.bottom - r.top), kind });
+  const out = [];
+  for (const e of document.querySelectorAll(".ff-bar")) {
+    const r = e.getBoundingClientRect();
+    if (r.height >= 1) out.push(box(r, e.querySelector(".ff-tag-abuse") && !e.querySelector(".ff-tag:not(.ff-tag-abuse)") ? "abuse" : "spam"));
+  }
+  for (const e of document.querySelectorAll(".ff-fill-line")) { const r = e.getBoundingClientRect(); if (r.height >= 1) out.push(box(r, "filler")); }
+  // a translation: its note, and the first visible text after it that isn't part of a note
+  for (const note of document.querySelectorAll(".ff-tx-note")) {
+    const nr = note.getBoundingClientRect();
+    if (nr.height < 1) continue;
+    const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    w.currentNode = note;
+    let n, tb = null;
+    while ((n = w.nextNode())) {
+      const el = n.parentElement;
+      if (!n.nodeValue.trim() || note.contains(el) || el.closest(".ff-tx-note, .ff-bar")) continue;
+      if (el.getBoundingClientRect().height < 1) continue;
+      let b = el; while (b && getComputedStyle(b).display.startsWith("inline")) b = b.parentElement;
+      tb = b.getBoundingClientRect(); break;
+    }
+    const r = tb ? { left: Math.min(nr.left, tb.left), top: Math.min(nr.top, tb.top), right: Math.max(nr.right, tb.right), bottom: Math.max(nr.bottom, tb.bottom) } : nr;
+    out.push(box(r, "tx"));
+  }
+  return { boxes: out.filter((b) => b.h > 0 && b.y < height).map((b) => ({ ...b, h: Math.min(b.h, height - b.y) })) };
+}
 const b64 = (buf, type = "png") => `data:image/${type};base64,${Buffer.from(buf).toString("base64")}`;
 const ICON = b64(fs.readFileSync(path.join(EXT, "icons/icon-128.png")));
 
 for (const loc of ONLY) {
   const dir = path.join(OUT, loc);
   fs.mkdirSync(dir, { recursive: true });
-  const list = pages(loc);
+  const list = sitePages(loc);
   const routes = new Map();
   for (const p of list) { routes.set(p.path, p.html); routes.set(p.path + "/off", unplug(p.html)); }
   const server = http.createServer((req, res) => {
@@ -53,7 +112,7 @@ for (const loc of ONLY) {
     args: ["--enable-unsafe-extension-debugging", "--no-first-run", `--lang=${loc}`], ignoreDefaultArgs: ["--disable-extensions"], env: { ...process.env, LANG: `${SYS_LANG[loc]}.UTF-8` } });
   // the extension's pages follow the system's dark mode; the site shows the light ones, like the store screenshots
   const light = (page) => page.emulateMediaFeatures([{ name: "prefers-color-scheme", value: "light" }]);
-  const sizes = {};
+  const sizes = {}, MARKS = {};
   const shot = async (file, page, clip) => {
     await page.screenshot({ path: path.join(dir, file), type: "webp", quality: 82, clip });
     sizes[file] = [clip.width, clip.height];
@@ -64,6 +123,9 @@ for (const loc of ONLY) {
       for (const off of sc.markTarget ? [false] : [false, true]) {
         const page = await browser.newPage();
         await light(page);
+        const warns = [];
+        page.on("console", (m) => { if (m.type() === "warning" && /no translation/.test(m.text())) warns.push(m.text()); });
+        page.on("pageerror", (e) => console.warn(`${loc} ${sc.key}: page error`, e.message));
         // the page's own address (the stand-in route) is rewritten by the page itself, so load /off first and let it replaceState
         await page.evaluateOnNewDocument((l) => { window.__ffUiLang = l; }, loc);
         await page.setViewport({ width: sc.width, height: 1300, deviceScaleFactor: 2 });
@@ -77,11 +139,18 @@ for (const loc of ONLY) {
           await page.hover(`shreddit-comment[thingid="${sc.hoverAfter}"] .ff-mark`);
           await wait(400);
         }
-        const h = sc.markTarget ? await page.evaluate(() => Math.ceil(document.querySelector(".wrap").getBoundingClientRect().bottom))
-          : await page.evaluate(() => Math.ceil(Math.max(...[...document.body.children].filter((e) => e.tagName !== "SCRIPT").map((e) => e.getBoundingClientRect().bottom))) + 12);
+        const h = sc.markTarget ? await page.evaluate(() => Math.ceil(document.querySelector("shreddit-comment-tree").getBoundingClientRect().bottom) + 16)
+          : await page.evaluate(() => {
+            // X: main is min-height 100vh, so measure the lowest post that is still shown (cleaned ones are display:none)
+            const cells = [...document.querySelectorAll('main [data-testid="cellInnerDiv"]')].map((c) => c.getBoundingClientRect()).filter((r) => r.height > 0);
+            if (cells.length) return Math.ceil(Math.max(...cells.map((r) => r.bottom)) + scrollY) + 1;
+            return Math.ceil(Math.max(...[...document.body.children].filter((e) => e.tagName !== "SCRIPT").map((e) => e.getBoundingClientRect().bottom))) + 12;
+          });
         const height = sc.markTarget ? Math.min(h, 1150) : off ? cropH : (cropH = Math.min(h, CROP[sc.key]));
         await page.setViewport({ width: sc.width, height: Math.max(height, 1300), deviceScaleFactor: 2 });
         await shot(`${sc.key}-${sc.markTarget ? "after" : off ? "before" : "after"}.webp`, page, { x: 0, y: 0, width: sc.width, height });
+        if (sc.marks) (MARKS[sc.key] ||= {})[off ? "before" : "after"] = await page.evaluate(off ? findBefore : findAfter, { marks: sc.marks, foreign: sc.foreign, item: sc.item, height });
+        if (warns.length) console.warn(`${loc} ${sc.key}${off ? " (before)" : ""}: ${warns.length} texts had no stand-in translation`, warns.slice(0, 4));
         await page.close();
       }
     }
@@ -133,5 +202,6 @@ for (const loc of ONLY) {
     server.close();
   }
   fs.writeFileSync(path.join(dir, "sizes.json"), JSON.stringify(sizes, null, 1) + "\n");
+  fs.writeFileSync(path.join(dir, "marks.json"), JSON.stringify(MARKS) + "\n");
   console.log(`${loc}: ${fs.readdirSync(dir).sort().join(", ")}`);
 }

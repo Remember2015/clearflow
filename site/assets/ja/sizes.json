@@ -1,4 +1,12 @@
 {
+ "xnews-after.webp": [
+  600,
+  695
+ ],
+ "xnews-before.webp": [
+  600,
+  695
+ ],
  "x-after.webp": [
   600,
   860
@@ -7,25 +15,41 @@
   600,
   860
  ],
+ "xhs-after.webp": [
+  700,
+  980
+ ],
+ "xhs-before.webp": [
+  700,
+  980
+ ],
  "reddit-after.webp": [
-  740,
-  881
+  640,
+  902
  ],
  "reddit-before.webp": [
-  740,
-  881
+  640,
+  902
  ],
  "yt-after.webp": [
-  820,
+  680,
   956
  ],
  "yt-before.webp": [
-  820,
+  680,
   956
+ ],
+ "hn-after.webp": [
+  640,
+  900
+ ],
+ "hn-before.webp": [
+  640,
+  900
  ],
  "mark-after.webp": [
   740,
-  741
+  653
  ],
  "popup.webp": [
   340,

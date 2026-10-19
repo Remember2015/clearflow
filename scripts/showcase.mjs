@@ -30,7 +30,7 @@ window.__ffTxFn = (m) => {
   const D = window.__ffTx, key = (s) => s.replace(/\\s+/g, " ").trim();
   const one = (s) => D[key(s)];
   let text;
-  if (m.markup) { let miss = false; text = m.source.replace(/>([^<]+)</g, (all, s) => { if (!s.trim()) return all; const x = one(s); if (x == null) miss = true; return ">" + (x ?? s) + "<"; }); if (miss) text = null; }
+  if (m.markup) { let miss = false; text = (">" + m.source + "<").replace(/>([^<]+)</g, (all, s) => { if (!s.trim()) return all; const x = one(s); if (x == null) miss = true; return ">" + (x ?? s) + "<"; }).slice(1, -1); if (miss) text = null; }
   else text = one(m.source) ?? null;
   if (text == null) { console.warn("no translation for", m.source); return null; }
   return { action: "fill", text, model: "openai/gpt-6-luna", cost: 0, cached: false };
@@ -206,7 +206,7 @@ shreddit-comment{display:block;margin:12px 0} details{padding-left:4px} summary{
 [slot=commentMeta] a{color:#1a1a1b;font-weight:600;text-decoration:none} .av{width:22px;height:22px;border-radius:50%;display:inline-block} .op{color:#0079d3;font-weight:700}
 .rgrid{padding-left:28px} [slot=actionRow]{display:flex;gap:14px;font-size:12px;color:#576f76;margin-top:2px} [slot=actionRow] button{border:0;background:none;color:#576f76;font:inherit;padding:0}
 [id$=-children]{border-left:2px solid #edeff1;margin-left:-17px;padding-left:15px}`;
-  return { key: "reddit", width: 740, path: `/sc/${loc}/reddit`,
+  return { key: "reddit", width: 740, path: `/sc/${loc}/reddit`, dict,
     html: shell(loc, "r/bicycletouring", css, `<shreddit-app><div class="wrap">${postEl}<shreddit-comment-tree post-id="t3_sc1">${tree}</shreddit-comment-tree></div></shreddit-app>`,
       `${shadow}\n${txScript(dict)}\n${route("/r/bicycletouring/comments/sc1/hokkaido/", jev)}`, "inject_reddit.js") };
 }
@@ -262,7 +262,7 @@ ytd-comment-replies-renderer{display:block;margin:10px 0 0 50px} ytd-comment-rep
 <div id="owner"><span class="cav"></span><ytd-video-owner-renderer><div id="channel-name"><a href="/@SoraKitchen">Sora Kitchen</a></div><div class="subs">${u.views}</div></ytd-video-owner-renderer></div></ytd-watch-metadata>
 <div class="chead">${u.comments(312)}</div><ytd-comments id="comments"><ytd-item-section-renderer id="sections"><div id="contents">${comments}</div></ytd-item-section-renderer></ytd-comments></div></div></ytd-app>`;
   const setup = `window.ytInitialPlayerResponse = { videoDetails: { videoId: "${VID}", channelId: "UCsorakitchen0000000000", author: "Sora Kitchen" } };\n${txScript(dict)}\n${route(`/watch?v=${VID}`, jev)}`;
-  return { key: "yt", width: 820, path: `/sc/${loc}/yt`, html: shell(loc, "YouTube", css, body, setup, "inject_yt.js") };
+  return { key: "yt", width: 820, path: `/sc/${loc}/yt`, dict, html: shell(loc, "YouTube", css, body, setup, "inject_yt.js") };
 }
 
 // ---------- 标一条、同类都清理（0.26）：Reddit 帖子，评论用这个语言写；三条换了说法的同一套"交易老师"骗局，Jev 五问都没过线（替身给低分），
@@ -338,4 +338,268 @@ def("shreddit-post", ["full-post-link", "credit-bar", "title", "post-flair", "te
 export function pages(locale) {
   const loc = LOCALES.includes(locale) ? locale : "en";
   return [xPage(loc), redditPage(loc), ytPage(loc), markPage(loc)];
+}
+
+// ======================= website-only scenes (scripts/site-assets.mjs → site/) =======================
+// `sitePages(locale)` for en, zh-CN, ja: the four store pages plus an X tech-news post in another language with scam replies,
+// a Xiaohongshu note and (for Chinese and Japanese readers) a Hacker News thread. Every account, post and comment is invented;
+// the situations are modelled on what readers of those sites see every day. `pages()` (the store screenshots) is unchanged.
+
+// emoji don't decide the language (the stand-in detector wants plain ASCII for English)
+const NO_EMOJI_DETECT = `{ const d = window.__ffDetect; window.__ffDetect = (t) => d(String(t).replace(/[\\p{Extended_Pictographic}\\uFE0F\\u200D]/gu, "").trim()); }`;
+
+// ---------- X: a foreign-language tech-news post, real replies translated, scam / sexual / "🔥🔥🔥" replies cleaned ----------
+// en: the English version (read by Chinese and Japanese readers); ja: the Japanese version (read by English readers).
+// rows: [name, handle, text, Jev stand-in scores or null]
+const XN = {
+  en: {
+    post: ["OpenSource Daily", "@osdaily", "BREAKING: Fern 3.0 is out. Its rewritten build scheduler cuts full rebuilds by up to 40% on large monorepos, and incremental builds no longer need a background daemon."],
+    rows: [
+      ["Rachel Kim", "@rkim_dev", "Finally. The old scheduler fell over on anything above ten thousand targets.", null],
+      ["Grace Miller", "@grace_m_2291", "I lost $48,000 to a fake exchange last year and @RecoverDesk_Pro got every cent back in 48 hours. Message them, they are legit", { setup: 0.95, benefit: 0.9 }],
+      ["Nate", "@nate_k_7781", "🔥🔥🔥", { filler: 0.95 }],
+      ["Tobias Weber", "@tobias_builds", "Does the 40% hold on a laptop, or only on the 64-core machines from the benchmark post?", null],
+      ["Daniel Brooks", "@dbrooks_8820", "Same here, @RecoverDesk_Pro recovered my stolen crypto in two days. Highly recommend", { setup: 0.93, benefit: 0.88 }],
+      ["Linda W", "@linda_w_4410", "Thank you @RecoverDesk_Pro, you saved my retirement savings", { setup: 0.9, benefit: 0.86 }],
+      ["Mo", "@mo_trades", "huge", { filler: 0.94 }],
+      ["Mia", "@mia_x_2006", "bored and lonely tonight, my private pics are in my bio", { sexual: 0.96, benefit: 0.8 }],
+      ["Ken Ito", "@kenito", "The migration guide is honestly better than the release notes. Took me ten minutes to switch.", null],
+      ["Sam", "@sam_r_09", "this 👆", { filler: 0.93 }],
+    ],
+    tx: {
+      "BREAKING: Fern 3.0 is out. Its rewritten build scheduler cuts full rebuilds by up to 40% on large monorepos, and incremental builds no longer need a background daemon.": {
+        "zh-CN": "突发：Fern 3.0 发布。重写后的构建调度器让大型 monorepo 的全量构建最多快 40%，增量构建也不再需要后台守护进程。",
+        ja: "速報：Fern 3.0 がリリース。書き直されたビルドスケジューラで、大規模なモノレポのフルビルドが最大40%速くなり、差分ビルドにバックグラウンドのデーモンも不要になった。" },
+      "Finally. The old scheduler fell over on anything above ten thousand targets.": { "zh-CN": "终于来了。旧调度器只要目标超过一万个就撑不住。", ja: "やっとか。旧スケジューラはターゲットが1万を超えると落ちてた。" },
+      "I lost $48,000 to a fake exchange last year and @RecoverDesk_Pro got every cent back in 48 hours. Message them, they are legit": {
+        "zh-CN": "去年我在一个假交易所被骗了 4.8 万美元，@RecoverDesk_Pro 48 小时就帮我全追回来了。私信他们，靠谱", ja: "去年偽の取引所で4万8000ドル失ったけど、@RecoverDesk_Pro が48時間で全額取り戻してくれた。DMしてみて、本物だよ" },
+      "Does the 40% hold on a laptop, or only on the 64-core machines from the benchmark post?": { "zh-CN": "这 40% 在笔记本上也成立吗，还是只在跑分文章里那台 64 核的机器上？", ja: "その40%ってノートPCでも出る？それともベンチマーク記事の64コアのマシンだけ？" },
+      "Same here, @RecoverDesk_Pro recovered my stolen crypto in two days. Highly recommend": { "zh-CN": "我也是，@RecoverDesk_Pro 两天就找回了我被盗的加密货币。强烈推荐", ja: "私も。@RecoverDesk_Pro が盗まれた暗号資産を2日で取り戻してくれた。超おすすめ" },
+      "Thank you @RecoverDesk_Pro, you saved my retirement savings": { "zh-CN": "谢谢 @RecoverDesk_Pro，你救了我的养老钱", ja: "@RecoverDesk_Pro さんありがとう、老後の資金が救われました" },
+      huge: { "zh-CN": "太强了", ja: "すごい" },
+      "bored and lonely tonight, my private pics are in my bio": { "zh-CN": "今晚好无聊好寂寞，私密照在我简介里", ja: "今夜はひまでさみしい…プライベート写真はプロフにあるよ" },
+      "The migration guide is honestly better than the release notes. Took me ten minutes to switch.": { "zh-CN": "说实话，迁移指南写得比发布说明还好。我十分钟就切过去了。", ja: "正直、移行ガイドの方がリリースノートより分かりやすい。10分で乗り換えられた。" },
+      "this 👆": { "zh-CN": "就是这个 👆", ja: "これ 👆" },
+    },
+  },
+  ja: {
+    post: ["テック速報", "@technews_jp", "【速報】Fern 3.0 が公開。ビルドスケジューラを書き直し、大規模なモノレポではフルビルドが最大40%速くなった。差分ビルドにバックグラウンドのデーモンも不要に。"],
+    rows: [
+      ["りさ", "@risa_dev", "やっと来た。旧スケジューラはターゲットが1万を超えると落ちてたんだよね。", null],
+      ["美咲", "@misaki_2291", "去年偽の取引所で480万円失ったけど、@RecoverDesk_Pro さんが48時間で全額取り戻してくれました。DMしてみて、本物です", { setup: 0.95, benefit: 0.9 }],
+      ["ナオ", "@nao_k_7781", "🔥🔥🔥", { filler: 0.95 }],
+      ["トビ", "@tobi_builds", "その40%ってノートPCでも出るの？ベンチ記事の64コア機だけじゃなくて？", null],
+      ["大輔", "@daisuke_8820", "私も @RecoverDesk_Pro さんに盗まれた暗号資産を2日で取り戻してもらいました。本当におすすめ", { setup: 0.93, benefit: 0.88 }],
+      ["リンダ", "@linda_w_4410", "@RecoverDesk_Pro さん、老後の資金を救ってくれてありがとう", { setup: 0.9, benefit: 0.86 }],
+      ["モー", "@mo_trades", "草", { filler: 0.94 }],
+      ["ミア", "@mia_x_2006", "今夜ひまでさみしい…プライベートな写真はプロフにあるよ", { sexual: 0.96, benefit: 0.8 }],
+      ["伊藤ケン", "@kenito", "正直、移行ガイドの方がリリースノートより分かりやすい。10分で乗り換えできた。", null],
+      ["サム", "@sam_r_09", "それな", { filler: 0.93 }],
+    ],
+    tx: {
+      "【速報】Fern 3.0 が公開。ビルドスケジューラを書き直し、大規模なモノレポではフルビルドが最大40%速くなった。差分ビルドにバックグラウンドのデーモンも不要に。": {
+        en: "Breaking: Fern 3.0 is out. The build scheduler has been rewritten, making full builds up to 40% faster on large monorepos — and incremental builds no longer need a background daemon." },
+      "やっと来た。旧スケジューラはターゲットが1万を超えると落ちてたんだよね。": { en: "Finally. The old scheduler used to fall over once you went past 10,000 targets." },
+      "去年偽の取引所で480万円失ったけど、@RecoverDesk_Pro さんが48時間で全額取り戻してくれました。DMしてみて、本物です": { en: "I lost ¥4.8 million to a fake exchange last year, but @RecoverDesk_Pro got all of it back in 48 hours. DM them, they're the real deal" },
+      "その40%ってノートPCでも出るの？ベンチ記事の64コア機だけじゃなくて？": { en: "Does that 40% hold on a laptop too, not just the 64-core machine from the benchmark post?" },
+      "私も @RecoverDesk_Pro さんに盗まれた暗号資産を2日で取り戻してもらいました。本当におすすめ": { en: "@RecoverDesk_Pro got my stolen crypto back in two days too. Highly recommend" },
+      "@RecoverDesk_Pro さん、老後の資金を救ってくれてありがとう": { en: "@RecoverDesk_Pro, thank you for saving my retirement savings" },
+      "草": { en: "lol" },
+      "今夜ひまでさみしい…プライベートな写真はプロフにあるよ": { en: "bored and lonely tonight… my private pics are in my bio" },
+      "正直、移行ガイドの方がリリースノートより分かりやすい。10分で乗り換えできた。": { en: "Honestly the migration guide is clearer than the release notes. Took me 10 minutes to switch." },
+      "それな": { en: "this" },
+    },
+  },
+};
+function xNewsPage(loc) {
+  const u = UI[loc], src = XN[loc === "en" ? "ja" : "en"];
+  const dict = Object.fromEntries(Object.entries(src.tx).map(([k, v]) => [k, v[loc] ?? k]));
+  let n = 0;
+  const art = (name, handle, text, mins) => {
+    const id = 9200 + n, av = AV[(n++ * 5 + 2) % AV.length];
+    return `<div data-testid="cellInnerDiv"><div><article data-testid="tweet" style="--av:${av}">
+  <div data-testid="User-Name">${esc(name)}\n${handle}</div>
+  <a href="/${handle.slice(1)}/status/${id}"><time datetime="2026-10-10T00:00:00.000Z">${u.min(mins)}</time></a>
+  <div data-testid="tweetText">${esc(text)}</div>
+  <button data-testid="caret" aria-label="More" type="button">…</button></article></div></div>`;
+  };
+  const posts = [art(...src.post, 120), ...src.rows.map(([name, handle, text], i) => art(name, handle, text, 96 - i * 7))];
+  const jev = Object.fromEntries(src.rows.filter((r) => r[3]).map(([, , text, sc]) => [[...text].slice(0, 14).join(""), sc]));
+  const css = `body{font:15px/1.45 -apple-system,"Segoe UI",Roboto,${fontOf(loc)},sans-serif;max-width:600px;margin:0 auto;background:#fff;color:#0f1419;-webkit-font-smoothing:antialiased}
+main{border-inline:1px solid #eff3f4;min-height:100vh} article{position:relative;padding:12px 16px 12px 68px;border-bottom:1px solid #eff3f4;display:flow-root}
+article::before{content:"";position:absolute;left:16px;top:14px;width:40px;height:40px;border-radius:50%;background:var(--av)}
+[data-testid=User-Name]{white-space:pre;font-weight:700;line-height:1.25} time{color:#536471;font-size:13px} a{text-decoration:none}
+[data-testid=tweetText]{margin-top:4px} [data-testid=caret]{display:none} main > div:first-child article{padding-top:18px} main > div:first-child [data-testid=tweetText]{font-size:17px}`;
+  return { key: "xnews", width: 600, path: `/sc/${loc}/xnews`,
+    html: shell(loc, "X", css, `<main>${posts.join("")}</main>`, `${txScript(dict)}\n${NO_EMOJI_DETECT}\n${route(`/${src.post[1].slice(1)}/status/9200`, jev)}`, "inject_bundle.js") };
+}
+
+// ---------- Xiaohongshu: a dessert note; lead-generation comments ("see my profile", "add me on WeChat"), one template posted by
+// three accounts and "码住"-type replies cleaned; for English and Japanese readers the whole note is translated ----------
+const XHS = {
+  author: "一只小满",
+  title: "10 分钟搞定｜桂花酒酿小圆子，甜到心里🌼",
+  desc: "周末在家试了一下，比外面卖的还好吃～小圆子用糯米粉加温水揉，酒酿最后再放，煮久了会酸。配方都在图里啦",
+  tags: ["#甜品", "#家常菜", "#一人食"],
+  // [name, text, place, likes, Jev stand-in scores or null, [replies: name, text, place]]
+  comments: [
+    ["芒果冰", "看起来好好吃！酒酿是自己做的还是买的呀？", "上海", 86, null, [["一只小满", "买的现成的哦，超市冷藏柜就有～", "上海"]]],
+    ["小鹿学姐", "想学做甜品的姐妹看我主页，免费送一份配方合集，私信我就行💕", "广东", 3, { benefit: 0.95 }],
+    ["糯米团子", "码住", "浙江", 2, { filler: 0.95 }],
+    ["Ann", "This looks so cozy! Can I use brown sugar instead of rock sugar?", "美国", 41, null],
+    ["好物分享官", "宝子们，同款锅具链接在我主页，手慢无～", "江苏", 1, { benefit: 0.9 }],
+    ["甜甜圈", "宝子们，同款锅具链接在我主页，手慢无～", "北京", 0, { benefit: 0.9 }],
+    ["아린", "정말 맛있어 보여요! 레시피 공유해 주셔서 감사해요", "韩国", 27, null],
+    ["生活家居馆", "宝子们，同款锅具链接在我主页，手慢无～", "江苏", 0, { benefit: 0.9 }],
+    ["兼职小助理", "在家就能做的兼职，一天两三百，感兴趣的加我 v：tang 8899", "河南", 0, { benefit: 0.96 }],
+    ["阿酱", "桂花是去年秋天自己晒的吗？看着好香", "杭州", 19, null],
+    ["路过的猫", "蹲一个", "四川", 0, { filler: 0.94 }],
+  ],
+  tx: {
+    "10 分钟搞定｜桂花酒酿小圆子，甜到心里🌼": { en: "Done in 10 minutes | Osmanthus rice-wine dumplings, sweet all the way 🌼", ja: "10分で完成｜金木犀の甘酒白玉、心まで甘い🌼" },
+    "周末在家试了一下，比外面卖的还好吃～小圆子用糯米粉加温水揉，酒酿最后再放，煮久了会酸。配方都在图里啦": {
+      en: "Tried it at home this weekend and it's better than the ones you buy~ Knead glutinous rice flour with warm water for the dumplings, and add the rice wine last, or it turns sour. The recipe is in the pictures",
+      ja: "週末に家で作ってみたら、お店のよりおいしかった～白玉はもち粉をぬるま湯でこねて、甘酒は最後に入れてね。煮すぎると酸っぱくなるよ。レシピは画像に載せてます" },
+    "#甜品": { en: "#dessert", ja: "#スイーツ" }, "#家常菜": { en: "#homecooking", ja: "#家庭料理" }, "#一人食": { en: "#cookingforone", ja: "#ひとりごはん" },
+    "看起来好好吃！酒酿是自己做的还是买的呀？": { en: "Looks so good! Did you make the rice wine yourself or buy it?", ja: "おいしそう！甘酒は手作り？それとも市販？" },
+    "买的现成的哦，超市冷藏柜就有～": { en: "Store-bought! It's in the chilled section at the supermarket~", ja: "市販のだよ、スーパーの冷蔵コーナーにあるよ～" },
+    "想学做甜品的姐妹看我主页，免费送一份配方合集，私信我就行💕": { en: "Anyone who wants to learn desserts, check my profile — free recipe pack, just DM me💕", ja: "スイーツ作りを習いたい人はプロフ見てね、レシピ集を無料でプレゼント、DMしてね💕" },
+    "码住": { en: "saving this", ja: "保存" },
+    "This looks so cozy! Can I use brown sugar instead of rock sugar?": { "zh-CN": "看起来好温馨！可以用红糖代替冰糖吗？", ja: "ほっこりしますね！氷砂糖のかわりに黒糖でもいいですか？" },
+    "宝子们，同款锅具链接在我主页，手慢无～": { en: "Babes, the link to the same pot is on my profile, grab it before it's gone~", ja: "みんな、同じお鍋のリンクはプロフにあるよ、早い者勝ち～" },
+    "정말 맛있어 보여요! 레시피 공유해 주셔서 감사해요": { "zh-CN": "看起来真好吃！谢谢分享食谱", en: "Looks really delicious! Thanks for sharing the recipe", ja: "本当においしそう！レシピを教えてくれてありがとう" },
+    "在家就能做的兼职，一天两三百，感兴趣的加我 v：tang 8899": { en: "Side job you can do from home, 200–300 a day, add me on WeChat if interested: tang 8899", ja: "家でできる副業、1日2～3百元、興味ある人はWeChat追加して：tang 8899" },
+    "桂花是去年秋天自己晒的吗？看着好香": { en: "Did you dry the osmanthus yourself last autumn? It looks so fragrant", ja: "金木犀は去年の秋に自分で干したの？いい香りがしそう" },
+    "蹲一个": { en: "following", ja: "待機" },
+  },
+};
+function xhsPage(loc) {
+  const dict = Object.fromEntries(Object.entries(XHS.tx).map(([k, v]) => [k, v[loc] ?? k]));
+  const X = { en: { follow: "Follow", total: (n) => `${n} comments`, edited: "Edited", reply: "Reply", author: "Author", say: "Say something…" },
+    "zh-CN": { follow: "关注", total: (n) => `共 ${n} 条评论`, edited: "编辑于", reply: "回复", author: "作者", say: "说点什么…" },
+    ja: { follow: "フォロー", total: (n) => `コメント ${n} 件`, edited: "編集日", reply: "返信", author: "作者", say: "コメントする…" } }[loc] || {};
+  let n = 0;
+  const one = (name, text, place, likes, sub) => {
+    const id = (0x6f20 + n).toString(16).padStart(24, "0"), uid = (0x5f20 + n).toString(16).padStart(24, "0"), av = AV[(n++ * 7 + 1) % AV.length];
+    const isAuthor = name === XHS.author;
+    return `<div id="comment-${id}" class="comment-item${sub ? " comment-item-sub" : ""}"><div class="comment-inner-container">`
+      + `<div class="avatar"><a href="/user/profile/${uid}?xsec_source=pc_comment" data-user-id="${uid}"><span class="avatar-item" style="background:${av}"></span></a></div>`
+      + `<div class="right"><div class="author-wrapper"><div class="author"><a href="/user/profile/${uid}?xsec_source=pc_comment" class="name" data-user-id="${uid}">${esc(name)}</a>${isAuthor ? `<span class="tag">${X.author}</span>` : ""}</div>`
+      + `<div class="comment-menu"><div class="delete-dropdown"></div></div></div>`
+      + `<div class="content"><span class="note-text"><span>${esc(text)}</span></span></div>`
+      + `<div class="info"><div class="date"><span>10-12</span><span class="location">${esc(place)}</span></div><div class="interactions"><div class="like"><span class="like-i">♡</span><span class="count">${likes || ""}</span></div><div class="reply icon-container"><span class="count">${X.reply}</span></div></div></div></div></div></div>`;
+  };
+  const list = XHS.comments.map(([name, text, place, likes, , replies]) => `<div class="parent-comment">${one(name, text, place, likes, false)}`
+    + (replies ? `<div class="reply-container"><div class="list-container">${replies.map(([rn, rt, rp]) => one(rn, rt, rp, 5, true)).join("")}</div></div>` : "") + `</div>`).join("");
+  const desc = `<span class="note-text"><span>${esc(XHS.desc)}</span> ${XHS.tags.map((t) => `<a class="tag" href="/search_result?keyword=${encodeURIComponent(t.slice(1))}&amp;type=54">${esc(t)}</a>`).join(" ")}</span>`;
+  const body = `<div id="app"><div id="global" class="layout"><div class="note-detail-mask"><div id="noteContainer" class="note-container">
+  <div class="media-container"><div class="cover"><span class="c1">桂花酒酿</span><span class="c2">小圆子</span><span class="c3">10 分钟搞定</span></div></div>
+  <div class="interaction-container"><div class="author-container"><div class="author-wrapper"><div class="info"><div class="avatar-click"><div class="avatar-container"><a href="/user/profile/5f20000000000000000a0001"><span class="avatar-item" style="background:#f4b183"></span></a></div></div>
+  <a href="/user/profile/5f20000000000000000a0001?channel_type=explore_feed&amp;xsec_source=pc_user" class="name"><span class="username">${esc(XHS.author)}</span></a></div>
+  <div class="note-detail-follow-btn"><button class="follow-button">${X.follow}</button></div></div></div>
+  <div class="note-scroller"><div class="note-content"><h1 id="detail-title" class="title">${esc(XHS.title)}</h1><div id="detail-desc" class="desc">${desc}</div>
+  <div class="bottom-container"><span class="date">${X.edited} 10-12 上海</span></div></div><div class="divider"></div>
+  <div class="comments-el"><div class="comments-container"><div class="total">${X.total(128)}</div><div class="list-container">${list}</div></div></div></div>
+  <div class="engage-bar"><span class="say">${X.say}</span><span>♡ 2.1万</span><span>☆ 9862</span><span>💬 128</span></div></div></div></div></div></div>`;
+  const jev = Object.fromEntries(XHS.comments.filter((c) => c[4]).map(([, text, , , sc]) => [[...text].slice(0, 10).join(""), sc]));
+  const css = `body{margin:0;font:14px/1.5 -apple-system,"PingFang SC","Hiragino Sans GB",${fontOf(loc)},sans-serif;color:#333;background:#fff;-webkit-font-smoothing:antialiased}
+#noteContainer{display:flex;width:100%;background:#fff} .media-container{width:210px;flex:none;position:relative;background:linear-gradient(165deg,#fff3d6 0%,#ffd79a 45%,#f6a65e 100%)}
+.cover{position:sticky;top:0;height:640px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;color:#fff;font-weight:800;text-shadow:0 2px 0 #c96a1c,0 6px 18px rgba(150,70,0,.35)}
+.cover .c1{font-size:32px;letter-spacing:2px} .cover .c2{font-size:40px;letter-spacing:4px} .cover .c3{margin-top:14px;font-size:14px;font-weight:700;padding:6px 16px;border-radius:999px;background:#ff2442;text-shadow:none;letter-spacing:1px}
+.interaction-container{flex:1;min-width:0;padding:20px 20px 0;display:flex;flex-direction:column}
+.author-container .author-wrapper{display:flex;align-items:center;justify-content:space-between} .author-container .info{display:flex;align-items:center;gap:10px}
+.avatar-item{display:block;width:40px;height:40px;border-radius:50%} .author-container a.name{color:#333;font-size:15px;text-decoration:none}
+.follow-button{border:1px solid #ff2442;color:#ff2442;background:#fff;border-radius:999px;padding:6px 18px;font:500 15px/1 inherit}
+#detail-title{font-size:18px;font-weight:600;margin:18px 0 8px;line-height:1.4} #detail-desc{font-size:15px;line-height:1.65;color:#333} #detail-desc a.tag{color:#13386c;text-decoration:none}
+.bottom-container{margin-top:10px;font-size:13px;color:#999} .divider{height:1px;background:#eee;margin:16px 0}
+.total{font-size:14px;color:#999;margin-bottom:6px} .comment-item{margin:16px 0} .comment-inner-container{display:flex;gap:12px} .comment-item .avatar-item{width:32px;height:32px}
+.right{flex:1;min-width:0} .comment-item .author-wrapper{display:flex;justify-content:space-between} .comment-item .author{display:flex;align-items:center;gap:6px;font-size:14px}
+.comment-item .author a.name{color:rgba(51,51,51,.6);text-decoration:none} .comment-item .author .tag{font-size:11px;padding:1px 6px;border-radius:8px;background:#ff2442;color:#fff}
+.content{margin-top:3px;font-size:15px;line-height:1.55;color:#333} .comment-item .info{display:flex;justify-content:space-between;font-size:12px;color:#999;margin-top:6px}
+.location{margin-left:8px} .interactions{display:flex;gap:16px} .like-i{margin-right:3px} .reply-container{margin-left:44px}
+.engage-bar{margin-top:auto;position:sticky;bottom:0;background:#fff;border-top:1px solid #eee;display:flex;gap:18px;align-items:center;padding:12px 0;color:#333;font-size:14px}
+.engage-bar .say{flex:1;background:#f5f5f5;border-radius:999px;padding:8px 14px;color:#999}`;
+  return { key: "xhs", width: 700, path: `/sc/${loc}/xhs`, dict,
+    html: shell(loc, XHS.title, css, body, `${txScript(dict)}\n${NO_EMOJI_DETECT}\n${route("/explore/6f20000000000000000a0001?xsec_token=DEMO&xsec_source=pc_feed", jev)}`, "inject_xhs.js") };
+}
+
+// ---------- Hacker News: an English "Show HN" thread translated for Chinese and Japanese readers, links and code kept ----------
+const HN = {
+  // the stand-in translates the runs around a link one by one; the website boxes the whole sentence instead
+  fragments: ["It's described in the", "design doc", "under the invalidation section."],
+  sentences: ["It's described in the design doc under the invalidation section."],
+  title: "Show HN: Fern 3.0 – our rewritten build scheduler makes monorepo builds 40% faster",
+  top: "Hi HN, I'm one of the maintainers. The old scheduler walked the whole dependency graph on every change; the new one keeps it in memory and only re-plans the parts that changed. Happy to answer questions.",
+  // [id, user, indent, html (HN markup), ago]
+  comments: [
+    [9301, "pjm", 0, "Keeping the graph in memory is the interesting part. How do you deal with it going stale when someone edits the build files directly?", "2 hours ago"],
+    [9302, "lena_k", 1, "We hash every build file on startup and on each change event. If a hash doesn't match, that subtree is re-planned from scratch.<p>It's described in the <a href=\"https://example.com/fern/design\" rel=\"nofollow\">design doc</a> under the invalidation section.</p>", "2 hours ago"],
+    [9303, "rgb_dev", 0, "Numbers from our repo (about 12k targets) on an M3 laptop:<pre><code>  full rebuild:  6m10s -> 3m52s\n  no-op build:   41s -> 2s</code></pre>The no-op case is the real win for us.", "1 hour ago"],
+    [9304, "kmatsuda", 1, "Same experience here. The daemon was the thing I hated most about 2.x, glad it's gone.", "1 hour ago"],
+    [9305, "drewc", 0, "Is there a migration path for custom rules written against the old API, or do they all need a rewrite?", "58 minutes ago"],
+    [9306, "lena_k", 1, "Most rules work unchanged. The ones that reached into scheduler internals need small changes; the migration guide lists every one of them.", "41 minutes ago"],
+  ],
+  tx: {
+    "Show HN: Fern 3.0 – our rewritten build scheduler makes monorepo builds 40% faster": { "zh-CN": "Show HN：Fern 3.0——我们重写了构建调度器，monorepo 构建快了 40%", ja: "Show HN：Fern 3.0 – ビルドスケジューラを書き直して、モノレポのビルドが40%速くなりました" },
+    "Hi HN, I'm one of the maintainers. The old scheduler walked the whole dependency graph on every change; the new one keeps it in memory and only re-plans the parts that changed. Happy to answer questions.": {
+      "zh-CN": "大家好，我是维护者之一。旧调度器每次改动都要把整张依赖图走一遍；新的把图留在内存里，只重新规划改动的那部分。有问题尽管问。",
+      ja: "HN のみなさん、メンテナの一人です。旧スケジューラは変更のたびに依存グラフ全体をたどっていましたが、新しいものはグラフをメモリに保持し、変わった部分だけを計画し直します。質問があればどうぞ。" },
+    "Keeping the graph in memory is the interesting part. How do you deal with it going stale when someone edits the build files directly?": {
+      "zh-CN": "把图留在内存里是最有意思的部分。有人直接改了构建文件，图过期了怎么办？", ja: "グラフをメモリに持つところが面白い。誰かがビルドファイルを直接編集して古くなったときはどうするの？" },
+    "We hash every build file on startup and on each change event. If a hash doesn't match, that subtree is re-planned from scratch.": {
+      "zh-CN": "启动时和每次收到改动事件时，我们都会给每个构建文件算哈希。哈希对不上，那棵子树就从头重新规划。", ja: "起動時と変更イベントのたびに、すべてのビルドファイルのハッシュを取っています。一致しなければ、そのサブツリーを最初から計画し直します。" },
+    "It's described in the": { "zh-CN": "具体写在", ja: "詳しくは" }, "design doc": { "zh-CN": "设计文档", ja: "設計ドキュメント" },
+    "under the invalidation section.": { "zh-CN": "的“失效”一节里。", ja: "の「無効化」の節にあります。" },
+    "Numbers from our repo (about 12k targets) on an M3 laptop:": { "zh-CN": "我们仓库（大约 1.2 万个目标）在 M3 笔记本上的数字：", ja: "うちのリポジトリ（約1万2000ターゲット）を M3 のノートPCで測った数字：" },
+    "The no-op case is the real win for us.": { "zh-CN": "对我们来说，真正的提升在什么都没改的那次构建上。", ja: "うちにとって本当に効いたのは、何も変えていないときのビルドです。" },
+    "Same experience here. The daemon was the thing I hated most about 2.x, glad it's gone.": { "zh-CN": "我这边也一样。2.x 里我最烦的就是那个守护进程，总算没了。", ja: "こちらも同じ。2.x で一番嫌だったのがデーモンだったので、なくなってうれしい。" },
+    "Is there a migration path for custom rules written against the old API, or do they all need a rewrite?": { "zh-CN": "按旧 API 写的自定义规则有迁移办法吗，还是都得重写？", ja: "旧 API で書いたカスタムルールの移行手段はありますか？それとも全部書き直し？" },
+    "Most rules work unchanged. The ones that reached into scheduler internals need small changes; the migration guide lists every one of them.": {
+      "zh-CN": "大多数规则不用改。直接碰调度器内部的那些要小改，迁移指南里都列出来了。", ja: "ほとんどのルールはそのまま動きます。スケジューラの内部に触れていたものだけ少し直す必要があり、移行ガイドに全部載せています。" },
+  },
+};
+function hnPage(loc) {
+  const dict = Object.fromEntries(Object.entries(HN.tx).map(([k, v]) => [k, v[loc] ?? k]));
+  const row = ([id, user, ind, html, ago]) => `<tr class="athing comtr" id="${id}"><td><table border="0"><tbody><tr><td class="ind" indent="${ind}"><img src="s.gif" height="1" width="${ind * 40}"></td>`
+    + `<td valign="top" class="votelinks"><center><a id="up_${id}" href="vote?id=${id}&amp;how=up"><div class="votearrow" title="upvote"></div></a></center></td>`
+    + `<td class="default"><div style="margin-top:2px; margin-bottom:-10px;"><span class="comhead"><a href="user?id=${user}" class="hnuser">${user}</a> <span class="age" title="2026-10-13T11:00:00"><a href="item?id=${id}">${ago}</a></span> <span id="unv_${id}"></span><span class="navs"> | <a class="togg clicky" id="${id}" n="1" href="javascript:void(0)">[–]</a></span></span></div><br>`
+    + `<div class="comment"><div class="commtext c00">${html}</div><div class="reply"><p><font size="1"><u><a href="reply?id=${id}">reply</a></u></font></p></div></div></td></tr></tbody></table></td></tr>`;
+  const body = `<center><table id="hnmain" border="0" cellpadding="0" cellspacing="0" width="100%"><tr><td class="topbar"><b class="hnname">Hacker News</b><span class="pagetop">new | past | comments | ask | show | jobs | submit</span></td></tr>
+<tr id="pagespace" style="height:10px"></tr><tr><td><table class="fatitem" border="0"><tr class="athing submission" id="9300"><td align="right" valign="top" class="title"><span class="rank"></span></td><td valign="top" class="votelinks"><center><a id="up_9300" href="vote?id=9300&amp;how=up"><div class="votearrow" title="upvote"></div></a></center></td><td class="title"><span class="titleline"><a href="https://example.com/fern">${esc(HN.title)}</a><span class="sitebit comhead"> (<a href="from?site=example.com"><span class="sitestr">example.com</span></a>)</span></span></td></tr>
+<tr><td colspan="2"></td><td class="subtext"><span class="subline"><span class="score" id="score_9300">412 points</span> by <a href="user?id=lena_k" class="hnuser">lena_k</a> <span class="age" title="2026-10-13T09:00:00"><a href="item?id=9300">3 hours ago</a></span> | <a href="item?id=9300">186&nbsp;comments</a></span></td></tr>
+<tr><td colspan="2"></td><td><div class="toptext">${esc(HN.top)}</div></td></tr></table><br><table border="0" class="comment-tree"><tbody>${HN.comments.map(row).join("")}</tbody></table></td></tr></table></center>`;
+  const css = `body{font-family:Verdana,Geneva,sans-serif;font-size:10pt;color:#828282;margin:0;background:#f6f6ef;-webkit-font-smoothing:antialiased} :lang(zh) .commtext,:lang(zh) .toptext,:lang(zh) .titleline{font-family:Verdana,${fontOf(loc)},sans-serif}
+#hnmain{background:#f6f6ef;max-width:760px;margin:0 auto} .topbar{background:#ff6600;padding:3px 6px;color:#000} .hnname{margin-right:10px} .pagetop{font-size:10pt}
+.titleline{font-size:11pt} .titleline>a{color:#000;text-decoration:none} .sitebit,.sitestr{font-size:8pt;color:#828282} .sitebit a{color:#828282;text-decoration:none} .subtext{font-size:7.5pt} .subtext a,.comhead a{color:#828282;text-decoration:none}
+.toptext{color:#000;font-size:9.5pt;line-height:1.5;margin:8px 0 4px;max-width:640px} .comhead{font-size:8pt} .comment{font-size:9.5pt;line-height:1.45} .commtext{color:#000} .commtext a{color:#000}
+pre{white-space:pre-wrap;font-size:9pt;background:#efefe6;padding:6px 8px;border-radius:4px} .votearrow{width:10px;height:10px;margin:3px 2px 6px;background:linear-gradient(45deg,transparent 50%,#9a9a9a 50%);transform:rotate(-45deg) scale(.8)} .reply{font-size:8pt}
+.comment-tree td.default{padding-bottom:4px}`;
+  return { key: "hn", width: 640, path: `/sc/${loc}/hn`, dict,
+    html: shell(loc, "Hacker News", css, body, `${txScript(dict)}\n${route("/item?id=9300", {})}`, "inject_hn.js") };
+}
+
+const SITE_ORDER = { en: ["x", "xhs", "reddit", "yt", "mark"], "zh-CN": ["xnews", "x", "xhs", "reddit", "yt", "hn", "mark"], ja: ["xnews", "x", "xhs", "reddit", "yt", "hn", "mark"] };
+// what the website marks on the "before" shot: [text, kind] (spam / filler / abuse / sexual), the element around each comment
+// (`item`), and the texts that get translated (`foreign`); narrower pages than the store's so two fit side by side
+const SITE_MARKS = {
+  x: (loc) => { const C = XC[loc]; return [...[C.spamVar[0], C.spam, C.spamVar[1], C.m1].map((t) => [t, "spam"]), ...C.fill.map((t) => [t, "filler"]), [C.abuse, "abuse"]]; },
+  xnews: (loc) => XN[loc === "en" ? "ja" : "en"].rows.filter((r) => r[3]).map(([, , t, sc]) => [t, sc.sexual ? "sexual" : sc.filler ? "filler" : "spam"]),
+  xhs: () => XHS.comments.filter((c) => c[4]).map(([, t, , , sc]) => [t, sc.filler ? "filler" : "spam"]),
+  reddit: () => [[RT.spam[0], "spam"], [RT.nice[0], "filler"]],
+  yt: () => [[YT.scam[0], "spam"], [YT.scam2[0], "spam"], ["🔥🔥🔥", "filler"]],
+  hn: () => [],
+};
+const SITE_ITEM = { x: "article", xnews: "article", xhs: ".comment-item", reddit: "shreddit-comment", yt: "ytd-comment-view-model", hn: "tr.athing" };
+const SITE_WIDTH = { reddit: 640, yt: 680 };
+export function sitePages(locale) {
+  const loc = SITE_ORDER[locale] ? locale : "en";
+  const all = { x: xPage, xnews: xNewsPage, xhs: xhsPage, reddit: redditPage, yt: ytPage, hn: hnPage, mark: markPage };
+  return SITE_ORDER[loc].map((k) => {
+    const p = all[k](loc);
+    if (!SITE_MARKS[k]) return p;
+    const marks = SITE_MARKS[k](loc), marked = new Set(marks.map((m) => m[0]));
+    const skip = new Set(k === "hn" ? HN.fragments : []);
+    const foreign = [...Object.entries(p.dict || {}).filter(([src, tx]) => tx !== src && !marked.has(src) && !skip.has(src)).map(([src]) => src), ...(k === "hn" ? HN.sentences : [])];
+    return { ...p, width: SITE_WIDTH[k] || p.width, marks, foreign, item: SITE_ITEM[k] };
+  });
 }
