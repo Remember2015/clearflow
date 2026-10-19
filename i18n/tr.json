@@ -337,7 +337,7 @@
  "err.batch_miss": "Model bu öğeyi atladı; yeniden çevrilecek",
  "pop.alert.jevCredit": "TypeSafe bakiyesi yetersiz olduğundan yanıtlar denetlenemiyor.",
  "opt.captionConvert": "Geleneksel Çince altyazıları Basitleştirilmiş Çince göster",
- "opt.captionConvertHint": "YouTube arayüzü Basitleştirilmiş Çinceyken Geleneksel Çince altyazıları (Tayvan, Hong Kong) seçerseniz altyazılar Basitleştirilmiş Çince karakterlerle gösterilir; Tayvan ve Hong Kong ifadeleri de Çin anakarasındaki kullanıma göre değiştirilir. İşlem bilgisayarınızda yapılır ve ücretsizdir.",
+ "opt.captionConvertHint": "YouTube arayüzü Basitleştirilmiş Çinceyken Geleneksel Çince altyazıları (Tayvan, Hong Kong) seçerseniz, altyazılar Basitleştirilmiş karakterlerle gösterilir ve Tayvan ile Hong Kong'da kullanılan ifadeler Çin ana karasındaki ifadelerle değiştirilir. Videonun kendi Basitleştirilmiş Çince altyazıları varsa dönüştürme yapılmaz. İşlem bilgisayarınızda gerçekleşir ve ücretsizdir.",
  "opt.captionFix": "Otomatik çevrilen altyazıları iyileştir",
  "opt.captionFixHint": "YouTube'un otomatik çevrilmiş altyazılarını seçtiğinizde, Basitleştirilmiş Çince istiyorsanız ve videoda insanlar tarafından çevrilmiş Çince altyazılar varsa bunlar kullanılır. Yoksa TypeSafe, YouTube çevirisini denetler; çeviri kötüyse izlerken çeviri modeliniz altyazıları yeniden çevirir (yalnızca izlediğiniz bölümleri). İki anahtar da gerekir.",
  "tx.capConverted": "ClearFlow bu Geleneksel Çince altyazıları Basitleştirilmiş Çinceye dönüştürdü · orijinalini görmek için tıklayın",

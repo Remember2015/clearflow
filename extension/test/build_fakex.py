@@ -1130,15 +1130,17 @@ yt_shorts = ypage("Synthetic short - YouTube", "/shorts/SHORTSVID01",
 #   window.__setTrack(语言, 翻成的语言) 换字幕：照真 YouTube 用 XHR 请求 /api/timedtext?…&pot=…&fmt=json3（测试服务按 lang、tlang 给 yt/timedtext/ 下的文件），
 #   再按 <video> 的时间把那一行画进 .ytp-caption-window-container（一行一个 .ytp-caption-segment，换一行就整块重画）；<video> 接一个画布的流，时间真的在走。
 #   字幕：en 原文 6 行（每行 1.5 秒）、en.zh-Hans 是 YouTube 一行一行的机翻、zh-TW 人工繁体 4 行（每行 2.25 秒，带台湾用词）。?nohuman：没有 zh-TW 那条。
+#   ?hans：还有一条人工简体字幕 zh-CN（4 行，每行 2.25 秒，说法和 zh-TW 那条不一样，好分辨用的是哪条）。
 #   ?long：一个 400 行（每行 1 秒）的长视频，只有 en（timedtext/long/）——测拖进度。全是合成文字。
 #   视频的时间是假的钟（video.currentTime 换成页面自己的），照真播放器走、能拖：window.__seek(秒) 照真的顺序发 seeking → timeupdate → seeked。
 CAP_EN = ["The researchers set out to measure", "how long people can stay focused", "on a single computer program", "before switching to another one.", "The answer they found was", "about forty seconds on average."]
 CAP_MT = ["研究人员开始测量", "人们能够保持专注多久", "在单个计算机程序上", "在切换到另一个之前。", "他们找到的答案是", "平均约四十秒。"]
 CAP_TW = ["這些研究人員想測量大家", "在一個軟體上能專心多久", "才會切換到別的程式和影片。", "答案是平均大約四十秒。"]
+CAP_CN = ["研究者想知道我们", "能在一个应用上专注多久", "才会换到别的应用或视频。", "结果平均是四十秒左右。"]
 def timedtext(lines, step):
     return {"wireMagic": "pb3", "events": [{"tStartMs": int(k * step * 1000), "dDurationMs": int(step * 1000), "segs": [{"utf8": x}]} for k, x in enumerate(lines)]}
 os.makedirs(os.path.join(HERE, "fakex", "yt", "timedtext"), exist_ok=True)
-for name, lines, step in [("en", CAP_EN, 1.5), ("en.zh-Hans", CAP_MT, 1.5), ("zh-TW", CAP_TW, 2.25)]:
+for name, lines, step in [("en", CAP_EN, 1.5), ("en.zh-Hans", CAP_MT, 1.5), ("zh-TW", CAP_TW, 2.25), ("zh-CN", CAP_CN, 2.25)]:
     open(os.path.join(HERE, "fakex", "yt", "timedtext", name + ".json"), "w", encoding="utf-8").write(_json.dumps(timedtext(lines, step), ensure_ascii=False))
 os.makedirs(os.path.join(HERE, "fakex", "yt", "timedtext", "long"), exist_ok=True)
 for name, lines in [("en", [f"Line {k} of the long synthetic talk." for k in range(400)]), ("en.zh-Hans", [f"长篇合成演讲的第 {k} 行。" for k in range(400)])]:
@@ -1146,7 +1148,7 @@ for name, lines in [("en", [f"Line {k} of the long synthetic talk." for k in ran
 cap_player = """<script>
 (() => {
   const q = new URLSearchParams(location.search), P = document.getElementById("movie_player"), V = P.querySelector("video"), box = P.querySelector(".ytp-caption-window-container");
-  const TRACKS = [{ languageCode: "en", kind: "" }, ...(q.has("nohuman") || q.has("long") ? [] : [{ languageCode: "zh-TW", kind: "" }])];
+  const TRACKS = [{ languageCode: "en", kind: "" }, ...(q.has("nohuman") || q.has("long") ? [] : [{ languageCode: "zh-TW", kind: "" }]), ...(q.has("hans") ? [{ languageCode: "zh-CN", kind: "" }] : [])];
   // 假的钟：照真播放器走，能拖
   let T = 0, seeking = false;
   Object.defineProperty(V, "currentTime", { configurable: true, get: () => T, set: (x) => window.__seek(x) });

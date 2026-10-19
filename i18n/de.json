@@ -337,7 +337,7 @@
  "err.batch_miss": "Das Modell hat diesen Eintrag ausgelassen. Er wird erneut übersetzt.",
  "pop.alert.jevCredit": "Das TypeSafe-Guthaben ist aufgebraucht. Antworten können daher nicht geprüft werden.",
  "opt.captionConvert": "Traditionelle chinesische Untertitel in vereinfachter Schrift anzeigen",
- "opt.captionConvertHint": "Wenn du traditionelle chinesische Untertitel (Taiwan, Hongkong) auswählst und YouTube auf vereinfachtes Chinesisch eingestellt ist, werden sie in vereinfachter Schrift angezeigt und Formulierungen aus Taiwan und Hongkong durch solche aus Festlandchina ersetzt. Die Umwandlung erfolgt auf deinem Computer und ist kostenlos.",
+ "opt.captionConvertHint": "Wenn du traditionelle chinesische Untertitel (Taiwan, Hongkong) auswählst und YouTube auf vereinfachtes Chinesisch eingestellt ist, werden die Untertitel in vereinfachten Schriftzeichen und mit dem Wortschatz aus Festlandchina angezeigt. Das gilt nicht, wenn das Video eigene Untertitel auf vereinfachtem Chinesisch hat. Die Umwandlung erfolgt auf deinem Computer und ist kostenlos.",
  "opt.captionFix": "Automatisch übersetzte Untertitel verbessern",
  "opt.captionFixHint": "Wenn du YouTubes automatisch übersetzte Untertitel auswählst: Gibt es im Video chinesische Untertitel von Menschen und möchtest du vereinfachtes Chinesisch, werden stattdessen diese verwendet. Andernfalls prüft TypeSafe YouTubes Übersetzung. Ist sie schlecht, übersetzt dein Übersetzungsmodell die Untertitel beim Ansehen neu (nur die Stellen, die du ansiehst). Beide Schlüssel sind erforderlich.",
  "tx.capConverted": "ClearFlow hat diese Untertitel in traditionellem Chinesisch in vereinfachte Schrift umgewandelt · klicken, um das Original anzuzeigen",

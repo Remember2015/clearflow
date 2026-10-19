@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.29.2 — 2026-10-19
+
+- YouTube captions: if the video also has its own Simplified Chinese captions, Traditional Chinese captions you pick are shown as they are instead of being converted. (Auto-generated Simplified captions don't count.)
+
 ## 0.29.1 — 2026-10-19
 
 - YouTube captions: when you drag through the video, ClearFlow waits until you stop before retranslating, and translates only the part where you stopped (it used to translate every part you dragged past). Captions keep up with where you are.

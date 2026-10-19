@@ -337,7 +337,7 @@
  "err.batch_miss": "Le modèle a ignoré cet élément ; il sera retraduit",
  "pop.alert.jevCredit": "Le solde TypeSafe est épuisé : impossible de vérifier les réponses.",
  "opt.captionConvert": "Afficher les sous-titres en chinois traditionnel en chinois simplifié",
- "opt.captionConvertHint": "Lorsque vous choisissez des sous-titres en chinois traditionnel (Taïwan, Hong Kong) et que l'interface de YouTube est en chinois simplifié, ils s'affichent en caractères simplifiés et les termes employés à Taïwan et à Hong Kong sont remplacés par ceux de Chine continentale. Le traitement se fait sur votre ordinateur, sans frais.",
+ "opt.captionConvertHint": "Si vous choisissez des sous-titres en chinois traditionnel (Taïwan, Hong Kong) alors que l’interface de YouTube est en chinois simplifié, ils s’affichent en caractères simplifiés et les termes de Taïwan et de Hong Kong sont remplacés par ceux de Chine continentale. La conversion ne s’applique pas si la vidéo propose déjà des sous-titres en chinois simplifié. Le traitement se fait sur votre ordinateur et ne coûte rien.",
  "opt.captionFix": "Améliorer les sous-titres traduits automatiquement",
  "opt.captionFixHint": "Lorsque vous choisissez les sous-titres traduits automatiquement par YouTube : si la vidéo propose des sous-titres chinois rédigés par une personne et que vous souhaitez du chinois simplifié, ils sont utilisés à la place. Sinon, TypeSafe évalue la traduction de YouTube et, si elle est mauvaise, votre modèle de traduction retraduit les sous-titres pendant le visionnage (uniquement les passages que vous regardez). Les deux clés sont nécessaires.",
  "tx.capConverted": "ClearFlow a converti ces sous-titres en chinois traditionnel en chinois simplifié · cliquez pour voir l'original",

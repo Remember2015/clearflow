@@ -337,7 +337,7 @@
  "err.batch_miss": "O modelo ignorou este item; ele será traduzido novamente",
  "pop.alert.jevCredit": "Saldo insuficiente na TypeSafe. Não foi possível verificar as respostas.",
  "opt.captionConvert": "Exibir legendas em chinês tradicional em chinês simplificado",
- "opt.captionConvertHint": "Quando você seleciona legendas em chinês tradicional (Taiwan ou Hong Kong) e a interface do YouTube está em chinês simplificado, elas são exibidas em caracteres simplificados, com os termos de Taiwan e Hong Kong adaptados aos usados na China continental. Tudo é feito no seu computador, sem custo.",
+ "opt.captionConvertHint": "Se você escolher legendas em chinês tradicional (Taiwan, Hong Kong) e a interface do YouTube estiver em chinês simplificado, elas serão exibidas em caracteres simplificados, com o vocabulário de Taiwan e Hong Kong adaptado ao da China continental. Isso não se aplica quando o vídeo já tem legendas em chinês simplificado. O processamento é feito no seu computador e não custa nada.",
  "opt.captionFix": "Melhorar legendas traduzidas automaticamente",
  "opt.captionFixHint": "Quando você seleciona as legendas traduzidas automaticamente do YouTube: se o vídeo tiver legendas em chinês feitas por pessoas e você quiser chinês simplificado, elas serão usadas no lugar. Caso contrário, o TypeSafe verifica a tradução do YouTube e, se ela for ruim, seu modelo de tradução traduz as legendas novamente enquanto você assiste (somente os trechos que você assistir). São necessárias as duas chaves.",
  "tx.capConverted": "O ClearFlow converteu estas legendas em chinês tradicional para chinês simplificado · clique para ver o original",

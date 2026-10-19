@@ -337,7 +337,7 @@
  "err.batch_miss": "Model pominął ten element; zostanie przetłumaczony ponownie",
  "pop.alert.jevCredit": "Brak środków na koncie TypeSafe, więc nie można sprawdzać odpowiedzi.",
  "opt.captionConvert": "Wyświetlaj napisy w tradycyjnym chińskim alfabetem uproszczonym",
- "opt.captionConvertHint": "Gdy wybierzesz napisy w tradycyjnym chińskim (Tajwan, Hongkong), a interfejs YouTube będzie w uproszczonym chińskim, napisy będą wyświetlane alfabetem uproszczonym, a słownictwo tajwańskie i hongkońskie zostanie zastąpione używanym w Chinach kontynentalnych. Przetwarzanie odbywa się na Twoim komputerze i jest bezpłatne.",
+ "opt.captionConvertHint": "Jeśli wybierzesz chińskie napisy tradycyjne (Tajwan, Hongkong), a interfejs YouTube będzie w chińskim uproszczonym, napisy zostaną wyświetlone uproszczonymi znakami, a słownictwo tajwańskie i hongkońskie zostanie zastąpione kontynentalnym. Nie dotyczy filmów z własnymi napisami w chińskim uproszczonym. Konwersja odbywa się na Twoim komputerze i jest bezpłatna.",
  "opt.captionFix": "Poprawiaj napisy tłumaczone automatycznie",
  "opt.captionFixHint": "Gdy wybierzesz napisy YouTube z automatycznym tłumaczeniem: jeśli film ma napisy po chińsku przygotowane przez człowieka, a wybierzesz uproszczony chiński, zostaną użyte zamiast nich. W przeciwnym razie TypeSafe sprawdzi tłumaczenie YouTube, a jeśli będzie słabe, Twój model tłumaczeniowy przetłumaczy napisy ponownie podczas oglądania (tylko widoczne fragmenty). Wymagane są oba klucze.",
  "tx.capConverted": "ClearFlow zmienił napisy w tradycyjnym chińskim na uproszczony chiński · kliknij, aby zobaczyć oryginał",

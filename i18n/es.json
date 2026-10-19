@@ -337,7 +337,7 @@
  "err.batch_miss": "El modelo omitió este elemento; se volverá a traducir",
  "pop.alert.jevCredit": "No se pueden revisar las respuestas porque TypeSafe no tiene saldo.",
  "opt.captionConvert": "Mostrar subtítulos en chino tradicional en chino simplificado",
- "opt.captionConvertHint": "Si eliges subtítulos en chino tradicional (Taiwán o Hong Kong) y la interfaz de YouTube está en chino simplificado, se mostrarán en caracteres simplificados y se adaptará el vocabulario de Taiwán y Hong Kong al de China continental. El procesamiento se realiza en tu ordenador y no cuesta nada.",
+ "opt.captionConvertHint": "Si eliges subtítulos en chino tradicional (Taiwán o Hong Kong) y la interfaz de YouTube está en chino simplificado, se mostrarán en caracteres simplificados y con expresiones de China continental. No se convierten si el vídeo ya tiene subtítulos en chino simplificado. Se procesan en tu ordenador y no cuesta nada.",
  "opt.captionFix": "Mejorar los subtítulos traducidos automáticamente",
  "opt.captionFixHint": "Al elegir los subtítulos traducidos automáticamente de YouTube, si el vídeo tiene subtítulos humanos en chino y quieres chino simplificado, se usarán esos subtítulos. Si no, TypeSafe comprobará la traducción de YouTube y, si es deficiente, tu modelo de traducción volverá a traducirlos mientras ves el vídeo (solo las partes que veas). Se necesitan ambas claves.",
  "tx.capConverted": "ClearFlow convirtió estos subtítulos en chino tradicional a chino simplificado · haz clic para ver el original",

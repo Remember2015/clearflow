@@ -337,7 +337,7 @@
  "err.batch_miss": "Il modello ha saltato questo elemento; verrà tradotto di nuovo",
  "pop.alert.jevCredit": "Credito TypeSafe esaurito: impossibile controllare le risposte.",
  "opt.captionConvert": "Mostra i sottotitoli in cinese tradizionale in caratteri semplificati",
- "opt.captionConvertHint": "Selezionando i sottotitoli in cinese tradizionale (Taiwan o Hong Kong) con l'interfaccia di YouTube in cinese semplificato, i sottotitoli vengono mostrati in caratteri semplificati e le espressioni di Taiwan e Hong Kong vengono adattate a quelle della Cina continentale. La conversione avviene sul tuo computer ed è gratuita.",
+ "opt.captionConvertHint": "Se scegli i sottotitoli in cinese tradizionale (Taiwan, Hong Kong) mentre l’interfaccia di YouTube è in cinese semplificato, vengono mostrati in caratteri semplificati e i termini usati a Taiwan e Hong Kong vengono adattati a quelli della Cina continentale. La conversione non avviene se il video include già sottotitoli in cinese semplificato. Avviene sul tuo computer e non costa nulla.",
  "opt.captionFix": "Migliora i sottotitoli tradotti automaticamente",
  "opt.captionFixHint": "Quando selezioni i sottotitoli tradotti automaticamente di YouTube, se vuoi i caratteri cinesi semplificati e il video ha sottotitoli in cinese realizzati da persone, vengono usati questi. Altrimenti TypeSafe controlla la traduzione di YouTube e, se è scadente, il tuo modello di traduzione la ritraduce mentre guardi (solo le parti che guardi). Servono entrambe le chiavi.",
  "tx.capConverted": "ClearFlow ha convertito questi sottotitoli in cinese tradizionale in caratteri semplificati · fai clic per vedere l'originale",

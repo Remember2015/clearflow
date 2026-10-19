@@ -1,6 +1,7 @@
 // YouTube 字幕（0.29.0；用户 10-19：视频没有简体中文字幕、但有繁体中文字幕和"自动翻译"——繁体的转成简体给你，自动翻译的判一下、不行就重翻）。
 // 1. 你选了繁体中文字幕（中文（台湾）、中文（香港）……）、YouTube 的界面是简体中文：字幕显示成简体，台湾、香港用词一起换成大陆用词
-//    （zhconv.js，OpenCC 的词表，本地转、不花钱；设置里 captionConvert）。
+//    （zhconv.js，OpenCC 的词表，本地转、不花钱；设置里 captionConvert）。视频本来就有人工的简体中文字幕（中文（中国）、zh-Hans……）时不转
+//    （0.29.2，用户 10-19：有简体的就不要转繁体那条——你特意选了繁体，就照你选的显示；YouTube 自动生成的简体字幕不算，它多半不如人工的繁体字幕）。
 // 2. 你选了"自动翻译 → 某种语言"（YouTube 一行一行地机翻，一句话跨两三行的就翻碎了）、设置里 captionFix 开着：
 //    a. 翻成的是简体中文、视频有人工的中文字幕：换成它（繁体的照 1 转）；
 //    b. 不然拿前面一段原文和 YouTube 的译文问 Jev（和判 X 的 Grok 译文同一套），最低分不到重译阈值（设置里 translateThreshold）就用模型重翻：
@@ -21,6 +22,8 @@
     catch (e) { resolve({ error: String(e) }); }
   });
   const HANT = /^zh-(tw|hk|mo|hant)\b/i, HANS = /^zh(-(cn|sg|my|hans)\b.*)?$/i, ZH = /^zh\b/i;
+  // 人工的简体中文字幕（zh、zh-CN、zh-SG、zh-Hans……；不是自动生成的）
+  const humanHans = (list) => list.find((x) => x.kind !== "asr" && ZH.test(x.lang) && !HANT.test(x.lang)) || null;
   const schemeOf = (lang) => (/^zh-(hk|mo)\b/i.test(lang) ? "hk2sp" : /^zh-tw\b/i.test(lang) ? "tw2sp" : "t2s");
   const CHUNK = 40, SAMPLE = 40, AHEAD = 20; // 一段几行；判 YouTube 的译文用前面几行；离已经翻好的结尾还剩几行时去翻下一段
   // 拖进度（0.29.0，用户 10-19："播放器可以调进度"）：拖的过程中时间一路在变，路过的每一段都去翻就白花钱了——停下来 SETTLE 毫秒不再拖了才翻
@@ -73,13 +76,13 @@
     if (!on() || !track) return;
     const ui = Y.uiLang();
     if (!track.tlang) {
-      if (HANT.test(track.lang) && HANS.test(ui) && st.captionConvert !== false) { mode = { kind: "convert", scheme: schemeOf(track.lang) }; render(); }
+      if (HANT.test(track.lang) && HANS.test(ui) && st.captionConvert !== false && !humanHans(tracks)) { mode = { kind: "convert", scheme: schemeOf(track.lang) }; render(); }
       return;
     }
     if (st.captionFix === false) return;
     // a. 翻成简体中文、视频有人工的中文字幕：换成它（简体的优先）
     if (HANS.test(track.tlang)) {
-      const human = tracks.filter((x) => x.kind !== "asr" && ZH.test(x.lang)).sort((a, b) => Number(HANT.test(a.lang)) - Number(HANT.test(b.lang)))[0];
+      const human = humanHans(tracks) || tracks.find((x) => x.kind !== "asr" && HANT.test(x.lang)); // 有人工简体的用它，没有才用繁体的转
       if (human) {
         const cues = await getTrack(human.lang, "", "");
         if (my !== epoch) return;

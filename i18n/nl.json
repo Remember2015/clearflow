@@ -337,7 +337,7 @@
  "err.batch_miss": "Het model heeft dit item overgeslagen; het wordt opnieuw vertaald",
  "pop.alert.jevCredit": "TypeSafe-saldo is op, dus reacties kunnen niet worden beoordeeld.",
  "opt.captionConvert": "Traditioneel-Chinese ondertiteling in vereenvoudigde tekens tonen",
- "opt.captionConvertHint": "Als je Traditioneel-Chinese ondertiteling kiest (Taiwan, Hongkong) terwijl YouTube in het vereenvoudigd Chinees staat, wordt de ondertiteling in vereenvoudigde tekens weergegeven. Ook worden Taiwanese en Hongkongse woorden vervangen door woorden uit het Chinese vasteland. Dit gebeurt op je computer en kost niets.",
+ "opt.captionConvertHint": "Als je Chinese ondertiteling in traditionele tekens kiest (Taiwan, Hongkong) terwijl YouTube in het vereenvoudigd Chinees staat, worden de ondertitels in vereenvoudigde tekens weergegeven en worden Taiwanese en Hongkongse woorden aangepast aan het gebruik op het Chinese vasteland. Dit gebeurt niet als de video zelf al Chinese ondertiteling in vereenvoudigde tekens heeft. De omzetting gebeurt op je computer en kost niets.",
  "opt.captionFix": "Automatisch vertaalde ondertiteling verbeteren",
  "opt.captionFixHint": "Als je YouTube's automatisch vertaalde ondertiteling kiest en je vereenvoudigd Chinees wilt, wordt menselijke Chinese ondertiteling gebruikt als de video die heeft. Anders controleert TypeSafe YouTube's vertaling. Is die slecht, dan vertaalt je vertaalmodel de ondertiteling opnieuw terwijl je kijkt (alleen de stukken die je bekijkt). Beide sleutels zijn vereist.",
  "tx.capConverted": "ClearFlow heeft deze Traditioneel-Chinese ondertiteling omgezet naar vereenvoudigde tekens · klik om het origineel te bekijken",

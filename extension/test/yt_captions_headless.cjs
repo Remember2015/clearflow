@@ -4,6 +4,8 @@
 // ③ 没有人工中文字幕（?nohuman）、Jev 判 YouTube 的机翻差（替身给 0.4）：原文整段交给模型重翻，按原文的时间显示我们的译文；眼前这段走标准通道。
 // ④ 判下来不差（?capjudge=0.9）：照旧用 YouTube 的，不重翻。
 // ⑤ 拖进度（用户 10-19："播放器可以调进度"）：400 行的长视频（?long），翻好开头那段以后拖到 100 秒——那一段（80–119 行）走标准通道去翻，翻好后显示我们的。
+// ⑦ 视频还有人工简体字幕（?hans，中文（中国））：你选了繁体那条就照原样显示，不转、没有 ✦（0.29.2，用户 10-19：有简体的就不要转繁体那条）。
+// ⑧ 同一个视频选"自动翻译 → 中文（简体）"：换成人工简体那条，不用繁体那条转。
 // ⑥ 一路拖过去（250、290、330 秒每 80 毫秒一下，停在 370 秒）：路过的那几段（240、280、320 行开头的）不翻，只翻停下来的那一段（360–399 行）。
 // 用法：node test/yt_captions_headless.cjs <装了 puppeteer-core 的目录> [http://localhost:8767]（run_all.mjs 会起服务）
 const path = require("path");
@@ -17,6 +19,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const EN = ["The researchers set out to measure", "how long people can stay focused", "on a single computer program", "before switching to another one.", "The answer they found was", "about forty seconds on average."];
 const MT = ["研究人员开始测量", "人们能够保持专注多久", "在单个计算机程序上", "在切换到另一个之前。", "他们找到的答案是", "平均约四十秒。"];
 const TW = ["這些研究人員想測量大家", "在一個軟體上能專心多久", "才會切換到別的程式和影片。", "答案是平均大約四十秒。"];
+const CN = ["研究者想知道我们", "能在一个应用上专注多久", "才会换到别的应用或视频。", "结果平均是四十秒左右。"];
 // 现在该显示哪一行：离换行 0.35 秒以内的不算（两边都可能）
 const at = (list, step, t) => { const i = Math.floor(t / step), r = t - i * step; return i < list.length && r > 0.35 && r < step - 0.35 ? list[i] : undefined; };
 
@@ -79,6 +82,18 @@ const at = (list, step, t) => { const i = Math.floor(t / step), r = t - i * step
     s = await sample(pg, (t) => at(MT, 1.5, t));
     const m4 = await pg.evaluate(() => window.__ffCapMsgs || []);
     ok("④ 判下来不差：照旧用 YouTube 的、不重翻、没有 ✦", s.text === s.want && !s.mark && m4.some((m) => m.type === "captionJudge") && !m4.some((m) => m.type === "captionTranslate"), JSON.stringify({ s, m4: m4.map((m) => m.type) }));
+    await pg.close();
+    // ⑦ ⑧
+    pg = await open("?hans");
+    await wait(600);
+    await pg.evaluate(() => window.__setTrack("zh-TW"));
+    await wait(2000);
+    s = await sample(pg, (t) => at(TW, 2.25, t));
+    ok("⑦ 还有人工简体字幕：选了繁体那条照原样显示，不转、没有 ✦", s.text === s.want && !s.mark, JSON.stringify(s));
+    await pg.evaluate(() => window.__setTrack("en", "zh-Hans"));
+    await wait(2200);
+    s = await sample(pg, (t) => { const x = at(CN, 2.25, t), y = at(MT, 1.5, t); return x && y && x; });
+    ok("⑧ 选自动翻译成简体：换成人工简体那条（不用繁体的转）", s.text === s.want && /人工中文字幕/.test(s.mark || ""), JSON.stringify(s));
     await pg.close();
     // ⑤ ⑥
     const LONG = (k) => `Line ${k} of the long synthetic talk.`;

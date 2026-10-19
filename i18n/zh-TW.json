@@ -337,7 +337,7 @@
  "err.batch_miss": "模型漏掉了這則內容，將再次翻譯",
  "pop.alert.jevCredit": "TypeSafe 餘額不足，無法檢查回覆。",
  "opt.captionConvert": "繁體中文字幕顯示為簡體",
- "opt.captionConvertHint": "選擇繁體中文字幕（中文（台灣）、中文（香港）），且 YouTube 介面為簡體中文時，字幕會顯示為簡體字，台灣和香港用語也會改為中國大陸用語。在你的電腦上轉換，不需付費。",
+ "opt.captionConvertHint": "在 YouTube 選擇繁體中文字幕（中文（台灣）、中文（香港）），但 YouTube 介面使用簡體中文時，字幕會以簡體字顯示，台灣和香港用語也會改成中國大陸用語。影片本身已有簡體中文字幕時則不會轉換。在你的電腦上轉換，不需付費。",
  "opt.captionFix": "改善自動翻譯字幕",
  "opt.captionFixHint": "選擇 YouTube 的「自動翻譯」字幕時，如果影片有中文字幕，而且你想看簡體中文，就會改用影片的中文字幕；否則由 TypeSafe 檢查 YouTube 的翻譯，如果翻得不好，你的翻譯模型會在播放時重新翻譯字幕（只翻譯你正在看的部分）。需要設定兩組金鑰。",
  "tx.capConverted": "ClearFlow 已將這些繁體中文字幕轉為簡體 · 點選以查看原文",
