@@ -60,6 +60,16 @@
     fillerTag: (it) => Y.commentHeader(it.el),
     markSpot: (it) => Y.commentHeader(it.el),
     fillerAnchor: () => document.querySelector("ytd-comments #sections > #contents"),
+    // Shorts 的评论面板（0.28.14，用户 10-19 截图）：标题、输入框不动，中间的列表自己滚——最上面那一行一直看得见，列表下面不用再放一行
+    // （以前两行一起露着）；视频页的评论跟着整页滚，照旧上下各一行
+    fillPinned: (anchor) => Y.route().kind === "shorts" || /^(auto|scroll)$/.test(getComputedStyle(anchor).overflowY),
+    // 那一行和评论的头像左边对齐：Shorts 面板里评论往里缩了一截，那一行以前贴着面板边；视频页的评论本来就从左边开始，量出来是 0
+    fillIndent(anchor) {
+      const av = [...anchor.querySelectorAll("#author-thumbnail")].find((a) => a.getClientRects().length && a.getBoundingClientRect().width);
+      if (!av) return 0;
+      const r = av.getBoundingClientRect(), b = anchor.getBoundingClientRect();
+      return Math.max(0, Math.round(getComputedStyle(anchor).direction === "rtl" ? b.right - r.right : r.left - b.left));
+    },
     cacheId: (mode, key) => (mode === "post" ? key : "yt:feed"),
     statFor: (mode) => (mode === "post" ? { posts: 1 } : { feeds: 1 }),
     pageOf: (mode) => (mode === "post" ? "status" : "feed"),

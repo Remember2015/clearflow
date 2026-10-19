@@ -1105,11 +1105,32 @@ yt_long = ypage("How Synthetic Engines Work, Explained - YouTube", f"/watch?v={V
   f'<ytd-comments id="comments"><ytd-item-section-renderer id="sections"><div id="contents"></div></ytd-item-section-renderer></ytd-comments></div>'
   f'<template id="yt-comments">{"".join(f"<ytd-comment-thread-renderer>{ycomment(cid, h, t)}</ytd-comment-thread-renderer>" for cid, h, t in YT_LONG)}</template>',
   extra='<script>window.ytInitialPlayerResponse = { videoDetails: { videoId: "SYNTHVID001", channelId: "UCsynthchannel00000000000", author: "Synthetic Channel" } };</script>')
+# yt/shorts.html → /shorts/SHORTSVID01（0.28.14，用户 10-19 截图）：仿 Shorts 的评论面板——标题、底下的输入框不动，中间的列表（#contents）自己滚、
+#   往里缩 16px（评论的头像不贴面板边）。18 条：Ugs00–Ugs14 正常的英文、Ugs15–Ugs17 很短的表态（?jev 给 filler 0.9 → 藏起来，最上面一行"清理了 3 条"）。全是合成文字。
+SHORTS_TXT = ["Where did you buy that tent? It looks lighter than mine.", "The way the rain stopped right when you finished was perfect timing.",
+              "I tried this trick last summer and the poles kept slipping.", "Is that a lake behind you or a reservoir?", "My dog would never sit that still next to a fire.",
+              "That folding stove is the same one my uncle uses for fishing trips.", "Please do a full video on packing everything into one bag.",
+              "The sunrise at the end looked unreal, which camera do you use?", "I would be scared of bears sleeping out there alone.",
+              "Seeing the coffee steam in the cold air made me want to go camping.", "How long did the hike to that spot take?",
+              "The little lantern hanging inside the tent is such a cozy touch.", "Did the wind keep you awake at night?",
+              "My kids watched this three times and now want to camp in the garden.", "Those boots must be waterproof, the grass was soaked."]  # 每条说的都不一样（像模板的会被"刷同一句话"清理）
+YT_SHORTS = [(f"Ugs{k:02d}", f"@viewer{k}", SHORTS_TXT[k]) for k in range(15)] + \
+            [("Ugs15", "@fan15", "so cute"), ("Ugs16", "@fan16", "love it"), ("Ugs17", "@fan17", "wow nice")]
+def ycomment_av(cid, h, t):  # 带头像那一格（真 YouTube 是 #author-thumbnail）
+    return ycomment(cid, h, t).replace('<div id="main">', '<div id="author-thumbnail" style="float:left;width:40px;height:40px;border-radius:50%;background:#ccc;margin-inline-end:12px"></div><div id="main">', 1)
+yt_shorts = ypage("Synthetic short - YouTube", "/shorts/SHORTSVID01",
+  '<div id="shorts-container"><ytd-reel-video-renderer is-active=""><div class="panel" style="width:420px;height:640px;border:1px solid #ddd;border-radius:12px;overflow:hidden">'
+  '<ytd-comments id="comments"><ytd-item-section-renderer id="sections" style="display:flex;flex-direction:column;height:640px">'
+  '<div id="panel-header" style="padding:12px 16px;font-weight:700">评论 18</div>'
+  '<div id="contents" style="flex:1;overflow-y:auto;padding:0 16px"></div>'
+  '<div id="panel-footer" style="padding:12px 16px;border-top:1px solid #eee">添加评论…</div>'
+  '</ytd-item-section-renderer></ytd-comments></div></ytd-reel-video-renderer></div>'
+  f'<template id="yt-comments">{"".join(f"<ytd-comment-thread-renderer>{ycomment_av(cid, h, t)}</ytd-comment-thread-renderer>" for cid, h, t in YT_SHORTS)}</template>')
 yt_results = ypage("engines - YouTube", "/results?search_query=engines", '<div id="primary"><ytd-section-list-renderer><div id="contents">'
   + yresult("SEARCHV0001", "Why synthetic engines are quieter than you think", "A long look at noise levels, materials and the tricks engineers use every day.")
   + yresult("SEARCHV0002", "合成发动机入门", "从零开始讲合成发动机。") + "</div></ytd-section-list-renderer></div>")
 os.makedirs(os.path.join(HERE, "fakex", "yt", "youtubei", "v1"), exist_ok=True)
-for name, html in [("watch", yt_watch), ("results", yt_results), ("native", yt_native), ("long", yt_long)]:
+for name, html in [("watch", yt_watch), ("results", yt_results), ("native", yt_native), ("long", yt_long), ("shorts", yt_shorts)]:
     open(os.path.join(HERE, "fakex", "yt", name + ".html"), "w", encoding="utf-8").write(html)
 open(os.path.join(HERE, "fakex", "yt", "youtubei", "v1", "next"), "w", encoding="utf-8").write(_json.dumps(yt_next, ensure_ascii=False))
 

@@ -19,7 +19,8 @@
 //   dupMinUnits D1 同帖复读的句子至少几个汉字当量（rules.js 的 units；不给就是 rules.js 的默认值 6）。
 //   0.22 起「赞」「mark」这类回复（设置里的 filler）：fillerThreshold 这个站点 Jev 那一问（jev.js 的 filler）要多少分才藏（不给就不做）；
 //   fillerTargets(it) 藏哪几块（整条，不给就是 it.el）；hasReplies(it) 底下有回复的不藏（藏了回复就没了上文）；
-//   fillerTag(it) 显示出来时小标签放进哪个元素（作者那一栏）；fillerAnchor() 评论区最上面那一行放在哪个元素前面。
+//   fillerTag(it) 显示出来时小标签放进哪个元素（作者那一栏）；fillerAnchor() 评论区最上面那一行放在哪个元素前面；
+//   fillPinned(anchor) 那一行一直看得见、列表下面不用再放一行；fillIndent(anchor) 那一行往里缩多少（和评论对齐）。
 //   0.26 起：markSpot(it) 评论上"清理掉这条"的漏斗放进哪个元素（作者那一行；不给就不放）。
 // 每个站点的这些值按这个站点自己的数据定，不求各站点一样（用户 2026-10-14："不是所有平台一套规则，是单个平台内换话题、换语言都成立"）。
 // 按 X 的 @ 设计的 M1、"只贴自己的帖子"不用；楼主（op）的评论不自动折。读页面一律走 FFDom.readText（见 ffdom.js）。
@@ -502,7 +503,8 @@
       }
       const anchor = n && site.fillerAnchor ? site.fillerAnchor() : null;
       // 评论区长（看得见的 ≥ B.FILL_BOTTOM_MIN）时，评论列表下面（上面那一行挂的那个元素后面）再放一行一样的（0.27，用户 10-17：滚到后面就看不到上面那一行）
-      const end = anchor && shown >= B.FILL_BOTTOM_MIN ? anchor : null;
+      // 站点说那一行一直看得见（fillPinned：列表自己在滚，比如 YouTube Shorts 的评论面板）就不放下面那一行
+      const end = anchor && shown >= B.FILL_BOTTOM_MIN && !(site.fillPinned && site.fillPinned(anchor)) ? anchor : null;
       if (!end) { if (fillBottomEl) { fillBottomEl.remove(); fillBottomEl = null; } }
       else {
         if (!fillBottomEl) { fillBottomEl = B.makeFillLine(onFillToggle); fillBottomEl.classList.add("ff-fill-bottom"); if (site.barClass) fillBottomEl.classList.add(site.barClass); }
@@ -513,6 +515,9 @@
       if (!fillLineEl) { fillLineEl = B.makeFillLine(onFillToggle); if (site.barClass) fillLineEl.classList.add(site.barClass); }
       B.fillLine(fillLineEl, n, S.showFill, S.heavy ? counts : null);
       if (fillLineEl.nextElementSibling !== anchor) anchor.before(fillLineEl);
+      // 和评论对齐（fillIndent：站点量出来评论往里缩了多少）
+      const indent = site.fillIndent ? site.fillIndent(anchor) : 0, ml = indent ? `${indent}px` : "";
+      for (const l of [fillLineEl, fillBottomEl]) if (l && l.style.marginInlineStart !== ml) l.style.marginInlineStart = ml;
     }
     function clearUI() {
       document.querySelectorAll(".ff-bar, .ff-fill-line, .ff-fill-tag, .ff-mark").forEach((e) => e.remove());

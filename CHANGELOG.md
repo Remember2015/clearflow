@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.28.14 — 2026-10-19
+
+- YouTube Shorts: the "Cleared N replies like “nice” or “+1”" line appears once at the top of the comment panel instead of twice, and lines up with the comments instead of touching the panel edge.
+
 ## 0.28.13 — 2026-10-19
 
 - CI: the browser tests pass on Linux and are no longer allowed to fail. No changes to the extension itself.
