@@ -71,8 +71,18 @@
     }
     return unescape(out).replace(/\s+$/, "");
   }
-  // 短帖的正文按 display_text_range 截（去掉开头回复时带的 @ 和结尾的图片链接）；下标按码点算
-  const visible = (full, range) => (range ? [...full].slice(range[0], range[1]).join("") : full);
+  // 短帖的正文按 display_text_range 截（去掉开头回复时带的 @ 和结尾的图片链接）；下标按码点算。
+  // full_text 里的 & < > 是转义过的（&amp; &lt; &gt;），下标是按转义前还是还原后的字算，没找到能确认的文档（0.28.9，review：只按转义前的算，
+  // 如果其实是按还原后的，每个 & 让结尾少 4 个字——判分的原文缺一截、换上的译文也缺一截）。两种都算一遍，看哪种截下来"后面只剩 t.co 链接或者什么都没有"
+  // （截掉的就是结尾的图片、引用链接），用那种；都对得上（没有 & < >）或都对不上照旧按转义前的
+  const escape = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const fits = (cs, end) => /^(\s*https:\/\/t\.co\/\w+)*\s*$/.test(cs.slice(end).join(""));
+  function visible(full, range) {
+    if (!range) return full;
+    const esc = [...full], un = [...unescape(full)];
+    if (esc.length !== un.length && !fits(esc, range[1]) && fits(un, range[1])) return escape(un.slice(range[0], range[1]).join("")); // withLinks 里还会还原一次
+    return esc.slice(range[0], range[1]).join("");
+  }
   function answer(rec, src) {
     const links = {}, media = new Set(rec.media || []);
     const raw = rec.note ? rec.note.text : typeof rec.full === "string" ? visible(rec.full, rec.range) : null;

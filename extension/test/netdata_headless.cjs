@@ -52,6 +52,15 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     });
     ok("同一条帖子又来一份不带译文、全文的：先前记下的不被冲掉", g.d1.translation === "网飞又涨价了，说真的我受够了。" && g.d2.long === true && /all remote\.$/.test(g.d2.source) &&
       /全部远程。$/.test(g.d2.translation) && g.stats.xhr === 2 && g.stats.tweets === 7 && g.stats.cached === 5, JSON.stringify(g));
+    // 0.28.9：正文里有 & <（full_text 里转义成 &amp; &lt;）：display_text_range 不管按还原后还是转义后的字算，都截对
+    const amp = await page.evaluate(async () => {
+      await (await fetch("/i/api/graphql/fake/TweetDetailAmp")).text();
+      await new Promise((r) => setTimeout(r, 100));
+      const ask = (id) => new Promise((res) => { const h = (e) => { const d = JSON.parse(e.detail); if (d.id === id) { document.removeEventListener("ff-tx-data", h); res(d); } };
+        document.addEventListener("ff-tx-data", h); document.dispatchEvent(new CustomEvent("ff-tx-ask", { detail: id })); });
+      return [(await ask("5006")).source, (await ask("5007")).source];
+    });
+    ok("正文里有 & <：下标按还原后、转义后的字算都截对", amp[0] === "Tom & Jerry are back <3" && amp[1] === "Tom & Jerry are back <3", JSON.stringify(amp));
   } catch (e) {
     out.push(`FAIL 运行出错 ${e.stack}`);
   }

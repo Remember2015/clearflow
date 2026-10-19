@@ -402,6 +402,8 @@ open(os.path.join(HERE, "fakex", "translate.html"), "w", encoding="utf-8").write
 # 3011 楼主的、X 自动翻了但已经切回原文（"显示翻译"+"关于自动翻译"）；3003 挂了仿 React 的数据（只有完整原文，X 没翻），
 # 3012 楼主的另一条长帖、没有这份数据（插件得替你点开"显示更多"）。
 # ?notr：主帖没被翻译；?focal=3002：打开的是楼主那条回复（主帖在上面）。全是合成文字。
+# ?extra（0.28.9，x_thread_misc_headless）多出三条、主帖带页面数据（原文）：3013 楼主只嵌了一张引用卡片（被引用的是英文长帖、卡片里有"显示更多"）；
+# 3014 楼主英文回复，X 过 1.2 秒才挂出"显示翻译"；3015 别人，昵称写成"@thread_op"（冒充楼主），只 @ 了一个外人（M1 该清理）。
 TH = {
     "3001": {"who": "op", "lang": "en", "orig": "We shipped three things today: a new editor, faster sync, and cheaper plans.",
              "tr": "我们今天发布了三样东西：新编辑器、更快的同步和更便宜的套餐。", "xtr": True},
@@ -429,13 +431,36 @@ def th_art(sid):
             f'<a href="/{h}/status/{sid}"><time datetime="{t}">{4000 - int(sid)}分钟</time></a>'
             f'<div class="x-tr"></div><div data-testid="tweetText" dir="auto"></div>{more}'
             f'<div role="group" aria-label="1 回复"></div><button data-testid="caret" aria-label="更多" type="button">…</button></article></div></div>')
-th_cells = "".join(th_art(k) for k in TH if k != "3009") + '<div data-testid="cellInnerDiv"><div><h2>发现更多</h2></div></div>' + th_art("3009")
+def th_extra(sid, name, h, inner):
+    t = (NOW - datetime.timedelta(minutes=4000 - int(sid))).isoformat() + ".000Z"
+    return (f'<div data-testid="cellInnerDiv" data-extra="1"><div><article data-testid="tweet" data-fid="{sid}" tabindex="0">'
+            f'<div data-testid="User-Name"><a href="/{h}">{name}</a>\n<a href="/{h}">@{h}</a></div>'
+            f'<a href="/{h}/status/{sid}"><time datetime="{t}">{4000 - int(sid)}分钟</time></a>{inner}'
+            f'<div role="group" aria-label="1 回复"></div><button data-testid="caret" aria-label="更多" type="button">…</button></article></div></div>')
+TH_EXTRA = (th_extra("3013", "Thread OP", "thread_op", '<div role="link" tabindex="0" class="x-quote"><div data-testid="User-Name">Long Writer\n@long_writer</div>'
+              '<div data-testid="tweetText" lang="en" dir="auto">A very long quoted post that X only shows the start of, so there is a show more link inside the card</div>'
+              '<span data-testid="tweet-text-show-more-link" class="card-more">显示更多</span></div>')
+            + th_extra("3014", "Thread OP", "thread_op", '<div class="x-tr"></div><div data-testid="tweetText" lang="en" dir="auto">One more update: the beta is open to everyone now.</div>')
+            + th_extra("3015", "@thread_op", "other_user3", '<div data-testid="tweetText" lang="zh" dir="auto">@outsider_x 看这里</div>'))
+th_cells = "".join(th_art(k) for k in TH if k != "3009") + TH_EXTRA + '<div data-testid="cellInnerDiv"><div><h2>发现更多</h2></div></div>' + th_art("3009")
 th_page = f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>fake x thread</title>
 <style>body{{font:15px/1.5 -apple-system,sans-serif;max-width:600px;margin:20px auto;background:#fff;color:#0f1419}} article{{border-bottom:1px solid #eee;padding:10px 16px;display:flow-root}} [data-testid=User-Name]{{white-space:pre;font-weight:600}} [data-testid=User-Name] a{{color:inherit;text-decoration:none}} [data-testid=tweetText]{{white-space:pre-wrap;font-size:15px;line-height:20px}} .x-tr{{color:#536471;font-size:13px}} .x-tr:empty{{display:none}} .x-tr button{{border:0;background:none;color:#1d9bf0;padding:0 4px;cursor:pointer}}</style>
 </head><body><main><div data-testid="primaryColumn"><section role="region"><div aria-label="时间线：对话">{th_cells}</div></section></div></main>{FAKE_MENU}<script>
 const TH = {_json.dumps(TH, ensure_ascii=False)};
 const q = new URLSearchParams(location.search);
 if (q.has("notr")) TH["3001"].xtr = false;
+if (!q.has("extra")) document.querySelectorAll("[data-extra]").forEach((e) => e.remove());
+else {{
+  Object.assign(TH["3001"], {{ fiber: true, full: TH["3001"].orig }}); // 主帖的原文在页面数据里
+  window.__cardMore = 0;
+  document.addEventListener("click", (e) => {{ if (e.target.closest(".card-more")) {{ window.__cardMore++; e.stopImmediatePropagation(); }} }}, true); // 卡片里的"显示更多"是链接（点了会跳走）：只记次数
+  // 3014：过 1.2 秒才挂出"显示翻译"（按需翻译，点了和 3010 一样）
+  setTimeout(() => {{
+    const a = document.querySelector('article[data-fid="3014"]');
+    TH["3014"] = {{ who: "op", lang: "en", orig: a.querySelector('[data-testid="tweetText"]').textContent, tr: "再更新一下：测试版现在对所有人开放了。", demand: true }};
+    fill(a, "demand");
+  }}, 1200);
+}}
 // 和 translate.html 一样：X 自动翻译过的（xtr）显示译文和"显示原文"，点了在微任务里换成原文；别的帖子直接是原文、带 lang
 function fill(a, mode) {{
   const d = TH[a.dataset.fid], tt = a.querySelector('[data-testid="tweetText"]'), row = a.querySelector(".x-tr");
@@ -454,11 +479,11 @@ function fill(a, mode) {{
     : '<button type="button" aria-label="显示翻译">显示翻译</button><button type="button" aria-label="关于自动翻译">关于自动翻译</button>');
   a.dataset.mode = mode;
 }}
-document.querySelectorAll("article[data-fid]").forEach((a) => {{ const d = TH[a.dataset.fid]; fill(a, d.demand ? "demand" : d.startOrig ? "orig" : "tr"); }});
+document.querySelectorAll("article[data-fid]").forEach((a) => {{ const d = TH[a.dataset.fid]; if (d) fill(a, d.demand ? "demand" : d.startOrig ? "orig" : "tr"); }}); // ?extra 那几条是写死的
 // 仿 React 的数据：X 没翻的长帖只有完整原文
 document.querySelectorAll("article[data-fid]").forEach((a) => {{
   const d = TH[a.dataset.fid];
-  if (d.fiber) a["__reactFiber$fake"] = {{ memoizedProps: {{}}, return: {{ memoizedProps: {{ tweet: {{ id_str: a.dataset.fid, lang: d.lang, note_tweet: {{ text: d.full, entity_set: {{ urls: [] }} }} }} }}, return: null }} }};
+  if (d && d.fiber) a["__reactFiber$fake"] = {{ memoizedProps: {{}}, return: {{ memoizedProps: {{ tweet: {{ id_str: a.dataset.fid, lang: d.lang, note_tweet: {{ text: d.full, entity_set: {{ urls: [] }} }} }} }}, return: null }} }};
 }});
 window.__clicks = {{}}; window.__demandClicks = {{}}; // 所有切换按钮的点击 / 按需翻译那一下
 document.addEventListener("click", (e) => {{
@@ -572,6 +597,17 @@ open(os.path.join(api_dir, "HomeTimeline"), "w", encoding="utf-8").write(_json.d
 detail = {"data": {"threaded_conversation_with_injections_v2": {"instructions": [{"type": "TimelineAddEntries", "entries": [
     api_tweet("5005", {"orig": "Fetched through fetch, not XHR.", "tr": "这条是用 fetch 取的。"})]}]}}}
 open(os.path.join(api_dir, "TweetDetail"), "w", encoding="utf-8").write(_json.dumps(detail, ensure_ascii=False))
+# TweetDetailAmp（0.28.9）：回复正文里有 & 和 <（full_text 里是 &amp; &lt;），开头带 @、结尾带图片 t.co。5006 的 display_text_range 按还原后的字算，
+# 5007 按转义后的字算——X 是哪种没找到文档，两种都要截对："Tom & Jerry are back <3"
+def amp_tweet(sid, escaped):
+    prefix, body, media = "@someone ", "Tom &amp; Jerry are back &lt;3", " https://t.co/media" + sid
+    shown = body if escaped else body.replace("&lt;", "<").replace("&amp;", "&")
+    t = {"__typename": "Tweet", "rest_id": sid, "legacy": {"full_text": prefix + body + media, "display_text_range": [len(prefix), len(prefix) + len(shown)],
+         "entities": {"urls": [], "media": [{"url": "https://t.co/media" + sid, "display_url": "pic.x.com/m" + sid, "type": "photo"}]}, "lang": "en"},
+         "core": {"user_results": {"result": {"__typename": "User", "rest_id": "9" + sid, "legacy": {"screen_name": f"user{sid}"}}}}}
+    return {"entryId": f"tweet-{sid}", "content": {"itemContent": {"tweet_results": {"result": t}}}}
+amp = {"data": {"threaded_conversation_with_injections_v2": {"instructions": [{"type": "TimelineAddEntries", "entries": [amp_tweet("5006", False), amp_tweet("5007", True)]}]}}}
+open(os.path.join(api_dir, "TweetDetailAmp"), "w", encoding="utf-8").write(_json.dumps(amp, ensure_ascii=False))
 # TweetResultByRestId：5001、5002 又来一份，这次不带译文和长帖全文（有的接口就是这样）——先前记下的不能被冲掉
 def stripped(sid):
     t = api_tweet(sid, NET[sid])["content"]["itemContent"]["tweet_results"]["result"]

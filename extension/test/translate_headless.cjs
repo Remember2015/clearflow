@@ -197,7 +197,7 @@ PLAN["1002"] = { action: "keep", grokMin: 0.91, cached: false };
       pg.on("pageerror", (e) => out.push(`PAGEERROR ${e.message}`));
       await pg.evaluateOnNewDocument((plan, init) => { window.__ffTxPlan = plan; Object.assign(window, init); }, { ...FILL, ...plan }, init);
       await pg.goto(`${base}/fakex/thread.html${q}`, { waitUntil: "load" });
-      await wait(3500);
+      await wait(5000); // 0.28.9 起补翻先等 1.5 秒（X 可能晚一点挂出自己的翻译）
       return pg;
     };
     const fills = (pg) => pg.evaluate(() => (window.__ffTxMsgs || []).filter((m) => m.type === "translateFill"));

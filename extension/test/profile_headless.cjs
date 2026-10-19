@@ -55,7 +55,8 @@ const summary = () => new Promise((res) => {
     ok("翻译过的这两条正常帖子不折", !b["2007"] && !b["2008"], JSON.stringify(b));
     const jev = await page.evaluate(() => window.__ffLastJev);
     const sent = (jev?.replies || []).map((x) => x.id);
-    ok("请求里告诉 Jev 这是谁的主页", /profile page of @prof_user/.test(jev?.post || "") && jev?.author?.handle === "@prof_user" && jev?.author?.name === "Prof User",
+    // 0.28.9 起不带主页顶上的名字（刚跳过来时那一栏可能还没画、或者还是上一个人的，进了缓存指纹会对不上）
+    ok("请求里告诉 Jev 这是谁的主页（只带账号）", /profile page of @prof_user/.test(jev?.post || "") && jev?.author?.handle === "@prof_user" && jev?.author?.name === "",
       JSON.stringify([jev?.post, jev?.author]));
     ok("广告不判", !(await page.evaluate(() => (window.__ffLog || []).length && [...document.querySelectorAll(".ff-bar")].some((x) => x.nextElementSibling?.textContent.includes("买它")))) &&
       !sent.includes("2006"), JSON.stringify(sent));

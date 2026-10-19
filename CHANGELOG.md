@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.28.9 — 2026-10-19
+
+- X: a reply that only embeds a quoted post is no longer translated as if the quoted text were its own, and ClearFlow no longer clicks "Show more" inside the quote card (which opened the quoted post).
+- X: before translating an author's reply itself, ClearFlow waits a moment in case X adds its own "Show translation" button, which is free.
+- X: an account whose display name starts with "@" and copies the post author's handle is no longer treated as the post author.
+- X: whether a post asks for recommendations is judged on the original text, not on X's translation.
+- X: after you close a "…" menu, "Clean this" no longer shows up in the next menu you open for a different post.
+- X: on profile pages, judging no longer depends on whether the profile header had loaded, so revisits reuse cached results.
+- X translation: posts with emoji are no longer retranslated after you expand them; your choice of which version to show is kept. After you change a key, posts that failed are retried; after OpenRouter runs out of credit, ClearFlow tries again 10 minutes later instead of waiting for a page reload.
+- X: posts containing "&", "<" or ">" are no longer cut short at the end when read from page data.
+
 ## 0.28.8 — 2026-10-19
 
 - Settings: the monthly cost estimate averages the last 7 days (or the days since you installed), instead of multiplying a single busy day by 30. Money spent on a retranslation is counted even if judging it fails afterwards.

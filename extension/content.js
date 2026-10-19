@@ -201,6 +201,10 @@
     if (hit && hit.href === href) return hit.info;
     const m = href.match(/\/status\/(\d+)/);
     const who = X.author(a);
+    // 账号以作者那一栏里指向 /账号 的链接为准（0.28.9，review：以前取那一栏里第一行 @ 开头的字——昵称本身以 @ 开头的（"@elonmusk"）
+    // 就被当成了账号，冒充楼主的机器人算成楼主：M1 不管它、Jev 还被告诉"这是作者自己"）。和链接对得上就留原来的大小写（缓存指纹不变）
+    const aid = X.authorId(a);
+    if (aid && who.handle.toLowerCase() !== "@" + aid) who.handle = "@" + aid;
     // textEl 是第一段正文：回复没写字、只嵌了引用卡片时，其实是被引用帖子的正文。回复自己的话是卡片外面那段（ownText）
     const textEl = X.textEl(a), own = X.ownTextEl(a), time = X.postTime(a);
     const info = {
@@ -230,7 +234,7 @@
   document.addEventListener("ff-tx-data", (e) => {
     let d = null;
     try { d = JSON.parse(e.detail); } catch (err) { return; }
-    const w = d && pageWaiters.get(d.id);
+    const w = d && typeof d.id === "string" && pageWaiters.get(d.id);
     if (w) { pageWaiters.delete(d.id); w(d); }
   });
   function askOriginal(id) {
@@ -413,7 +417,7 @@
   // 帖子页问一句"这个帖子是不是在请大家推荐"（rec）。以前靠只认中文的正则，换种语言就认不出（见 jev.js 的 POST_QUESTIONS）。
   // 只看帖子是哪一条：设置变了、请求重来都不影响这个答案；问不到（没 key、出错）就按普通帖子判
   function ensureRec() {
-    if (S.mode !== "status" || S.rec !== undefined || !S.postText || !S.settings.useJev || !S.hasKey) return;
+    if (S.mode !== "status" || S.rec !== undefined || !S.postText || S.postOrigPending || !S.settings.useJev || !S.hasKey) return;
     S.rec = null;
     const postId = S.postId;
     send({ type: "jevPost", postId, post: S.postText, author: S.postAuthor }).then((r) => {
@@ -780,7 +784,9 @@
   const noteCaret = (ev) => {
     if (!alive() || !S.enabled || S.settingsLoading) return;
     const caret = X.caretOf(ev.target);
-    if (!caret) return;
+    // 点了别处（别的帖子的分享、转发菜单……）：不再往接下来开的菜单里加"清理这条"（0.28.9，review：以前记着 3 秒，
+    // 关掉 A 的菜单马上开 B 的分享菜单，里面多出一个清理 A 的选项）
+    if (!caret) { if (!(ev.target && ev.target.closest && X.inLayers(ev.target))) menuFor = null; return; }
     const art = caret.closest(ART);
     const id = art && inRoot(art) && pageKey() === S.postId ? articleId(art) : null;
     menuFor = id && id !== S.postId ? { id, at: Date.now() } : null;
@@ -788,6 +794,7 @@
   // X 可能在按下时就开菜单，所以 pointerdown 和 click 都记（捕获阶段，先于 X 自己的处理）
   document.addEventListener("pointerdown", noteCaret, true);
   document.addEventListener("click", noteCaret, true);
+  document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && ev.isTrusted) menuFor = null; }, true); // 你按 Esc 关了菜单（插件自己关菜单发的不算）
   const ICON = "M3.27 2 2 3.27l3.05 3.05C3.4 7.58 2.13 9.24 1.5 12c1.2 5.3 5.9 8.5 10.5 8.5 1.86 0 3.66-.52 5.24-1.47L20.73 22 22 20.73 3.27 2zM12 18.5c-3.47 0-7.02-2.3-8.43-6.5.54-1.6 1.43-2.86 2.56-3.84l2.06 2.06A3.5 3.5 0 0 0 12 15.5c.43 0 .84-.08 1.22-.22l1.43 1.43c-.84.5-1.7.79-2.65.79zm0-13c4.6 0 9.3 3.2 10.5 8.5-.4 1.79-1.17 3.3-2.2 4.52l-1.43-1.42c.6-.83 1.07-1.87 1.36-3.1C19.02 9.8 15.47 7.5 12 7.5c-.6 0-1.2.07-1.77.2L8.7 6.17C9.76 5.73 10.86 5.5 12 5.5z";
   function closeMenu(dd) {
     const esc = () => new KeyboardEvent("keydown", { key: "Escape", code: "Escape", keyCode: 27, bubbles: true });
@@ -884,7 +891,7 @@
   function resetFor(postId) {
     resetRequests();
     budget.reset();
-    S.postId = postId; S.opHandle = ""; S.postText = ""; S.postAuthor = null; S.root = null; S.rec = undefined;
+    S.postId = postId; S.opHandle = ""; S.postText = ""; S.postAuthor = null; S.root = null; S.rec = undefined; S.postOrigPending = false;
     S.participants = new Set(); S.items = new Map(); S.order = []; S.queue = []; S.notice = null; S.bannerCounted = false;
     S.dupOff = new Set(); S.near = R.nearState(); S.showFill = false; S.groups = new Map(); S.openGroups = new Set(); S.heavy = false;
     S.mode = !postId ? null : postId.startsWith("u:") ? "profile" : postId.startsWith("s:") ? "search" : "status";
@@ -893,7 +900,8 @@
     if (S.mode === "profile") {
       // 告诉 Jev 这是谁的主页：主人推自己的东西不算给别人拉人（和帖子页带上楼主一样）
       S.postText = `Posts on the X profile page of @${S.owner}: its own posts, and posts it reposted or replied to. They are not replies to one post.`;
-      S.postAuthor = { name: X.profileName() || "", handle: "@" + S.owner };
+      // 不带主页顶上的名字（0.28.9，review：刚跳过来时那一栏还没画出来、或者还是上一个人的，进了缓存指纹，下次来对不上又全判一遍）
+      S.postAuthor = { name: "", handle: "@" + S.owner };
     } else if (S.mode === "search") {
       // 搜索结果：一堆不相干的人发的帖子，没有作者可带；搜的词不发（同一条帖子换个词搜到，缓存照样用）
       S.postText = "Posts shown in X search results, from many unrelated accounts. They are not replies to one post.";
@@ -925,7 +933,7 @@
     }
     if (!S.settings) return;
     if (!S.enabled) { clearUI(); return; }
-    S.me = X.selfHandle();
+    S.me = X.selfHandle() || S.me; // 左边栏没画出来（窗口窄、刚加载）时用上次认出来的（0.28.9 以前当成认不出：你自己的回复也拿去判）
     const r = route();
     if (r.media) return; // 图片/视频层：底下的页面原样留着
     const key = pageKey(r);
@@ -939,7 +947,15 @@
       S.postText = focal.info.text;
       if (focal.info.translated) { // 主帖也是 X 的译文：给 Jev 的上下文换成原文
         const epoch = S.epoch, fid = focal.info.id;
-        askOriginal(fid).then((d) => { const o = originalOf(d); if (o && epoch === S.epoch && S.postId === fid) S.postText = o; });
+        // 拿到原文以前先不问"是不是求推荐"（0.28.9，review：以前这一问在拿到原文之前就发了，问的是 Grok 的译文）
+        S.postOrigPending = true;
+        askOriginal(fid).then((d) => {
+          if (epoch !== S.epoch || S.postId !== fid) return;
+          const o = originalOf(d);
+          if (o) S.postText = o;
+          S.postOrigPending = false;
+          scheduleScan(0);
+        });
       }
       S.opHandle = focal.info.handle;
       S.postAuthor = { name: focal.info.name, handle: focal.info.handle }; // 告诉 Jev 帖子是谁发的，提作者自家产品不算拉人

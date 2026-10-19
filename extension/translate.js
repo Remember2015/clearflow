@@ -41,7 +41,7 @@
   document.addEventListener("ff-tx-data", (e) => {
     let d = null;
     try { d = JSON.parse(e.detail); } catch (err) { return; }
-    const w = d && pageWaiters.get(d.id);
+    const w = d && typeof d.id === "string" && pageWaiters.get(d.id);
     if (w) { pageWaiters.delete(d.id); w(d); }
   });
   function askPage(id) {
@@ -70,7 +70,11 @@
     scheduleRender();
   }
   // 开关关了、缺 key、key 无效、余额不足：这一页先不再发，等设置变了再说（Jev 的问题只影响首页那种）
+  let creditStop = 0; // OpenRouter 余额不足停下的时间：过 CREDIT_RETRY 再试（充值不会通知插件；0.28.9 以前要刷新页面）
+  const CREDIT_RETRY = 10 * 60e3;
+  const clearErrors = () => { for (const [k, j] of jobs) if (j.state === "error") jobs.delete(k); };
   function stopFor(code) {
+    if (code === "or_credit") creditStop = Date.now();
     if (["disabled", "noorkey", "or_badkey", "or_credit"].includes(code)) { onImprove = false; onFill = false; return true; }
     if (["nokey", "badkey"].includes(code)) { onImprove = false; return true; }
     return false;
@@ -87,6 +91,10 @@
   // 要翻的：和你的语言不一样的；und（认不出）、zxx（没有文字）、qme / qam / qht 这类（只有链接、@、话题）不翻
   const foreign = (lang) => !!lang && !sameLang(lang, target()) && !/^(und|zxx|q[a-t][a-z])$/.test(lang);
   const textOf = X.textOf;
+  // 这条自己的正文、自己的"显示更多"：引用卡片里的不算（0.28.9，review：只嵌了引用卡片、自己没写字的回复，以前拿卡片里被引用那条的正文
+  // 去翻、把译文放进卡片，还会去点卡片里的"显示更多"——那是个链接，会跳走；引用了长帖的短回复也被当成长帖、一直不改进）
+  const ownText = (a) => X.ownTextEl(a);
+  const moreOf = (a) => { const q = X.quoteCard(a); return [...a.querySelectorAll(MORE)].find((m) => !(q && q.contains(m))) || null; };
   const settle = async () => { for (let i = 0; i < 4; i++) await Promise.resolve(); };
   // 点翻译那一行的按钮（显示原文）读原文，再点一次（显示翻译）切回去（见文件开头）。切不过去或切不回来就放弃这条
   async function readOriginal(a) {
@@ -120,13 +128,17 @@
   }, { rootMargin: "100% 50% 200% 50%" });
   const watched = new WeakSet();
 
-  const RETRY_MS = 30000;
+  const RETRY_MS = 30000, JOBS_MAX = 2000;
   // 失败了 30 秒后再试一次，还不行这一页就不管这条了
   const failed = (job) => { job.state = "error"; job.retryAt = job.retries < 1 ? Date.now() + RETRY_MS : 0; job.retries++; };
   function newJob(kind, id, tt, extra = {}) {
     const key = jobKey(kind, id);
-    const job = { kind, sig: tt.textContent, state: "pending", result: null, showOurs: true, retries: jobs.get(key)?.retries || 0, retryAt: 0, ...extra };
+    const prev = jobs.get(key);
+    const job = { kind, sig: tt.textContent, state: "pending", result: null, showOurs: prev ? prev.showOurs : true, retries: prev?.retries || 0, retryAt: 0, ...extra };
+    jobs.delete(key);
     jobs.set(key, job);
+    // 最多记 JOBS_MAX 条（0.28.9，review：首页刷一晚上，每条帖子的原文、译文都攒着）：最早的、不在做的先丢
+    if (jobs.size > JOBS_MAX) for (const [k, j] of jobs) { if (jobs.size <= JOBS_MAX) break; if (j.state !== "pending") jobs.delete(k); }
     return [key, job];
   }
   function finish(key, job, r) {
@@ -145,7 +157,7 @@
     inflight++;
     try {
       let source, xText, srcLang;
-      const long = !!a.querySelector(MORE), shown = norm(textOf(tt));
+      const long = !!moreOf(a), shown = norm(textOf(tt));
       // 先问页面数据：X 的译文（长帖是页面上那一截）和屏幕上显示的对得上，原文就用它，不用去点按钮
       const d = await askPage(id);
       if (jobs.get(key) !== job) return;
@@ -175,7 +187,7 @@
     inflight++;
     try {
       let source = textOf(tt), truncated = false;
-      if (a.querySelector(MORE)) {
+      if (moreOf(a)) {
         // X 只显示了一截：完整原文从页面数据里拿（露出来那截得是它的开头），翻出来的就是全文
         const d = await askPage(id);
         if (jobs.get(key) !== job) return;
@@ -186,7 +198,7 @@
           // 读不到：替你点开"显示更多"，下一轮按展开后的全文翻
           thread.expanded.add(id);
           jobs.delete(key);
-          a.querySelector(MORE)?.click();
+          moreOf(a)?.click();
           return;
         } else truncated = true; // 点开了还是一截：只好翻露出来的这截
       }
@@ -199,7 +211,9 @@
     }
   }
   // 正文还是这份：一样，或者是长帖从那一截展开成了我们判过的全文
-  const sameText = (job, tt) => tt.textContent === job.sig || (!!job.fullNorm && norm(tt.textContent) === job.fullNorm);
+  // 全文（页面数据里的，带表情）按 textOf 比：表情是 <img alt>，textContent 里没有（0.28.9，review：带表情的长帖在 Grok 版 / 原文点开"显示更多"后
+  // 对不上，我们的块被撤掉、重做一遍——又付一次费，还把你选的"看 Grok 版"冲掉）
+  const sameText = (job, tt) => tt.textContent === job.sig || (!!job.fullNorm && norm(textOf(tt)) === job.fullNorm);
   // 已经在做 / 做过而且正文没变 / 失败了还没到重试时间：跳过
   function busy(job, tt) {
     return !!job && (job.state === "pending" || (job.state === "error" && !(job.retryAt && Date.now() >= job.retryAt)) ||
@@ -227,7 +241,7 @@
     if (!onImprove) return;
     for (const a of nearFirst(arts.filter((x) => near.has(x)))) { // 离视口近的先做
       if (inflight >= MAX_INFLIGHT) break;
-      const id = statusId(a), tt = a.querySelector(TEXT);
+      const id = statusId(a), tt = ownText(a);
       if (!id || !tt || xState(a) !== "auto" || a.style.display === "none") continue; // 广告没有 id；没显示着 X 的译文；被评论区那边折叠了
       if (busy(jobs.get(jobKey("improve", id)), tt)) continue; // 译文变了才重做
       if (judging(id)) continue;
@@ -238,9 +252,11 @@
   // 帖子页：哪些作者的帖子 X 翻译过（只看主帖和它上面的原帖），记到离开这个帖子为止（主帖被虚拟列表卸载了也照样用）。
   // seen：每条帖子第一次看到时 X 的翻译状态（auto 自动翻了 / demand 能按需翻 / off 切回了原文 / none 没有）；clicked：替你点过"显示翻译"的；
   // expanded：读不到页面数据、替你点过"显示更多"的
-  let thread = { pid: null, authors: new Set(), seen: new Map(), clicked: new Set(), expanded: new Set() };
+  // firstAt：每条第一次看到的时间（补翻先等 FILL_WAIT，见 tickFill）
+  const FILL_WAIT = 1500;
+  let thread = { pid: null, authors: new Set(), seen: new Map(), firstAt: new Map(), clicked: new Set(), expanded: new Set() };
   function conversation(root, pid) {
-    if (thread.pid !== pid) thread = { pid, authors: new Set(), seen: new Map(), clicked: new Set(), expanded: new Set() };
+    if (thread.pid !== pid) thread = { pid, authors: new Set(), seen: new Map(), firstAt: new Map(), clicked: new Set(), expanded: new Set() };
     const arts = [];
     for (const cell of X.cells(root)) {
       const a = cell.querySelector(ART);
@@ -257,25 +273,30 @@
   function tickFill(arts) {
     if (!onFill || !thread.authors.size) return;
     for (const a of nearFirst(arts.filter((x) => near.has(x)))) {
-      const id = statusId(a), tt = a.querySelector(TEXT);
+      const id = statusId(a), tt = ownText(a);
       if (a.style.display === "none") continue; // 被评论区那边折叠了（你标的）：看不见，不翻
       if (!id || !tt || !thread.authors.has(authorOf(a))) continue;
       const cur = xState(a);
       const prev = thread.seen.get(id);
       if (!prev || (prev === "none" && cur === "demand")) thread.seen.set(id, cur); // X 晚一点才挂出"显示翻译"按钮也算按需
+      if (!thread.firstAt.has(id)) thread.firstAt.set(id, Date.now());
       const lang = X.textLang(tt);
       // X 能翻但没自动翻：替你点一次"显示翻译"。只点第一次看到就是这样的；你自己切回原文的不点，点过的不再点
       if (cur === "demand" && thread.seen.get(id) === "demand" && !thread.clicked.has(id) && foreign(lang)) { thread.clicked.add(id); xToggle(a)?.click(); continue; }
       if (translatedByX(a) || thread.clicked.has(id)) continue;
       if (inflight >= MAX_INFLIGHT) break;
       if (!foreign(lang) || busy(jobs.get(jobKey("fill", id)), tt)) continue; // 展开"显示更多"后正文变了：重翻
-      if (judging(id)) continue;
+      if (judging(id)) continue; // 先问（等判的钟从第一次看到算起）
+      // 刚看到、X 还没挂出翻译那一行的先等一等（0.28.9，review：X 晚一两秒才挂出"显示翻译"，插件已经付费翻了，接着又替你点了 X 的翻译、
+      // 插件的那份作废，还要再付一次改进的判分）
+      if (cur === "none" && Date.now() - thread.firstAt.get(id) < FILL_WAIT) continue;
       processFill(a, id, tt, lang);
     }
   }
 
   function tick() {
     if (!alive()) { stop(); return; }
+    if (creditStop && Date.now() - creditStop > CREDIT_RETRY) { creditStop = 0; clearErrors(); loadSettings(); }
     const pg = page();
     if (!pg) return;
     const root = X.column();
@@ -307,7 +328,8 @@
       const tok = m[0], a = el("a", "ff-tx-link", tok);
       if (tok.startsWith("http")) {
         const key = tok.replace(/^https?:\/\//, "").replace(/…$/, "");
-        a.href = hrefs.get(key) || tok.replace(/…$/, "");
+        const h = hrefs.get(key);
+        a.href = typeof h === "string" && /^https?:\/\//i.test(h) ? h : tok.replace(/…$/, ""); // 只认 http(s)（页面数据是页面那边给的，别信别的协议）
         a.target = "_blank"; a.rel = "noopener noreferrer";
       } else if (tok[0] === "@") a.href = `/${tok.slice(1)}`;
       else if (tok[0] === "#") a.href = `/hashtag/${encodeURIComponent(tok.slice(1))}`;
@@ -364,7 +386,7 @@
   const unhide = (e) => { if (e && e.dataset.ffTxHidden) { e.style.display = ""; delete e.dataset.ffTxHidden; } };
   function render(a) {
     const pg = page();
-    const id = statusId(a), tt = a.querySelector(TEXT), more = a.querySelector(MORE);
+    const id = statusId(a), tt = ownText(a), more = moreOf(a);
     let block = a.querySelector(".ff-tx");
     // 这条现在归哪种：X 翻译过的看"改进"，没翻的看"补翻"（补翻只在帖子页）
     const kind = !pg || !id ? null : translatedByX(a) ? "improve" : pg.kind === "status" ? "fill" : null;
@@ -388,9 +410,11 @@
     }
     shownHere(job.kind).add(id);
     const [label, toggle] = labels(job);
-    block.querySelector(".ff-tx-text").hidden = !job.showOurs;
-    block.querySelector(".ff-tx-label").textContent = label;
-    block.querySelector(".ff-tx-toggle").textContent = toggle;
+    // 一样的不重写（0.28.9，review：每一轮都重写，评论区那边当成页面变了、每秒多扫一遍）
+    const textEl = block.querySelector(".ff-tx-text"), labelEl = block.querySelector(".ff-tx-label"), toggleEl = block.querySelector(".ff-tx-toggle");
+    if (textEl.hidden !== !job.showOurs) textEl.hidden = !job.showOurs;
+    if (labelEl.textContent !== label) labelEl.textContent = label;
+    if (toggleEl.textContent !== toggle) toggleEl.textContent = toggle;
     // 我们的是全文（按页面数据里的全文翻的）：X 的"显示更多"没用了，藏起来；切回 X 的版本再露出来
     if (job.showOurs) { hide(tt); if (more && job.fullNorm) hide(more); }
     else { unhide(tt); if (more) unhide(more); }
@@ -436,7 +460,10 @@
   let tickT = null;
   function stop() { clearInterval(tickT); tickT = null; io.disconnect(); observer.disconnect(); }
   try {
-    chrome.storage.onChanged.addListener((ch) => { if (ch.ff_settings || ch.ff_key || ch.ff_or_key) loadSettings(); });
+    chrome.storage.onChanged.addListener((ch) => {
+      if (ch.ff_key || ch.ff_or_key) { creditStop = 0; clearErrors(); } // 换了 key：因为 key 停下、出错的帖子重新来（0.28.9 以前这一页一直不再试）
+      if (ch.ff_settings || ch.ff_key || ch.ff_or_key) loadSettings();
+    });
   } catch (e) { /* 插件刚重载 */ }
   loadSettings().then(() => { tickT = setInterval(tick, TICK); tick(); });
 })();
