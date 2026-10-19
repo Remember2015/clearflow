@@ -11,7 +11,12 @@
   // 短文本豁免用：同上但保留数字和字母（"啰妹扣号2096209202" 不算短）
   const VIS_STRIP = /https?:\/\/\S+|[\/\s]|[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}~～!！?？。，,.:：#\-]/gu;
   // 邀请码：只认链接里的推广参数。以前还认"邀请码 / 推荐码"这几个中文字，换种语言就不灵，Jev 的"引流"那一问本来就认得出
-  const AFF = /[?&#](ref|aff|code|invite|inviter|i)=[\w-]{3,}/i;
+  // 推广码（0.28.6，review：以前 i=、ref=、code= 哪儿都算，Apple Music 的 ?i=、GitHub 的 ?ref=readme 这种正常链接被本地直接清理，
+  // 不问 Jev）：aff、invite、inviter 这类哪儿都算；ref、code 只在大网站以外的链接上算（"xrozzz.pro/login?ref=… 注册帮填我的邀请码"）；不再认 i
+  const AFF_STRONG = /[?&#](aff|aff_id|affiliate|invite|invite_code|invitecode|inviter)=[\w-]{3,}/i;
+  const AFF_WEAK = /(?:https?:\/\/)?(?:www\.)?([a-z0-9-]+(?:\.[a-z0-9-]+)+)[^\s?#]*[?&#](?:ref|code)=[\w-]{3,}/gi;
+  const BIG_HOST = /(^|\.)(x\.com|twitter\.com|t\.co|youtube\.com|youtu\.be|reddit\.com|redd\.it|google\.[a-z.]+|github\.com|apple\.com|spotify\.com|amazon\.[a-z.]+|wikipedia\.org|medium\.com|substack\.com|producthunt\.com|microsoft\.com|notion\.so|figma\.com|xiaohongshu\.com|ycombinator\.com|bilibili\.com)$/i;
+  const aff = (text) => AFF_STRONG.test(text) || [...String(text || "").matchAll(AFF_WEAK)].some((m) => !BIG_HOST.test(m[1]));
   const B64 = /(?<![A-Za-z0-9+/=])[A-Za-z0-9+/]{12,}={0,2}(?![A-Za-z0-9+/=])/g;
   // base64 解出来是能读的字，里面还有链接、域名、邮箱、@账号、电话那样的一串数字（7 位以上，可以隔空格、横线）、5 位以上的数字
   // 或"字母 + 数字"的号：藏的是联系方式。以前认 qq / 微信 / tg 这几个词，换成 WhatsApp、LINE 这些平台就漏（改写集上漏了 1 条）
@@ -100,15 +105,18 @@
   const ALNUM = /[\p{L}\p{N}]/u;
   function hiddenChars(text) {
     const cs = [...(text || "")];
+    // 每个位置前后最近的看得见的字（0.28.6，review：以前每个零宽连接符都往前往后把整串隐藏字符走一遍，一条塞了上万个的评论
+    // 一次要 1.7 秒、每次扫描都重算，能把页面卡死；先各扫一遍，整体是线性的）
+    const prev = new Array(cs.length), next = new Array(cs.length);
+    for (let i = 0, last = -1; i < cs.length; i++) { prev[i] = last; if (!INVIS.test(cs[i])) last = i; }
+    for (let i = cs.length - 1, last = -1; i >= 0; i--) { next[i] = last; if (!INVIS.test(cs[i])) last = i; }
     let n = 0, vis = 0;
     for (let i = 0; i < cs.length; i++) {
       const c = cs[i];
       if (ALNUM.test(c)) vis++;
       if (!INVIS.test(c) || c === "\u200E" || c === "\u200F") continue;
       if (c === "\u200C" || c === "\u200D") {
-        let p = i - 1; while (p >= 0 && INVIS.test(cs[p])) p--;
-        let q = i + 1; while (q < cs.length && INVIS.test(cs[q])) q++;
-        const a = cs[p] || "", b = cs[q] || "";
+        const a = cs[prev[i]] || "", b = cs[next[i]] || "";
         if ((EMOJI_PART.test(a) && EMOJI_PART.test(b)) || JOINING.test(a) || JOINING.test(b)) continue;
       }
       n++;
@@ -124,7 +132,7 @@
       if (h) return { kind: "m1", detail: "@" + h };
     }
     if (hiddenChars(text)) return { kind: "hidden", detail: "" };
-    if (AFF.test(text)) return { kind: "aff", detail: "" };
+    if (aff(text)) return { kind: "aff", detail: "" };
     const d = b64Lure(text);
     if (d) return { kind: "b64", detail: d.slice(0, 40) };
     return null;
@@ -269,31 +277,39 @@
   };
   const squash = (text) => String(text || "").replace(/\s+/g, "").toLowerCase();
   // list：[{raw, text}]（feedback.js 存的；旧的只有 text）→ 预先算好的样例
+  // 样例存的原文最多 RAW_MAX 字（feedback.js 的 marked()，空白合成一个、截前 300 字）：存满了的（cut）拿这条回复同样截过的那截来比
+  // （0.28.6，review：以前拿全文比截过的样例，标过的一条 415 字的骗局一模一样再来也认不出）。链接另外从全文里取（links，0.28.6 起存），
+  // 放在 300 字以后的联系方式也认得出；旧的没存 links，只认前 300 字里的
+  const RAW_MAX = 300;
+  const rawCut = (t) => String(t || "").replace(/\s+/g, " ").trim().slice(0, RAW_MAX);
   function markedPrep(list) {
     return (list || []).map((x) => {
       const raw = typeof x.raw === "string" && x.raw ? x.raw : "";
       const n = raw ? normSlogan(raw) : String(x.text || "");
-      return { full: raw ? squash(raw) : "", links: markLinks(raw), cs: [...n].slice(0, NEAR_MAX_CHARS), long: units(n) >= NEAR_LONG, link: HAS_LINK.test(raw) };
-    }).filter((x) => x.full || x.cs.length);
+      const links = markLinks(raw);
+      for (const k of Array.isArray(x.links) ? x.links : []) if (typeof k === "string" && k) links.add(k);
+      return { full: raw ? squash(raw) : "", links, cs: [...n].slice(0, NEAR_MAX_CHARS), long: units(n) >= NEAR_LONG, link: HAS_LINK.test(raw), cut: raw.length >= RAW_MAX };
+    }).filter((x) => x.full || x.cs.length || x.links.size);
   }
   // 这条回复像不像哪一条样例：{kind: "same" | "link" | "near", detail}，都不像给 null
   function markedMatch(text, prepared) {
     if (!prepared || !prepared.length || !text) return null;
-    const full = squash(text), links = markLinks(text), n = normSlogan(text), cs = [...n].slice(0, NEAR_MAX_CHARS);
-    const long = units(n) >= NEAR_LONG, link = HAS_LINK.test(text);
-    let near = null;
+    const view = (t) => { const n = normSlogan(t); return { full: squash(t), n, cs: [...n].slice(0, NEAR_MAX_CHARS), long: units(n) >= NEAR_LONG, link: HAS_LINK.test(t) }; };
+    const whole = view(text), links = markLinks(text);
+    let cut = null, near = null;
     for (const p of prepared) {
-      if (p.full && p.full.length >= 2 && p.full === full) return { kind: "same" };
+      const c = p.cut ? (cut ||= view(rawCut(text))) : whole;
+      if (p.full && p.full.length >= 2 && p.full === c.full) return { kind: "same" };
       for (const k of p.links) if (links.has(k)) return { kind: "link", detail: k };
-      if (!near && cs.length >= 3 && p.cs.length >= 3 && ((long && p.long) || (link && p.link))) {
+      if (!near && c.cs.length >= 3 && p.cs.length >= 3 && ((c.long && p.long) || (c.link && p.link))) {
         // 两成：1 - 0.8 是 0.19999…，5 个字乘出来 0.9999… 取整成 0，所以加一点再取整（D1 那边一直是这样算的，没动它）
-        const max = Math.floor((1 - NEAR_SIM) * Math.max(cs.length, p.cs.length) + 1e-9);
-        if (editDistance(cs, p.cs, max) <= max) near = { kind: "near" };
+        const max = Math.floor((1 - NEAR_SIM) * Math.max(c.cs.length, p.cs.length) + 1e-9);
+        if (editDistance(c.cs, p.cs, max) <= max) near = { kind: "near" };
       }
     }
     return near;
   }
-  const api = { markedPrep, markedMatch, mentions, units, coreUnits, visibleLen, FILLER_UNITS, fillerShort, b64Lure, m1, mentionNudge, MENTION_NUDGE_UNITS, MENTION_NUDGE, shortExempt, hiddenChars, localVerdict, normSlogan, sloganOk, dupOk, editDistance, nearState, findDupSlogans };
+  const api = { markedPrep, markedMatch, markLinks, mentions, units, coreUnits, visibleLen, FILLER_UNITS, fillerShort, b64Lure, m1, mentionNudge, MENTION_NUDGE_UNITS, MENTION_NUDGE, shortExempt, hiddenChars, localVerdict, normSlogan, sloganOk, dupOk, editDistance, nearState, findDupSlogans };
   globalThis.FFRules = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })();

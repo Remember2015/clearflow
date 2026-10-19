@@ -42,6 +42,7 @@
   const rawId = (c) => { const h = c.querySelector("#published-time-text a")?.getAttribute("href") || ""; const m = h.match(/[?&]lc=([\w.-]{4,100})/); return m ? m[1] : null; };
   const commentId = (c) => { const r = rawId(c); return r ? "yt_" + r : null; };
   const commentAuthor = (c) => (c.querySelector("#author-text")?.textContent || "").trim();
+  const commentAuthorHref = (c) => (c.querySelector("#author-text")?.getAttribute("href") || "").split(/[?#]/)[0];
   const commentBodyHost = (c) => c.querySelector("#content-text");
   // 正文那一格：yt-attributed-string 里那个普通 span（换译文时整格克隆它，不克隆 YouTube 自己的组件）
   const commentBody = (c) => { const h = commentBodyHost(c); return h ? h.querySelector(`:scope > span:not(.${OWN})`) || h : null; };
@@ -113,7 +114,7 @@
   // 深色主题：<html dark>
   const dark = () => document.documentElement.hasAttribute("dark");
   const uiLang = () => document.documentElement.lang || navigator.language || "en";
-  globalThis.FFYT = Object.freeze({ route, vidOf, comments, rawId, commentId, commentAuthor, commentBody, commentBodyHost, commentText, commentInfo, commentFoldEls, isReply,
+  globalThis.FFYT = Object.freeze({ route, vidOf, comments, rawId, commentId, commentAuthor, commentAuthorHref, commentBody, commentBodyHost, commentText, commentInfo, commentFoldEls, isReply,
     translateButton, ytTranslated, rememberOriginal,
     commentHeader, owner, watchTitleEl, watchTitle, listTitles, snippetOf, descBox, descSnippet, descFull, descExpanded, dark, uiLang, readText, authors, QUIET });
 })();

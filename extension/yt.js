@@ -44,7 +44,7 @@
         const id = Y.commentId(c);
         if (!id || !Y.commentBody(c)) continue;
         const info = Y.commentInfo(c), a = Y.commentAuthor(c);
-        out.push({ id, el: c, name: a, handle: a, text: Y.commentText(c), op: !!(info && info.creator), time: null, info });
+        out.push({ id, el: c, name: a, handle: a, href: Y.commentAuthorHref(c), text: Y.commentText(c), op: !!(info && info.creator), time: null, info });
       }
       return out;
     },
@@ -70,7 +70,12 @@
     },
     localVerdict(it) {
       const o = Y.owner();
-      if (o.name && !(it.info && o.channelId && it.info.channelId === o.channelId)) {
+      // 冒充频道主：评论者是谁、这个视频是谁的都知道了才判，频道主本人（作者标记、页面数据里的频道主、主页链接一样）不判
+      // （0.28.6，review：以前不知道就当"不是频道主"，页面数据晚到或者 Shorts 划过去时，频道主自己的推广评论被当冒充者清理）
+      // 主页链接只比 /@账号 那一段（Shorts 上频道链接是 /@账号/shorts，评论作者的是 /@账号；2026-10-19 真页面上看的）
+      const at = (h) => ((h || "").match(/^\/@[^/?#]+/) || [""])[0].toLowerCase();
+      const own = it.op || (it.info && it.info.creator) || (at(it.href) && at(it.href) === at(o.href)) || (it.info && o.channelId && it.info.channelId === o.channelId);
+      if (o.name && it.info && o.channelId && !own) {
         const handle = (o.href.match(/^\/@([^/?#]+)/) || [])[1] || "";
         if ((Y2.lookalike(it.handle, o.name) || (handle && Y2.lookalike(it.handle, handle))) && it.scores && (it.scores.benefit >= 0.3 || (it.scores.setup ?? 0) >= 0.5))
           return { kind: "imp", reason: t("reason.withDetail", { reason: t("kind.imp"), detail: o.name }) };

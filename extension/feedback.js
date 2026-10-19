@@ -103,7 +103,9 @@ const keyOf = (x) => (R.sloganOk(x.text) ? x.text : `id:${x.source?.id || ""}`);
 function marked(entry, site) {
   const raw = String(entry?.text || "").replace(/\s+/g, " ").trim().slice(0, 300), text = R.normSlogan(raw);
   if (!validId(entry?.id) || !(R.sloganOk(text) || /\p{L}/u.test(raw))) return null;
-  return { text, raw, site: typeof site === "string" ? site : "", source: { postId: entry.postId, id: entry.id, handle: entry.handle || "" }, createdAt: Date.now() };
+  // links：全文里的链接（0.28.6：原文只存前 300 字，后面的联系方式靠它认，见 rules.js 的 markedPrep）
+  const links = [...R.markLinks(String(entry?.text || ""))].slice(0, 10);
+  return { text, raw, ...(links.length ? { links } : {}), site: typeof site === "string" ? site : "", source: { postId: entry.postId, id: entry.id, handle: entry.handle || "" }, createdAt: Date.now() };
 }
 const withMarked = (list, item) => [...list.filter((x) => keyOf(x) !== keyOf(item) && x.source?.id !== item.source.id), item].slice(-MARK_MAX);
 export async function listSlogans() {

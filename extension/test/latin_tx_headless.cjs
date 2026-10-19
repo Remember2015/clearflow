@@ -161,6 +161,32 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     m = await cldPage("zh-CN", true);
     const e2 = m.filter((x) => x[0] === "t1_e2");
     ok("先问浏览器，中文界面：全是汉字、但浏览器认得准是日文的评论照翻（原文语言 ja）", e2.length === 1 && e2[0][1] === "ja", JSON.stringify(m));
+
+    // ⑦ 0.28.6（review）：@账号、英文 #话题、不带 http 的域名不算这种语言的字——中文界面，浏览器认不准（替身对非 ASCII 的都说认不准）时，
+    //    "@SomeLongEnglishChannelName 我觉得说得对"、"看这个 www.example.com/abc/def 太好笑了"都按中文算、不翻
+    {
+      const page = await browser.newPage();
+      page.on("pageerror", (e) => out.push(`PAGEERROR ${e.message}`));
+      await page.evaluateOnNewDocument(() => {
+        window.__ffUiLang = "zh-CN";
+        const swap = { t1_e2: "@SomeLongEnglishChannelName 我觉得说得对", t1_e3: "看这个 www.example.com/abc/def 太好笑了 #funny" };
+        const done = new Set();
+        const mo = new MutationObserver(() => {
+          if (document.documentElement && document.documentElement.lang !== "zh-CN") document.documentElement.lang = "zh-CN";
+          for (const [id, t] of Object.entries(swap)) {
+            const p = !done.has(id) && document.querySelector(`shreddit-comment[thingid="${id}"] [slot="comment"] p`);
+            if (p) { p.textContent = t; done.add(id); }
+          }
+        });
+        mo.observe(document, { childList: true, subtree: true });
+      });
+      await page.setViewport({ width: 900, height: 2400 });
+      await page.goto(`${BASE}/fakex/reddit/post_en.html`, { waitUntil: "load" });
+      await wait(4000);
+      const m = await page.evaluate(() => (window.__ffTxMsgs || []).filter((x) => x.type === "translateFill").map((x) => x.id));
+      ok("中文界面：\"@英文账号 + 中文\"、夹着域名和英文 #话题 的中文评论不翻（浏览器认不准时）", !m.includes("t1_e2") && !m.includes("t1_e3") && m.includes("t1_e1"), JSON.stringify(m));
+      await page.close();
+    }
   } catch (e) {
     out.push(`FAIL 出错 ${e.stack || e}`);
   } finally {

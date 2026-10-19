@@ -28,7 +28,7 @@
   };
   // 界面上的字（只作兜底：X 是别的语言界面时靠结构）
   const STOP_RE = /^(发现更多|Discover more|更多帖子|More posts)/; // 帖子页下面推荐的别的帖子，不算这条对话
-  const AD_RE = /(^|\n)(广告|Ad|Promoted)(\n|$)/;
+  const AD_WORD = /^(广告|Ad|Promoted)$/;
 
   // ---------- 网址 ----------
   // /用户/status/数字 是帖子详情页；后面跟 /photo/N、/video/N 是盖在当前页面上的图片 / 视频层（底下可能还是首页）；
@@ -101,8 +101,17 @@
     return [...new Set(urls.filter((u) => /^https:\/\/pbs\.twimg\.com\//.test(u || "")))];
   }
   const moreLink = (a) => a.querySelector(SEL.more);
-  // 广告：整条包在 placementTracking 里，或者正文外面单独一行"广告 / Promoted"（inner：调用方已经取过的 innerText）
-  const isAd = (a, inner) => !!a.closest(SEL.adWrap) || AD_RE.test(inner ?? a.innerText);
+  // 广告：整条包在 placementTracking 里，或者正文、作者那一栏、引用的帖子外面，有一个只写着"广告 / Ad / Promoted"的字
+  // （0.28.6，review：以前拿整条的 innerText 认，回复正文里单独一行"广告"、昵称就叫"Ad"的都被当广告跳过——不判、也不能手动清理）
+  const adLabel = (a) => {
+    const q = quoteCard(a);
+    for (const e of a.querySelectorAll("span, div")) {
+      if (e.childElementCount || !AD_WORD.test((e.textContent || "").trim())) continue;
+      if (!e.closest(SEL.text) && !e.closest(SEL.userName) && !(q && q.contains(e))) return true;
+    }
+    return false;
+  };
+  const isAd = (a) => !!a.closest(SEL.adWrap) || adLabel(a);
   const caretOf = (target) => (target && target.closest ? target.closest(SEL.caret) : null);
   // 新挂上来的节点里有没有"…"菜单：先认 Dropdown 标记，没有的话认 #layers 里新出现的 role=menu
   function menuIn(n) {
@@ -221,7 +230,7 @@
   }
 
   globalThis.FFX = Object.freeze({
-    SEL, STOP_RE, AD_RE, route, selfHandle, profileName, column, inLayers, statusLink, statusId, postTime, articlesFor, userLines, author, authorId,
+    SEL, STOP_RE, AD_WORD, adLabel, route, selfHandle, profileName, column, inLayers, statusLink, statusId, postTime, articlesFor, userLines, author, authorId,
     textEl, textLang, quoteCard, ownTextEl, quoteHandle, hasMedia, photoUrls, moreLink, isAd, caretOf, menuIn, menuTemplate,
     cells, isSectionHeader, timelineOf, uiLang, primaryLang, sameLang, translationRow, translationState, translationToggle, textOf,
     darkTheme, API_URL, apiRecord, isApiTweet, apiTweets, fiberTweet, fiberRecord,

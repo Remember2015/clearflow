@@ -85,6 +85,24 @@ ok("模板那 30 条并成一组", last.size === 1 && [...last.values()][0].leng
   ok("标记：旧格式（只有去掉标点的那句，够长）照样一字不差地认", R.markedMatch("这是一句很长的旧版记住的话术！", R.markedPrep([{ text: "这是一句很长的旧版记住的话术" }]))?.kind === "near");
   ok("标记：没有样例 → null", R.markedMatch("随便一句", []) === null);
 }
+// 0.28.6（review）：推广码——aff、invite 这类哪儿都算；ref、code 只在大网站以外算；不再认 i
+{
+  const v = (t) => (R.localVerdict(t, [], {}) || {}).kind || null;
+  ok("推广码：小网站的 ?ref= 照样认（\"注册帮填我的邀请码\"）", v("https://xrozzz.pro/login?ref=7zkd4cbd 注册帮填我的邀请码") === "aff");
+  ok("推广码：?invite= 哪儿都认", v("注册送 100 元 https://abc.example.net/s?invite=AB12CD") === "aff");
+  ok("推广码：GitHub 的 ?ref=readme、Product Hunt 的 ?ref=twitter 不算", v("https://github.com/foo/bar/blob/main/README.md?ref=readme 看这个") === null &&
+    v("https://www.producthunt.com/posts/foo?ref=twitter 不错") === null);
+  ok("推广码：Apple Music 的 ?i= 不算", v("https://music.apple.com/us/album/x/1559523357?i=1559523359 这首好听") === null);
+  // 隐藏字符：上万个零宽连接符也是线性的（以前每个都往前往后走一遍，1 万个要 1.7 秒）
+  const t0 = Date.now(), n = R.hiddenChars("买" + "\u200D".repeat(10000) + "号");
+  ok("隐藏字符：1 万个零宽连接符 0.2 秒内算完", n === 10000 && Date.now() - t0 < 200, `${n} ${Date.now() - t0}ms`);
+  ok("隐藏字符：emoji 组合里的零宽连接符不算", R.hiddenChars("👨\u200D👩\u200D👧 一家人出去玩") === 0);
+  // 标记过的长评论（超过 300 字，样例只存了前 300 字）：一模一样再来认得出；链接在 300 字以后的，靠全文存下的 links 认
+  const story = "我之前也是被人带着做副业，".repeat(25) + "想了解的加我 telegram: https://t.me/fakescam123 详细聊";
+  const raw = story.replace(/\s+/g, " ").trim().slice(0, 300);
+  ok("标记：超过 300 字的一模一样再来 → same", R.markedMatch(story, R.markedPrep([{ raw }]))?.kind === "same");
+  ok("标记：链接在 300 字以后、开头改了 → 靠全文链接认", R.markedMatch("换了个开头 " + story.slice(60), R.markedPrep([{ raw, links: [...R.markLinks(story)] }]))?.kind === "link");
+}
 console.log(out.join("\n"));
 const fails = out.filter((l) => !l.startsWith("PASS")).length;
 console.log(fails ? `${fails} 项没过` : `全过（${out.length} 项）`);

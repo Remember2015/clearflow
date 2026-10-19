@@ -50,7 +50,7 @@
       multi.length ? `带引用的 ${multi.length} 条里认出 ${quoted} 条` : "页面上没有带引用的帖子");
     const media = arts.filter((a) => FFX.hasMedia(a)).length;
     add("帖子", "图片 / 视频", media ? "正常" : "无从判断", `${media} 条带图或视频`);
-    const adWrap = arts.filter((a) => a.closest(FFX.SEL.adWrap)).length, adText = arts.filter((a) => FFX.AD_RE.test(a.innerText)).length;
+    const adWrap = arts.filter((a) => a.closest(FFX.SEL.adWrap)).length, adText = arts.filter((a) => FFX.adLabel(a)).length;
     add("帖子", "广告（整条包在 placementTracking 里 / 有「广告」字样）", adWrap === adText ? (adWrap ? "正常" : "无从判断") : "注意",
       `包着的 ${adWrap} 条，带字样的 ${adText} 条${adWrap !== adText ? "：两种认法对不上，看看是不是 X 改了广告的样子" : ""}`);
 

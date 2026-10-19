@@ -126,6 +126,21 @@ const state = () => {
       (await page.evaluate(() => location.pathname)) === "/results", JSON.stringify(s.related[0]));
     sum = await page.evaluate(summary);
     ok("YouTube 搜索结果：弹窗答只翻标题、不折叠", sum && sum.site === "yt" && sum.kind === "list" && !sum.folds && sum.tx && sum.tx.filled === 1, JSON.stringify(sum));
+
+    // ③ 0.28.6（review）：页面数据没到（拦掉 ytdata 发来的消息）时不判"冒充频道主"——频道主自己带推广意味的评论（替身给推广分 0.5）
+    //    以前因为不知道是不是频道主就当不是，handle 和频道一样，被当冒充者清理
+    {
+      const p2 = await browser.newPage();
+      p2.on("pageerror", (e) => out.push(`PAGEERROR ${e.message}`));
+      await p2.evaluateOnNewDocument(() => window.addEventListener("message", (e) => { if (e.data && e.data.source === "ff-yt") e.stopImmediatePropagation(); }, true));
+      await p2.setViewport({ width: 1280, height: 1800 });
+      await p2.goto(`${BASE}/fakex/yt/watch.html?jev=${encodeURIComponent(JSON.stringify({ "New video next week": { benefit: 0.5 } }))}`, { waitUntil: "load" });
+      await wait(4000);
+      await openGroups(p2);
+      const st = await p2.evaluate(state);
+      ok("YouTube：页面数据没到时，频道主自己的推广评论不判成冒充频道主", !/冒充/.test(st.Ugc02.bar || ""), JSON.stringify(st.Ugc02));
+      await p2.close();
+    }
   } catch (e) {
     out.push(`FAIL 运行出错 ${e.stack}`);
   }

@@ -38,9 +38,12 @@
     });
     const target = () => (site.uiLang ? site.uiLang() : Dm.uiLang());
     // ---------- 认文字 ----------
+    // 认语言之前去掉不算这种语言的字：网址、Reddit 的 u/ r/、@账号、英文的 #话题、不带 http 的域名（0.28.6，review：YouTube 的回复
+    // 都自动带"@账号"，"@SomeLongEnglishChannel 说得对"按字母数是拉丁字母，浏览器认不准时中文回复被当外文翻了；中日韩的 #话题 是这种语言的字，留着）
+    const bare = (text) => String(text).replace(/https?:\/\/\S+|\bu\/\w+|\br\/\w+|@[\w.]+|#[A-Za-z0-9_]+|\b(?:www\.)?(?:[a-z0-9-]+\.)+(?:com|net|org|io|co|me|tv|app|dev|ly|gl|gg|xyz|info|cn|jp|kr|de|fr|uk|ru|in|br|es|it)\b(?:\/\S*)?/gi, " ");
     function mainScript(text) {
       const n = {};
-      for (const ch of text.replace(/https?:\/\/\S+|\bu\/\w+|\br\/\w+/g, "")) for (const [k, re] of SCRIPTS) if (re.test(ch)) { n[k] = (n[k] || 0) + (WIDE.has(k) ? 3 : 1); break; }
+      for (const ch of bare(text)) for (const [k, re] of SCRIPTS) if (re.test(ch)) { n[k] = (n[k] || 0) + (WIDE.has(k) ? 3 : 1); break; }
       // 日文里汉字多，有两个以上假名就算日文——但汉字加假名得比别的文字多（0.27.5，用户 10-18 截图：一段英文的 YouTube 简介末尾一行
       // "キャンプ"标签，整段被当成日文，说明写"原文（日语）"；日文界面还会因此不翻）
       const cjk = (n.han || 0) + (n.kana || 0);
@@ -103,7 +106,7 @@
         done(label, !!label && !sameLang(label, ui) && !(guess && sameLang(guess, ui)));
       };
       try {
-        chrome.i18n.detectLanguage(text.slice(0, 1000), (r) => {
+        chrome.i18n.detectLanguage(bare(text).slice(0, 1000), (r) => {
           void chrome.runtime.lastError;
           const top = r && r.languages && r.languages[0], code = top ? base(top.language) : "";
           const sure = top && r.isReliable && top.percentage >= 70 && /^[a-z]{2,3}$/.test(code) && code !== "und" && !(s === "latin" && !MAIN.has(code));

@@ -49,6 +49,7 @@ def art(user, handle, sid, text, minutes_ago, photo=False, extra=None):
     pic = (f'<div data-testid="tweetPhoto"><img alt="图像" src="{photo}" style="width:160px;height:90px;border-radius:8px"></div>' if isinstance(photo, str) else
            '<div data-testid="tweetPhoto"><div style="width:160px;height:90px;background:#d6dde3;border-radius:8px"></div></div>') if photo else ""
     social = f'<div data-testid="socialContext">{x["social"]}</div>' if x.get("social") else ""
+    adl = '<div class="x-adl"><span>广告</span></div>' if x.get("adlabel") else ""  # 真 X 的广告：作者那一栏旁边一个"广告"
     badge = '<svg data-testid="icon-verified" width="12" height="12"></svg>' if x.get("verified") else ""
     card = f'<div data-testid="card.wrapper"><a href="https://t.co/fake"><span>{x["card"]}</span></a></div>' if x.get("card") else ""
     q = x.get("quote")
@@ -62,7 +63,7 @@ def art(user, handle, sid, text, minutes_ago, photo=False, extra=None):
     group = (f'<div role="group" aria-label="{x["group"]}"><button data-testid="reply">·</button><button data-testid="retweet">·</button>'
              f'<button data-testid="{"unlike" if x.get("liked") else "like"}">·</button></div>') if x.get("group") else ""
     return f'''<div data-testid="cellInnerDiv"><div><article data-testid="tweet">{social}
-  <div data-testid="User-Name">{user}\n{handle}{badge}</div>
+  <div data-testid="User-Name">{user}\n{handle}{badge}</div>{adl}
   <a href="/{handle[1:]}/status/{sid}"><time datetime="{t}">{minutes_ago}分钟</time></a>
   {body}{pic}{card}{quote}{group}
   <button data-testid="caret" aria-label="更多" type="button">…</button></article></div></div>'''
@@ -137,6 +138,13 @@ write_status("7004", page("7004", "测试帖：有人知道这是哪部片子吗
     ("一模一样", "@mark_same_b2", "7402", "是这一部吧" + tlink("FAKE7401"), 49),
     ("换了链接", "@mark_near_c3", "7403", "是这部吧\n" + tlink("FAKE7403"), 48),
     ("正常用户", "@normal_7004", "7404", "这部电影我也看过，结局挺意外的", 47),
+]))
+# 7008（0.28.6，review）：回复正文里单独一行"广告"、昵称就叫"Ad"的不是广告，照样判；真广告（作者那一栏旁边一个"广告"）不判
+write_status("7008", page("7008", "测试帖：大家觉得这个怎么样", [
+    ("广告党", "@line_ad_a", "7801", "这条不是广告<br>广告<br>就是想说一句", 50),
+    ("Ad", "@named_ad_b", "7802", "说得很对，我也这么觉得", 49),
+    ("正常用户", "@normal_7008", "7803", "这个帖子讲得挺清楚的", 48),
+    ("真广告", "@real_ad_c", "7804", "全场五折，点击购买", 47, False, {"adlabel": True}),
 ]))
 # 7005（0.27，清理得多的页面）：7 条垃圾（替身按"领福利"给引流分）和正常回复一条隔一条，加一条"赞"：清理条 7 条超过 5，整条藏起来、最上面一行汇总
 HEAVY_SPAM = ["私信我领福利一号，先到先得", "私信我领福利二号，名额不多", "私信我领福利三号，今天截止", "私信我领福利四号，快来",
