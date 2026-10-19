@@ -61,7 +61,7 @@ stub = r'''
     if (msg.type === "translateFillBatch") {
       const one = (m) => window.__ffTxPlan?.["fill:" + m.id] || window.__ffTxFn?.(m) || { action: "fill", text: m.markup ? m.source.replace(/<p(\d+)>/g, "<p$1>【替身补翻】") : "【替身补翻】" + m.source,
         model: "stub/model", cost: 0, cached: false };
-      for (const m of msg.items) (window.__ffTxMsgs ||= []).push({ ...JSON.parse(JSON.stringify(m)), type: "translateFill", batch: msg.items.length });
+      for (const m of msg.items) (window.__ffTxMsgs ||= []).push({ ...JSON.parse(JSON.stringify(m)), type: "translateFill", batch: msg.items.length, flex: msg.flex });
       (window.__ffTxBatches ||= []).push(msg.items.length);
       (window.__ffTxBatchSrc ||= []).push(msg.items.map((m) => m.source));
       r = { results: msg.items.map((m) => (window.__ffTxBatchDrop && window.__ffTxBatchDrop(m) ? { error: "少了这一条", code: "batch_miss", retryable: true } : one(m))) };

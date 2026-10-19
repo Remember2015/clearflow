@@ -191,7 +191,8 @@
         } else truncated = true; // 点开了还是一截：只好翻露出来的这截
       }
       if (!/\p{L}/u.test(source) || source.length > MAX_LEN) { job.state = "skip"; return; }
-      finish(key, job, await send({ type: "translateFill", id, source, srcLang: lang, truncated, target: target() }));
+      const ar = a.getBoundingClientRect(), shown = ar.bottom > 0 && ar.top < (innerHeight || 800); // 不在屏幕上的走 flex（见 translator.js）
+      finish(key, job, await send({ type: "translateFill", id, source, srcLang: lang, truncated, target: target(), flex: !shown }));
     } finally {
       inflight--;
       scheduleRender();

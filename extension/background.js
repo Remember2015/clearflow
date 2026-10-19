@@ -493,7 +493,7 @@ async function handleFill(msg, site = null) {
   try {
     await txSlot(controller.signal);
     acquired = true;
-    const r = await translator.fillIn({ orKey: key, settings: fillSettings(st, msg), signal: controller.signal, item: fillItem(msg) });
+    const r = await translator.fillIn({ orKey: key, settings: fillSettings(st, msg), signal: controller.signal, item: fillItem(msg), flex: msg.flex === true });
     bump(r.cached ? { tx_fill_cached: one } : { tx_fill: one, tx_usd: r.cost || 0 }).catch(() => {});
     if (!r.cached) health("or", null).catch(() => {});
     return r;
@@ -545,8 +545,9 @@ async function handleFillBatch(msg, sender, site = null) {
     acquired = true;
     const items = want.map((k) => fillItem(msg.items[k]));
     const push = items.length > 1 ? partSender(msg, sender) : null;
-    const got = items.length === 1 ? [await translator.fillIn({ orKey: key, settings: st, signal: controller.signal, item: items[0] })]
-      : await translator.fillInBatch({ orKey: key, settings: st, signal: controller.signal, items, onItem: push && ((j, r) => push(want[j], r)) });
+    const flex = msg.flex === true; // 页面那头说这一批都不在屏幕上（预翻译）：走 flex
+    const got = items.length === 1 ? [await translator.fillIn({ orKey: key, settings: st, signal: controller.signal, item: items[0], flex })]
+      : await translator.fillInBatch({ orKey: key, settings: st, signal: controller.signal, items, flex, onItem: push && ((j, r) => push(want[j], r)) });
     let fills = 0, usd = 0;
     want.forEach((k, j) => {
       const r = got[j];

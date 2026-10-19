@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.28.4 — 2026-10-19
+
+- Translation requests that aren't urgent — posts and comments just outside the screen being translated ahead of time, and improving X's own translations — now go through OpenAI's flex tier on OpenRouter, the same model at half the price. Anything on screen still uses the standard tier. If flex is busy or slow (nothing within 10 seconds), the request switches to the standard tier right away.
+
 ## 0.28.3 — 2026-10-19
 
 - X translation: ClearFlow's retranslation now replaces X's automatic translation when it scores at least 0.05 higher (was 0.1; existing default settings are migrated, custom values are kept). If the retranslation scores even lower than X's, the other model (the fallback, DeepSeek V4.1 Flash by default) translates it once more and the better of the two is used.

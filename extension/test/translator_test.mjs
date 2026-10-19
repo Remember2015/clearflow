@@ -87,6 +87,47 @@ await ok("再翻那一次出错：照第一份判，不报错", async () => {
   assert.equal(r.action, "keep"); assert.equal(r.retried, false); assert.equal(r.oursMin, 0.5);
 });
 
+// 0.28.4：flex 通道（不急的走 OpenAI 的 flex，半价）
+const flexOf = (b) => JSON.stringify(b.provider || null);
+await ok("flex：补翻带 flex 的请求里排 openai/flex、允许回退；不带的没有 provider", async () => {
+  const net = fakeNet({ judgeScores: () => good, orPlan: () => "译文" });
+  await fillIn({ orKey: "o", settings: S, item: { id: "1", source: "hello there" }, cache: memCache(), fetchImpl: net.fetchImpl, flex: true });
+  await fillIn({ orKey: "o", settings: S, item: { id: "2", source: "hello again" }, cache: memCache(), fetchImpl: net.fetchImpl });
+  assert.equal(flexOf(net.calls.or[0]), JSON.stringify({ order: ["openai/flex"], allow_fallbacks: true }));
+  assert.equal(flexOf(net.calls.or[1]), "null");
+});
+await ok("flex：出错（429）马上同一个模型走标准通道，不等、不算重试", async () => {
+  const net = fakeNet({ judgeScores: () => good, orPlan: (b) => (b.provider ? json({ error: { message: "flex capacity" } }, 429) : "标准通道的译文") });
+  const t0 = Date.now();
+  const r = await translate("o", S, { source: "hello" }, { fetchImpl: net.fetchImpl, flex: true });
+  assert.equal(r.text, "标准通道的译文"); assert.equal(net.calls.or.length, 2);
+  assert.deepEqual(net.calls.or.map((b) => [b.model, !!b.provider]), [[S.translateModel, true], [S.translateModel, false]]);
+  assert.ok(Date.now() - t0 < 500, "不该等");
+});
+await ok("flex：迟迟不回（超过 flexWaitMs）放弃、走标准通道", async () => {
+  const calls = [];
+  const fetchImpl = async (url, init) => {
+    const b = JSON.parse(init.body); calls.push(!!b.provider);
+    if (b.provider) return new Promise((_, rej) => init.signal.addEventListener("abort", () => rej(Object.assign(new Error("aborted"), { name: "AbortError" }))));
+    return json({ model: b.model, choices: [{ message: { content: "标准的" } }], usage: { cost: 0.00004 } });
+  };
+  const r = await translate("o", S, { source: "hello" }, { fetchImpl, flex: true, flexWaitMs: 50 });
+  assert.equal(r.text, "标准的"); assert.deepEqual(calls, [true, false]);
+});
+await ok("flex：主模型 400 直接换后备（不再走标准通道试一次），后备模型（DeepSeek，不是 OpenAI 的）不带 flex", async () => {
+  const net = fakeNet({ judgeScores: () => good, orPlan: (b) => (b.model === S.translateModel ? json({ error: { message: "bad" } }, 400) : "后备的") });
+  const r = await translate("o", S, { source: "hello" }, { fetchImpl: net.fetchImpl, flex: true });
+  assert.equal(r.text, "后备的");
+  assert.deepEqual(net.calls.or.map((b) => [b.model, !!b.provider]), [[S.translateModel, true], [S.translateFallback, false]]); // 400 不是通道的问题：不再走标准试一次
+});
+await ok("flex：改进 Grok 译文的重译走 flex，换后备再翻的不带", async () => {
+  const luna = "翻差了的译文", ds = "后备模型翻得好的译文";
+  const net = fakeNet({ judgeScores: (t) => (t === item.xText ? { faithful: 0.62, complete: 0.8, natural: 0.7 } : t === luna ? { faithful: 0.5, complete: 0.8, natural: 0.7 } : good),
+    orPlan: (body) => (body.model === S.translateModel ? luna : ds) });
+  await improve({ jevKey: "j", orKey: "o", settings: S, item, cache: memCache(), fetchImpl: net.fetchImpl });
+  assert.deepEqual(net.calls.or.map((b) => [b.model, !!b.provider]), [[S.translateModel, true], [S.translateFallback, false]]);
+});
+
 await ok("主模型 400（思考关不掉之类）：换后备模型", async () => {
   const net = fakeNet({ judgeScores: (t) => (t === item.xText ? bad : good),
     orPlan: (body) => (body.model === "openai/gpt-6-luna" ? json({ error: { message: "Reasoning is mandatory" } }, 400) : "后备的译文") });

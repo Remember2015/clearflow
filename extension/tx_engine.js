@@ -208,6 +208,9 @@
       }
       flush();
     }
+    // 在不在屏幕上：发翻译请求时一条都不在的（上下一屏内的预翻译）走 flex 通道（半价、可能慢一点，见 translator.js）；
+    // 有一条在屏幕上就走标准通道（0.28.4，用户 10-19）
+    const onScreen = (el) => { if (!el || !el.isConnected) return false; const r = el.getBoundingClientRect(); return (r.width || r.height) && r.bottom > 0 && r.top < (innerHeight || 800); };
     // 一块要发的东西（翻译和只查缓存都用它）
     const reqOf = (job, i) => ({ id: job.id, source: job.chunks[i].src, srcLang: job.lang, truncated: job.truncated && i === job.chunks.length - 1,
       part: job.chunks.length > 1 ? i : undefined, markup: job.rich || undefined, alt: job.chunks[i].alt || undefined, target: target() });
@@ -230,7 +233,7 @@
       c.state = "sending";
       inflight++;
       try {
-        const r = await send({ type: "translateFill", ...reqOf(job, i) });
+        const r = await send({ type: "translateFill", ...reqOf(job, i), flex: !onScreen(job.el) });
         if (jobs.get(job.key) !== job || accept(job, c, r) || c.state === "todo") return;
         if (STOP.includes(r && r.code)) { on = false; jobs.delete(job.key); }
         else { // 别的错：等一会儿再试这一块，三次不行就照原文
@@ -267,7 +270,7 @@
         else if (job.chunks[i].state === "todo") pump(); // 标记弄乱了：马上换后备模型单独再翻
       });
       try {
-        const r = await send({ type: "translateFillBatch", rid, items: list.map(([job, i]) => reqOf(job, i)) });
+        const r = await send({ type: "translateFillBatch", rid, items: list.map(([job, i]) => reqOf(job, i)), flex: !list.some(([job]) => onScreen(job.el)) });
         const results = Array.isArray(r && r.results) ? r.results : null;
         list.forEach(([job, i], k) => {
           const c = job.chunks[i], x = results ? results[k] : r;

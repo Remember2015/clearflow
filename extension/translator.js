@@ -93,12 +93,23 @@ export const BATCH_EN = "Below are several unrelated items, each wrapped in a ma
   "in the same marker, in the original order, every marker exactly once; never move content between items, merge them or split them.";
 // onText：流式（0.19.4，只有几条一起翻的用）——请求带 stream: true，每来一段字就 onText(到现在为止的全文)，几条里先译完的那条先换上；
 // 回来的不是事件流（比如中间的代理不支持）就照整段的读
-export async function translateOnce(orKey, model, { source, srcLang, truncated, markup, batch, target = "zh" }, { signal, fetchImpl = fetch, timeoutMs = 20000, onText } = {}) {
+// 不急的请求走 OpenAI 的 flex 通道（0.28.4，用户 10-19："兼顾成本和速度，可见区域的用标准的，不可见预翻译的可以用 flex"）：
+// 同一个模型、半价（OpenRouter 上 openai/gpt-6-luna 的 openai/flex 端点 $0.05 / $0.25 每百万 token，标准 $0.10 / $0.50），
+// OpenAI 忙的时候排在后面、可能没资源。2026-10-19 量的（30 条真实评论 / 30 条长帖，8 路并发）：flex 中位 1.96 s / 2.59 s、
+// 最慢 3.1 s / 4.3 s，标准 2.26 s / 3.51 s、最慢 3.7 s / 6.5 s，都 30/30 成功。只有 OpenAI 的模型有 flex（后备的 DeepSeek 没有）。
+// provider.order 先排 flex、allow_fallbacks 让 OpenRouter 在 flex 出错时自己换标准端点；FLEX_WAIT_MS 还没出字（流式的第一段 /
+// 不流式的整个回复）就放弃 flex、改走标准通道（translate() 里，不算一次重试）。`:batch` 变体不能走 chat/completions（404），用不了
+const FLEX_OK = /^openai\//, FLEX_WAIT_MS = 10000;
+export async function translateOnce(orKey, model, { source, srcLang, truncated, markup, batch, target = "zh" }, { signal, fetchImpl = fetch, timeoutMs = 20000, onText, flex = false, flexWaitMs = FLEX_WAIT_MS } = {}) {
   const control = new AbortController();
   const stop = () => control.abort(signal.reason);
   signal?.addEventListener("abort", stop, { once: true });
   if (signal?.aborted) stop();
   const timer = setTimeout(() => control.abort(fail("翻译请求超时", "timeout", true)), timeoutMs);
+  flex = flex && FLEX_OK.test(model);
+  let slow = flex ? setTimeout(() => control.abort(fail("flex 通道太慢", "flex_slow", true)), flexWaitMs) : 0;
+  const started = () => { if (slow) { clearTimeout(slow); slow = 0; } };
+  if (onText && slow) { const f = onText; onText = (...a) => { started(); return f(...a); }; }
   const t0 = Date.now();
   try {
     const resp = await fetchImpl(OR_API, {
@@ -109,6 +120,7 @@ export async function translateOnce(orKey, model, { source, srcLang, truncated, 
         // 上限给足（按实际输出计费，给大了不多花钱）：中文译文的 token 数和英文原文的字数差不多，长帖 2000 不够用
         model, temperature: 0.2, max_tokens: Math.min(8000, Math.max(400, source.length * 2 + 300)),
         reasoning: { enabled: false }, usage: { include: true }, ...(onText ? { stream: true } : {}),
+        ...(flex ? { provider: { order: ["openai/flex"], allow_fallbacks: true } } : {}),
         messages: isZhHans(target)
           ? [{ role: "system", content: SYSTEM_PROMPT },
             { role: "user", content: `${batch ? BATCH_ZH + "\n" : ""}${markup ? MARKUP_ZH + "\n" : ""}原文（${(srcLang && langName(srcLang, "zh-CN")) || "外语"}${truncated ? "，后面被截断了：只翻这一段，末尾加“…”，不要补全" : ""}）：\n${source}` }]
@@ -124,6 +136,7 @@ export async function translateOnce(orKey, model, { source, srcLang, truncated, 
       throw fail(`OpenRouter HTTP ${resp.status}: ${body}`, "or_http", resp.status === 429 || resp.status >= 500);
     }
     const streamed = onText && resp.body && /event-stream/i.test(resp.headers.get("content-type") || "");
+    if (!streamed) started(); // 不流式的：回复头到了就是整个回复好了
     const data = streamed ? await readStream(resp, onText) : await resp.json();
     const text = cleanOutput(data?.choices?.[0]?.message?.content);
     if (!text) throw fail("模型没有返回译文", "or_empty", true);
@@ -134,10 +147,11 @@ export async function translateOnce(orKey, model, { source, srcLang, truncated, 
       reasoningTokens: u.completion_tokens_details?.reasoning_tokens || 0, secs: (Date.now() - t0) / 1000 };
   } catch (e) {
     if (signal?.aborted) throw signal.reason;
-    if (control.signal.aborted && control.signal.reason?.code === "timeout") throw control.signal.reason;
+    if (control.signal.aborted && ["timeout", "flex_slow"].includes(control.signal.reason?.code)) throw control.signal.reason;
     throw e;
   } finally {
-    clearTimeout(timer);
+    clearTimeout(timer); started(); // started()：清掉 flex 的计时
+
     signal?.removeEventListener("abort", stop);
   }
 }
@@ -178,18 +192,22 @@ async function readStream(resp, onText) {
   return { model, usage, choices: [{ message: { content }, finish_reason: finish }] };
 }
 
-// 主模型一次、可重试的错误再一次，还不行换后备模型；key 无效、余额不足不换（换了也一样）
+// 主模型一次、可重试的错误再一次，还不行换后备模型；key 无效、余额不足不换（换了也一样）。
+// opts.flex：不急的（不在屏幕上的预翻译、X 上改进 Grok 译文）先走 flex 通道，出错或太慢马上改走标准通道（不等、不算一次重试）
 export async function translate(orKey, settings, item, opts = {}) {
   const models = [settings.translateModel, settings.translateFallback].filter((m, i, a) => m && a.indexOf(m) === i);
   let last;
   for (const model of models) {
+    let flex = !!opts.flex && FLEX_OK.test(model);
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        return await translateOnce(orKey, model, item, opts.onText ? { ...opts, onText: (text) => opts.onText(text, model) } : opts);
+        return await translateOnce(orKey, model, item, { ...opts, flex, ...(opts.onText ? { onText: (text) => opts.onText(text, model) } : {}) });
       } catch (e) {
         if (opts.signal?.aborted) throw e;
         last = e;
         if (e.code === "or_badkey" || e.code === "or_credit") throw e;
+        // flex 忙、太慢（429、5xx、超时）：同一个模型马上走标准通道；400 这种是模型本身的问题，换通道也一样，照常换后备
+        if (flex && e.retryable) { flex = false; attempt--; continue; }
         if (!e.retryable) break; // 比如这个模型的思考关不掉（400）：直接换后备
         await sleep(600 * (attempt + 1), opts.signal);
       }
@@ -299,13 +317,13 @@ export async function fillCached({ settings, item, cache = idbCache }) {
   } catch { return null; } // 缓存坏了就当没命中
 }
 // 帖子页补翻：item: {id, source, srcLang, truncated}；返回 {action: "fill", text, model, cost, cached}
-export async function fillIn({ orKey, settings, item, cache = idbCache, signal, fetchImpl }) {
+export async function fillIn({ orKey, settings, item, cache = idbCache, signal, fetchImpl, flex = false }) {
   const key = await fillKey(item, settings);
   try {
     const hit = await cache.get(key);
     if (hit) return { ...hit, cached: true };
   } catch { /* 缓存坏了就当没命中 */ }
-  const ours = await translate(orKey, settings, item, { signal, fetchImpl });
+  const ours = await translate(orKey, settings, item, { signal, fetchImpl, flex });
   const result = { action: "fill", text: ours.text, model: ours.model, cost: ours.cost };
   try { await cache.put(key, result, capOf(settings)); } catch { /* 写不进缓存也照样返回 */ }
   return { ...result, cached: false };
@@ -318,7 +336,7 @@ export async function fillIn({ orKey, settings, item, cache = idbCache, signal, 
 // 纯文字的条目（标题）不该带标记，模型要是加了就去掉。
 // onItem(k, 结果)：流式，第 k 条（从 0 数）的 </uN> 一到就先给（4 个标题一批，第一条 1.3 秒、整批 2 秒左右才完）；先给了的就定了，
 // 后面同一个标记再出现（模型重复了）也不改。整批出错时先给了的照样进缓存。花费最后才知道：先给的不带，返回的带
-export async function fillInBatch({ orKey, settings, items, cache = idbCache, signal, fetchImpl, onItem }) {
+export async function fillInBatch({ orKey, settings, items, cache = idbCache, signal, fetchImpl, onItem, flex = false }) {
   const source = items.map((it, k) => `<u${k + 1}>${it.source}</u${k + 1}>`).join("\n");
   const langs = new Set(items.map((it) => it.srcLang || ""));
   const unit = (it, text) => { // 一条的译文：纯文字的去掉标记、去掉多余的引号和前缀
@@ -340,7 +358,7 @@ export async function fillInBatch({ orKey, settings, items, cache = idbCache, si
   let r;
   try {
     r = await translate(orKey, settings, { source, srcLang: langs.size === 1 ? items[0].srcLang : null, markup: items.some((it) => it.markup),
-      batch: items.length, target: items[0].target }, { signal, fetchImpl, onText });
+      batch: items.length, target: items[0].target }, { signal, fetchImpl, onText, flex });
   } catch (e) {
     await Promise.all([...early].map(([k, x]) => put(items[k], { action: "fill", ...x, cost: 0 })));
     throw e;
@@ -372,7 +390,8 @@ export async function improve({ jevKey, orKey, settings, item, cache = idbCache,
   if (grok.min >= settings.translateThreshold) {
     result = { action: "keep", grok: grok.scores, grokMin: grok.min, cost: 0, jevTokens: grok.tokens };
   } else {
-    let pick = await translate(orKey, settings, item, { signal, fetchImpl });
+    // 改进 Grok 的译文不急（页面上已经是 Grok 的译文了）：走 flex
+    let pick = await translate(orKey, settings, item, { signal, fetchImpl, flex: true });
     let judged = await judge(jevKey, { source: item.source, translation: pick.text, srcLang: item.srcLang, target: item.target }, jevOpts);
     let cost = pick.cost || 0, jevTokens = grok.tokens + judged.tokens, retried = false;
     // 重译的反倒比 Grok 还差：换另一个模型（主模型 / 后备模型里没用过的那个）再翻一次，两份里取分高的（0.28.3，用户 10-18：
