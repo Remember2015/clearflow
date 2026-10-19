@@ -144,6 +144,10 @@
       !(it.images && it.images.length) && R.fillerShort(it.text);
     const fillerHide = (it) => fillerAsk(it) && !!it.scores && typeof it.scores.filler === "number" && it.scores.filler >= site.fillerThreshold &&
       !(site.hasReplies && site.hasReplies(it));
+    // 帖子作者（楼主、频道主、笔记作者）自己的评论多问一句"是不是在接着讲自己这个帖子"（0.28.11，jev.js 的 op_topic）：是的话垃圾三问不清理它
+    const opAsk = (it) => !!it.op && S.mode === "post" && !it.userLabel;
+    const onTopic = (it) => opAsk(it) && !!it.scores && typeof it.scores.op_topic === "number" && it.scores.op_topic >= globalThis.FFSettings.OP_TOPIC_THRESHOLD;
+    const asks = (it) => [...(fillerAsk(it) ? ["filler"] : []), ...(opAsk(it) ? ["op_topic"] : [])];
     function decide(it) {
       if (!it.overrideReady) return { fold: false, kind: "pending" };
       if (it.userLabel === "missed") return { fold: true, kind: "user", reason: KIND("user") };
@@ -181,7 +185,7 @@
             const need = site.spamThreshold ? site.spamThreshold(it, base, k) : k === "setup" ? base + 0.1 : base;
             if (v >= need && (!best || v - need > best.over)) best = { k, v, over: v - need };
           }
-          if (best && (withImg(it) || !R.shortExempt(it.text))) cands.push({ kind: "jev", score: best.v, reason: `${REASON(best.k)} ${best.v.toFixed(2)}` });
+          if (best && (withImg(it) || !R.shortExempt(it.text)) && !onTopic(it)) cands.push({ kind: "jev", score: best.v, reason: `${REASON(best.k)} ${best.v.toFixed(2)}` });
         }
         for (const [k, on, kth] of [["abuse", st.abuse, st.abuseThreshold], ["sexual", st.sexual, st.sexualThreshold]]) {
           const v = it.scores[k];
@@ -195,7 +199,7 @@
     }
     function needJev(it) {
       // 已经有分、但这条该多问的 filler 没问过（刚打开这个开关）：重问一次
-      const missing = !it.scores || it.stale || (fillerAsk(it) && typeof it.scores.filler !== "number");
+      const missing = !it.scores || it.stale || (fillerAsk(it) && typeof it.scores.filler !== "number") || (opAsk(it) && typeof it.scores.op_topic !== "number");
       if (!(S.enabled && !S.loading && it.overrideReady && !it.userLabel && S.settings.useJev && S.hasKey && missing && !it.queued && !it.jevSkipped && (it.text.trim() || withImg(it)))) return false;
       if (it.markedLocal) return false;
       if (folds.spam && ((S.settings.dup && (it.dup || it.known)) || R.localVerdict(it.text, new Set(), { m1: false, m1MaxLen: S.settings.m1MaxLen, media: false }))) return false;
@@ -239,7 +243,7 @@
         const key = S.key, epoch = S.epoch;
         S.inflight++;
         send({ type: "jev", postId: cacheId, post: S.postText, author: S.postAuthor,
-          replies: batch.map((it) => ({ id: it.id, name: it.name, handle: it.handle, text: it.text, ...(withImg(it) ? { images: it.images } : {}), ...(fillerAsk(it) ? { ask: ["filler"] } : {}) })),
+          replies: batch.map((it) => ({ id: it.id, name: it.name, handle: it.handle, text: it.text, ...(withImg(it) ? { images: it.images } : {}), ...(asks(it).length ? { ask: asks(it) } : {}) })),
           ...(site.jevExtra && S.mode === "post" ? { extra: site.jevExtra } : {}) })
           .then((r) => {
             if (key !== S.key || epoch !== S.epoch) return;

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.28.11 — 2026-10-19
+
+- A post author's own reply that continues their post — an update, more details, an answer, or a link to the very thing the post is about — is no longer cleaned as promotion. ClearFlow asks TypeSafe one extra question for the author's replies only; an author using their own post to advertise something unrelated is still cleaned, and abuse, sexual content and spam you marked are handled as before.
+
 ## 0.28.10 — 2026-10-19
 
 - Comments that are only a code block are no longer sent for translation.

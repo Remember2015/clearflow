@@ -51,6 +51,16 @@ export const EXTRA_QUESTIONS = {
     "does the reply add nothing beyond a generic reaction - only praise, agreement, laughter, an emotion, thanks, a greeting, " +
     "a placeholder (such as \"mark\", \"+1\", \"interested\", \"following\", a lone emoji or hashtag) or a contest / giveaway entry - " +
     "with no specific opinion, information, answer, question, or reference to particular content of the post?",
+  // op_topic（0.28.11）：只问帖子作者自己的回复——是不是在接着讲自己这个帖子（补充、更新、回答、贴帖子里讲的那个东西的链接），
+  // 而不是借自己的帖子打无关的广告。是的话垃圾三问不清理它（辱骂、色情、你标记过的、本地的推广链接规则照样管）。
+  // 用户 10-19 报的：Rach 发"新的 Zig UI 框架快出了"，自己回"上线了：github 链接、去某网站看"被当成拉人（benefit 0.89、disguised 0.89），
+  // 这一问 0.86–0.89。X、小红书标注集里按现在门槛会因垃圾三问清理的作者回复 36 条：0.72–0.95 的 9 条都是接着讲（哪里下载、
+  // 双十一某东有、穿搭全身来自某牌、自己视频的补充），0.11–0.53 的 27 条都该清（低价蓝 v 推广码、黄片站、Join my channel、
+  // 抽奖帖 19 条"谢谢关注，私信你了"、小红书"查收 / 发你"私信引流、交友推广、无关的账号自我介绍）。门槛 0.7（settings.js 的 OP_TOPIC_THRESHOLD）。
+  // 脚本 scratchpad/opreply/op_topic_eval.mjs（数据只在本机）
+  op_topic:
+    "The reply is written by the author of the post (same account as post_author). Is the author continuing their own post - adding " +
+    "details, an update, an answer, or a link to the very thing the post announces or discusses - rather than advertising something unrelated to the post?",
 };
 // 问帖子本身的（0.15.3 起）：rec——帖子是不是在请大家推荐东西。是的话回复里报名字是在回答，不算拉人，
 // 垃圾回复的门槛换成"求推荐类帖子的阈值"（默认 0.9）。以前靠只认中文的正则（推荐 / 服务商 / 有没有…靠谱），帖子译成别的语言就认不出：

@@ -137,5 +137,7 @@
   }
   // "和你标记过的垃圾是同一类"（0.26，Jev 的 marked 那一问，见 jev.js 的 MARKED_QUESTION）多少分折：YouTube 的数据上 0.6 一条没误伤
   const MARKED_THRESHOLD = 0.6;
-  globalThis.FFSettings = Object.freeze({ DEFAULTS, normalize, validate, forSite, siteOf, SITES, IMAGE_ORIGINS, MARKED_THRESHOLD });
+  // 帖子作者自己的回复"是在接着讲自己这个帖子"（jev.js 的 op_topic）到这个分：垃圾三问不清理它（0.28.11）
+  const OP_TOPIC_THRESHOLD = 0.7;
+  globalThis.FFSettings = Object.freeze({ DEFAULTS, normalize, validate, forSite, siteOf, SITES, IMAGE_ORIGINS, MARKED_THRESHOLD, OP_TOPIC_THRESHOLD });
 })();

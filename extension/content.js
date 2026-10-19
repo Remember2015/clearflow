@@ -304,7 +304,8 @@
   // X 两份标注集里楼主回复 134 条，现在的门槛会清理 33 条：推广链接、黄片站、"Join my channel"、自我推广、骂人的，
   // 和一个抽奖帖里给每个人回的同一句"谢谢关注，私信你了"（19 条）；像误伤的 1 条（回答哪里能下载软件）。
   // 只有讲"借别人的评论区引流"的三条不管楼主：M1、"@ 外人降门槛"、只贴自己另一条帖子——楼主在自己帖子里 @ 别人聊、
-  // 贴自己上一条帖子接着讲是常事（数据里楼主唯一一条 M1 命中是误伤）。内容交给 Jev 判，推广链接这类本地规则照样管
+  // 贴自己上一条帖子接着讲是常事（数据里楼主唯一一条 M1 命中是误伤）。内容交给 Jev 判，推广链接这类本地规则照样管。
+  // 0.28.11 起楼主的回复多问一句"是不是在接着讲自己这个帖子"（op_topic），是的话垃圾三问不清理（"哪里能下载"那条就是这样放回来的）
   const isOp = (it) => !!S.opHandle && !!it.handle && it.handle.toLowerCase() === S.opHandle.toLowerCase();
   // 看图片（0.18，设置里默认关）开着、这条带图：只有图没写字的也判，短文本豁免也不用
   const withImg = (it) => !!(S.settings && S.settings.images && it.images && it.images.length);
@@ -314,6 +315,10 @@
   const fillerAsk = (it) => S.mode === "status" && !!S.settings && S.settings.filler !== false && !it.userLabel && !isSelf(it) &&
     it.hasOwn && !it.quoteHandle && !it.media && !(it.images && it.images.length) && R.fillerShort(it.text);
   const fillerHide = (it) => fillerAsk(it) && !!it.scores && typeof it.scores.filler === "number" && it.scores.filler >= FILLER_TH;
+  // 帖子作者自己的回复多问一句"是不是在接着讲自己这个帖子"（0.28.11，jev.js 的 op_topic）：是的话垃圾三问不清理它
+  const opAsk = (it) => S.mode === "status" && !it.userLabel && !isSelf(it) && isOp(it);
+  const onTopic = (it) => opAsk(it) && !!it.scores && typeof it.scores.op_topic === "number" && it.scores.op_topic >= globalThis.FFSettings.OP_TOPIC_THRESHOLD;
+  const asks = (it) => [...(fillerAsk(it) ? ["filler"] : []), ...(opAsk(it) ? ["op_topic"] : [])];
   function decide(it) {
     if (!it.overrideReady) return { fold: false, kind: "pending" };
     if (it.userLabel === "missed") return { fold: true, kind: "user", reason: KIND("user") };
@@ -349,7 +354,7 @@
       // 垃圾回复、辱骂、色情可能同时过线，按分最高的那一类标：点名开撕的"绞杀评论区海狗@某人"拉人分 0.55 上下、辱骂 0.9，
       // 该标辱骂。辱骂、色情不用短文本豁免（"SB" 就两个字母）
       const cands = [];
-      if (best && (withImg(it) || !R.shortExempt(it.text))) cands.push({ kind: "jev", score: best.v, reason: `${REASON(best.k)} ${best.v.toFixed(2)}` });
+      if (best && (withImg(it) || !R.shortExempt(it.text)) && !onTopic(it)) cands.push({ kind: "jev", score: best.v, reason: `${REASON(best.k)} ${best.v.toFixed(2)}` });
       // 和你标记过的垃圾是同一类（0.26，Jev 的 marked 那一问）：你自己标的，不用短文本豁免
       const mk = it.scores.marked;
       if (typeof mk === "number" && mk >= globalThis.FFSettings.MARKED_THRESHOLD) cands.push({ kind: "marked", score: mk, reason: KIND("marked") });
@@ -369,7 +374,7 @@
 
   function needJev(it) {
     // 已经有分、但这条该多问的 filler 没问过（刚打开这个开关）：重问一次
-    const missing = !it.scores || (fillerAsk(it) && typeof it.scores.filler !== "number");
+    const missing = !it.scores || (fillerAsk(it) && typeof it.scores.filler !== "number") || (opAsk(it) && typeof it.scores.op_topic !== "number");
     if (!(S.enabled && !S.settingsLoading && it.overrideReady && !it.userLabel && S.settings.useJev && S.hasKey && missing && !it.queued && !it.jevSkipped && (it.text.trim() || withImg(it)))) return false;
     if (it.translated && it.origState !== "done") return false; // 原文还没拿到
     if (isSelf(it) || (S.settings.dup && it.known) || it.markedLocal) return false;
@@ -387,7 +392,7 @@
       // 缓存按"这一页"分：搜索结果不分搜的词（同一条帖子换个词搜到，用同一份结果）
       const cacheId = S.mode === "search" ? "s:search" : postId;
       send({ type: "jev", postId: cacheId, post: S.postText, author: S.postAuthor,
-        replies: batch.map((it) => ({ id: it.id, name: it.name, handle: it.handle, text: it.text, ...(withImg(it) ? { images: it.images } : {}), ...(fillerAsk(it) ? { ask: ["filler"] } : {}) })),
+        replies: batch.map((it) => ({ id: it.id, name: it.name, handle: it.handle, text: it.text, ...(withImg(it) ? { images: it.images } : {}), ...(asks(it).length ? { ask: asks(it) } : {}) })),
         ...(S.mode === "status" ? { extra: EXTRA } : {}) })
         .then((r) => {
           if (postId !== S.postId || epoch !== S.epoch) return;
