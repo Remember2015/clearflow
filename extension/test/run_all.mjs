@@ -17,8 +17,8 @@ const CHROME = process.env.CHROME_PATH || "/Applications/Google Chrome.app/Conte
 const FAKEX_PORT = Number(process.env.FF_FAKEX_PORT || 8767), STATIC_PORT = Number(process.env.FF_STATIC_PORT || 8776);
 const only = process.argv.includes("--only") ? new Set(process.argv[process.argv.indexOf("--only") + 1].split(",")) : null;
 
-const UNIT = ["rules_near_test.cjs", "ytrules_test.cjs", "i18n_test.cjs", "settings_test.cjs", "feedback_test.mjs", "translator_test.mjs", "backend_regression.mjs"];
-const HEADLESS = ["x_local", "x_ad", "x_tx_hold", "op_topic", "x_thread_misc", "images", "xhs", "yt", "yt_shorts", "yt_native_tx", "yt_long_tx", "tx_misc", "flex", "hn", "reddit", "reddit_tx", "latin_tx", "mark", "budget", "translate", "search", "quote", "probe", "profile", "netdata", "rec",
+const UNIT = ["rules_near_test.cjs", "zhconv_test.cjs", "ytrules_test.cjs", "i18n_test.cjs", "settings_test.cjs", "feedback_test.mjs", "translator_test.mjs", "backend_regression.mjs"];
+const HEADLESS = ["x_local", "x_ad", "x_tx_hold", "op_topic", "x_thread_misc", "images", "xhs", "yt", "yt_shorts", "yt_captions", "yt_native_tx", "yt_long_tx", "tx_misc", "flex", "hn", "reddit", "reddit_tx", "latin_tx", "mark", "budget", "translate", "search", "quote", "probe", "profile", "netdata", "rec",
   "ui", "i18n", "filler", "group", "welcome"].map((n) => `${n}_headless.cjs`);
 const HTML = ["background_test.html", "background_translate_test.html", "settings_test.html", "cache_test.html", "cache_context_test.html", "content_reliability_test.html"];
 const unitOnly = process.argv.includes("--unit"); // 只跑 Node 的单元测试：不要 Chrome、不起服务（CI 上那一步）
@@ -30,6 +30,10 @@ const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; cha
 function serve(root, port) {
   const server = http.createServer((req, res) => {
     let p = decodeURIComponent(new URL(req.url, "http://x").pathname);
+    if (p === "/api/timedtext") { // 仿 YouTube 的字幕接口（yt_captions_headless）：按 lang、tlang 给 fakex/yt/timedtext/ 下的文件
+      const q = new URL(req.url, "http://x").searchParams;
+      p = `/fakex/yt/timedtext/${(q.get("lang") || "").replace(/[^\w-]/g, "")}${q.get("tlang") ? "." + q.get("tlang").replace(/[^\w-]/g, "") : ""}.json`;
+    }
     let file = path.join(root, p);
     if (!file.startsWith(root)) { res.writeHead(403).end(); return; }
     if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, "index.html");

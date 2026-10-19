@@ -335,5 +335,13 @@
  "err.http": "Jev isteği başarısız oldu: {msg}",
  "err.disabled": "Ayarlardan kapalı",
  "err.batch_miss": "Model bu öğeyi atladı; yeniden çevrilecek",
- "pop.alert.jevCredit": "TypeSafe bakiyesi yetersiz olduğundan yanıtlar denetlenemiyor."
+ "pop.alert.jevCredit": "TypeSafe bakiyesi yetersiz olduğundan yanıtlar denetlenemiyor.",
+ "opt.captionConvert": "Geleneksel Çince altyazıları Basitleştirilmiş Çince göster",
+ "opt.captionConvertHint": "YouTube arayüzü Basitleştirilmiş Çinceyken Geleneksel Çince altyazıları (Tayvan, Hong Kong) seçerseniz altyazılar Basitleştirilmiş Çince karakterlerle gösterilir; Tayvan ve Hong Kong ifadeleri de Çin anakarasındaki kullanıma göre değiştirilir. İşlem bilgisayarınızda yapılır ve ücretsizdir.",
+ "opt.captionFix": "Otomatik çevrilen altyazıları iyileştir",
+ "opt.captionFixHint": "YouTube'un otomatik çevrilmiş altyazılarını seçtiğinizde, Basitleştirilmiş Çince istiyorsanız ve videoda insanlar tarafından çevrilmiş Çince altyazılar varsa bunlar kullanılır. Yoksa TypeSafe, YouTube çevirisini denetler; çeviri kötüyse izlerken çeviri modeliniz altyazıları yeniden çevirir (yalnızca izlediğiniz bölümleri). İki anahtar da gerekir.",
+ "tx.capConverted": "ClearFlow bu Geleneksel Çince altyazıları Basitleştirilmiş Çinceye dönüştürdü · orijinalini görmek için tıklayın",
+ "tx.capHuman": "Bunlar videonun insanlar tarafından çevrilmiş Çince altyazılarıdır (Basitleştirilmiş Çince gösteriliyor) ve YouTube'un otomatik çevirisi yerine kullanılır · YouTube çevirisini görmek için tıklayın",
+ "tx.capFixed": "YouTube bu altyazıları kötü çevirdiği için ClearFlow yeniden çevirdi · YouTube çevirisini görmek için tıklayın",
+ "tx.capOriginal": "Orijinal altyazılar gösteriliyor · geri dönmek için tıklayın"
 }

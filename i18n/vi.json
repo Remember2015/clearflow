@@ -335,5 +335,13 @@
  "err.http": "Yêu cầu Jev thất bại: {msg}",
  "err.disabled": "Đã tắt trong cài đặt",
  "err.batch_miss": "Mô hình đã bỏ sót mục này; mục sẽ được dịch lại",
- "pop.alert.jevCredit": "TypeSafe không còn đủ số dư, nên không thể kiểm tra các câu trả lời."
+ "pop.alert.jevCredit": "TypeSafe không còn đủ số dư, nên không thể kiểm tra các câu trả lời.",
+ "opt.captionConvert": "Hiển thị phụ đề chữ Hoa phồn thể bằng chữ giản thể",
+ "opt.captionConvertHint": "Khi bạn chọn phụ đề chữ Hoa phồn thể (Đài Loan, Hồng Kông) và giao diện YouTube dùng chữ giản thể, phụ đề sẽ hiển thị bằng chữ giản thể, đồng thời cách dùng từ của Đài Loan và Hồng Kông được đổi sang cách dùng từ ở Trung Quốc đại lục. Xử lý trên máy tính của bạn, không mất phí.",
+ "opt.captionFix": "Cải thiện phụ đề tự động dịch",
+ "opt.captionFixHint": "Khi bạn chọn phụ đề «Tự động dịch» của YouTube: nếu video có phụ đề tiếng Trung do người dịch thực hiện và bạn muốn dùng chữ giản thể, phụ đề đó sẽ được dùng thay thế. Nếu không, TypeSafe sẽ kiểm tra bản dịch của YouTube; nếu bản dịch chưa tốt, mô hình dịch của bạn sẽ dịch lại phụ đề khi bạn xem (chỉ dịch phần bạn xem). Cần cả hai khóa.",
+ "tx.capConverted": "ClearFlow đã chuyển phụ đề chữ Hoa phồn thể này sang chữ giản thể · nhấp để xem bản gốc",
+ "tx.capHuman": "Đây là phụ đề tiếng Trung do người dịch thực hiện (hiển thị bằng chữ giản thể), dùng thay cho bản dịch tự động của YouTube · nhấp để xem bản của YouTube",
+ "tx.capFixed": "Bản dịch tự động phụ đề này của YouTube chưa tốt nên ClearFlow đã dịch lại · nhấp để xem bản của YouTube",
+ "tx.capOriginal": "Đang hiển thị phụ đề gốc · nhấp để chuyển lại"
 }

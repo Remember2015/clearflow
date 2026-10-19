@@ -556,6 +556,65 @@ async function handleFill(msg, site = null) {
   }
 }
 
+// YouTube 字幕（0.29.0，ytcaps.js）：判 YouTube 自动翻译的那一段（captionJudge，要 Jev key），一段字幕整段重翻（captionTranslate，要 OpenRouter key）。
+// 只有 YouTube 的页面发来、这个网站开着翻译、设置里 captionFix 开着才做
+const validCapLang = (l) => l == null || (typeof l === "string" && /^[a-z]{2,3}(-[a-z0-9]{2,8}){0,2}$/i.test(l));
+const validCapJudge = (m) => typeof m.source === "string" && m.source.trim() && m.source.length <= 5000 && typeof m.translation === "string" && m.translation.trim() &&
+  m.translation.length <= 5000 && validCapLang(m.srcLang) && validLang(m.target);
+const validCapLines = (m) => Array.isArray(m.lines) && m.lines.length >= 1 && m.lines.length <= 60 && m.lines.every((l) => typeof l === "string" && l.length <= 400) &&
+  m.lines.join("").length <= 6000 && validCapLang(m.srcLang) && validLang(m.target);
+async function capAccess(site, need) {
+  if (site !== "yt") return { error: "disabled", code: "disabled", retryable: false };
+  const st = await settings(site);
+  if (!st.translate || st.captionFix === false) return { error: "disabled", code: "disabled", retryable: false };
+  const key = need === "jev" ? await apiKey() : await orKey();
+  if (!key) return need === "jev" ? { error: "nokey", code: "nokey", retryable: false } : { error: "noorkey", code: "noorkey", retryable: false };
+  return { st, key };
+}
+async function handleCaptionJudge(msg, site) {
+  if (!validCapJudge(msg)) return { error: "无效的字幕", code: "invalid_request", retryable: false };
+  const a = await capAccess(site, "jev");
+  if (a.error) return a;
+  const controller = new AbortController();
+  txControllers.add(controller);
+  let acquired = false;
+  try {
+    await txSlot(controller.signal);
+    acquired = true;
+    const r = await translator.judgeCaptions({ jevKey: a.key, settings: a.st, signal: controller.signal,
+      item: { source: msg.source, translation: msg.translation, srcLang: msg.srcLang, target: msg.target || "zh" } });
+    if (!r.cached) { bump({ tx_jev_tokens: r.tokens || 0 }).catch(() => {}); health("jev", null).catch(() => {}); }
+    return r;
+  } catch (e) {
+    return noteFailure(failure(e));
+  } finally {
+    txControllers.delete(controller);
+    if (acquired) txRelease();
+  }
+}
+async function handleCaptionTranslate(msg, site) {
+  if (!validCapLines(msg)) return { error: "无效的字幕", code: "invalid_request", retryable: false };
+  const a = await capAccess(site, "or");
+  if (a.error) return a;
+  const controller = new AbortController();
+  txControllers.add(controller);
+  let acquired = false;
+  try {
+    await txSlot(controller.signal);
+    acquired = true;
+    await sameKeys(a.key);
+    const r = await translator.translateCaptions({ orKey: a.key, settings: a.st, signal: controller.signal, lines: msg.lines, srcLang: msg.srcLang, target: msg.target || "zh", flex: msg.flex === true });
+    if (!r.cached) { bump({ tx_captions: 1, tx_usd: r.cost || 0 }).catch(() => {}); health("or", null).catch(() => {}); }
+    return r;
+  } catch (e) {
+    if (e?.spent) bump({ tx_usd: e.spent.cost || 0 }).catch(() => {});
+    return noteFailure(failure(e));
+  } finally {
+    txControllers.delete(controller);
+    if (acquired) txRelease();
+  }
+}
+
 // 几条一起补翻（0.19.4，tx_engine.js 把短的拼起来发）：2–8 条、合计不超过 6000 字、同一个目标语言、都不是"换后备模型重翻"的。
 // 先一条条查缓存，没命中的拼成一个请求（占一个翻译位置）；只剩一条没命中就照单条翻。返回 {results}，和 items 一一对应；
 // 模型回来的少了某一条：那一条给 {code: "batch_miss"}，页面那头单独再发。
@@ -700,6 +759,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       case "sloganClear":
         await feedback.clearSlogans();
         return { ok: true };
+      case "captionJudge":
+        return await handleCaptionJudge(msg, site);
+      case "captionTranslate":
+        return await handleCaptionTranslate(msg, site);
       case "setKey": { // 设置页、引导页存 key（0.28.12）：只收插件自己的页面发来的，网站页面里的内容脚本不行
         if (!fromExtension(sender)) return { error: "不是插件自己的页面", code: "invalid_request", retryable: false };
         if ((msg.which !== "jev" && msg.which !== "or") || typeof msg.value !== "string" || msg.value.length > 500) return { error: "无效的 key", code: "invalid_request", retryable: false };

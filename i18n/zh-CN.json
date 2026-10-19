@@ -335,5 +335,13 @@
  "err.http": "Jev 请求出错：{msg}",
  "err.disabled": "设置里关着",
  "err.batch_miss": "模型漏了这一条，会再翻一次",
- "pop.alert.jevCredit": "TypeSafe 余额不足，回复判不了。"
+ "pop.alert.jevCredit": "TypeSafe 余额不足，回复判不了。",
+ "opt.captionConvert": "繁体中文字幕显示成简体",
+ "opt.captionConvertHint": "你在 YouTube 选了繁体中文字幕（中文（台湾）、中文（香港）），而 YouTube 的界面是简体中文时，字幕显示成简体，台湾、香港的用词也换成大陆用词。在你的电脑上转，不花钱。",
+ "opt.captionFix": "改善自动翻译的字幕",
+ "opt.captionFixHint": "你选了 YouTube 的「自动翻译」字幕时：要的是简体中文、视频又有人工的中文字幕，就换成它；没有的话请 TypeSafe 判一下 YouTube 的机翻，翻得不好就用你的翻译模型一边看一边重翻（只翻你看到的部分）。要两个 key。",
+ "tx.capConverted": "插件把繁体字幕转成了简体 · 点一下看原文",
+ "tx.capHuman": "这是视频的人工中文字幕（转成了简体），代替 YouTube 的自动翻译 · 点一下看 YouTube 的",
+ "tx.capFixed": "YouTube 自动翻译的字幕翻得不好，插件重新翻译了 · 点一下看 YouTube 的",
+ "tx.capOriginal": "正在看原来的字幕 · 点一下换回来"
 }

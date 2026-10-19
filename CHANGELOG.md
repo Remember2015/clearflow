@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.29.0 — 2026-10-19
+
+- YouTube captions. If you pick Traditional Chinese captions and YouTube's interface is in Simplified Chinese, they're shown in Simplified characters, with Taiwan and Hong Kong wording changed to mainland wording (done locally, using OpenCC's dictionaries). If you pick YouTube's auto-translated captions: when you want Simplified Chinese and the video has human Chinese captions, those are used instead; otherwise TypeSafe checks YouTube's translation and, if it's poor, ClearFlow retranslates the captions as you watch, a sentence-aware chunk at a time. A small ✦ after the captions lets you switch back to YouTube's. Both can be turned off under YouTube → Advanced in Settings.
+- The privacy policy describes what caption text is sent and when.
+
 ## 0.28.14 — 2026-10-19
 
 - YouTube Shorts: the "Cleared N replies like “nice” or “+1”" line appears once at the top of the comment panel instead of twice, and lines up with the comments instead of touching the panel edge.

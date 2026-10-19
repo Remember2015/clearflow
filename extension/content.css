@@ -248,3 +248,10 @@ ytd-watch-metadata .ff-rtx-note.ff-tx-note { margin: 6px 0 2px; }
 .ff-dark .ff-tx-toggle::before { color: rgb(139, 152, 165); }
 .ff-tx-toggle:hover { text-decoration: underline; }
 .ff-tx-toggle:focus-visible { outline: 2px solid rgb(29, 155, 240); outline-offset: 2px; border-radius: 4px; }
+
+/* YouTube 字幕（0.29.0，ytcaps.js）：插件换过的那一块字幕后面一个小 ✦，鼠标停上去说是怎么换的，点它看 YouTube 原来的。
+   颜色跟着字幕的字走（播放器的字幕样式用户自己能改），点的范围比图标大一圈 */
+.ff-cap-mark { display: inline-flex; align-items: center; justify-content: center; width: 1.1em; height: 1.1em; margin-inline-start: 0.35em;
+  vertical-align: -0.12em; cursor: pointer; opacity: 0.75; pointer-events: auto; border-radius: 50%; }
+.ff-cap-mark:hover, .ff-cap-mark:focus-visible { opacity: 1; outline: none; }
+.ff-cap-mark svg { width: 0.8em; height: 0.8em; fill: currentColor; }

@@ -335,5 +335,13 @@
  "err.http": "Jev-verzoek mislukt: {msg}",
  "err.disabled": "Uitgeschakeld in instellingen",
  "err.batch_miss": "Het model heeft dit item overgeslagen; het wordt opnieuw vertaald",
- "pop.alert.jevCredit": "TypeSafe-saldo is op, dus reacties kunnen niet worden beoordeeld."
+ "pop.alert.jevCredit": "TypeSafe-saldo is op, dus reacties kunnen niet worden beoordeeld.",
+ "opt.captionConvert": "Traditioneel-Chinese ondertiteling in vereenvoudigde tekens tonen",
+ "opt.captionConvertHint": "Als je Traditioneel-Chinese ondertiteling kiest (Taiwan, Hongkong) terwijl YouTube in het vereenvoudigd Chinees staat, wordt de ondertiteling in vereenvoudigde tekens weergegeven. Ook worden Taiwanese en Hongkongse woorden vervangen door woorden uit het Chinese vasteland. Dit gebeurt op je computer en kost niets.",
+ "opt.captionFix": "Automatisch vertaalde ondertiteling verbeteren",
+ "opt.captionFixHint": "Als je YouTube's automatisch vertaalde ondertiteling kiest en je vereenvoudigd Chinees wilt, wordt menselijke Chinese ondertiteling gebruikt als de video die heeft. Anders controleert TypeSafe YouTube's vertaling. Is die slecht, dan vertaalt je vertaalmodel de ondertiteling opnieuw terwijl je kijkt (alleen de stukken die je bekijkt). Beide sleutels zijn vereist.",
+ "tx.capConverted": "ClearFlow heeft deze Traditioneel-Chinese ondertiteling omgezet naar vereenvoudigde tekens · klik om het origineel te bekijken",
+ "tx.capHuman": "Dit is de menselijke Chinese ondertiteling van de video (weergegeven in vereenvoudigde tekens), gebruikt in plaats van YouTube's automatische vertaling · klik om die van YouTube te bekijken",
+ "tx.capFixed": "YouTube's automatische vertaling van deze ondertiteling was slecht, dus ClearFlow heeft die opnieuw vertaald · klik om die van YouTube te bekijken",
+ "tx.capOriginal": "De oorspronkelijke ondertiteling wordt weergegeven · klik om terug te schakelen"
 }

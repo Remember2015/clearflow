@@ -299,6 +299,20 @@ function SitePage({ id, d }) {
           </CollapsibleContent>
         </Collapsible>
       )}
+      {/* YouTube 的字幕（0.29.0，用户 10-19 定：开关放在 YouTube 的设置里、默认开）：繁体字幕显示成简体；自动翻译的字幕差了重翻 */}
+      {id === "yt" && (
+        <Collapsible className="flex flex-col gap-2" id="siteAdv">
+          <CollapsibleTrigger id="siteAdvTrigger" render={<Button variant="ghost" size="sm" className="adv-trigger group w-fit gap-1 ps-2 text-muted-foreground" />}>
+            <IconChevron /> {t("opt.advTitle")}
+          </CollapsibleTrigger>
+          <CollapsibleContent className={PANEL}>
+            <Section id="siteAdvCard">
+              <SwitchRow k="captionConvert" name="opt.captionConvert" hint="opt.captionConvertHint" s={s} disabled={!s.translate} />
+              <SwitchRow k="captionFix" name="opt.captionFix" hint="opt.captionFixHint" s={s} disabled={!s.translate} />
+            </Section>
+          </CollapsibleContent>
+        </Collapsible>
+      )}
     </>
   );
 }

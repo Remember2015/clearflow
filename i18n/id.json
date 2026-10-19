@@ -335,5 +335,13 @@
  "err.http": "Permintaan Jev gagal: {msg}",
  "err.disabled": "Dinonaktifkan di pengaturan",
  "err.batch_miss": "Item ini terlewat oleh model; akan diterjemahkan lagi",
- "pop.alert.jevCredit": "Saldo TypeSafe habis, jadi balasan tidak bisa diperiksa."
+ "pop.alert.jevCredit": "Saldo TypeSafe habis, jadi balasan tidak bisa diperiksa.",
+ "opt.captionConvert": "Tampilkan teks bahasa Mandarin Tradisional dalam aksara Sederhana",
+ "opt.captionConvertHint": "Saat Anda memilih teks bahasa Mandarin Tradisional (Taiwan, Hong Kong) dan antarmuka YouTube menggunakan bahasa Mandarin Sederhana, teks ditampilkan dalam aksara Sederhana, dengan kosakata Taiwan dan Hong Kong disesuaikan ke kosakata Tiongkok daratan. Diproses di komputer Anda dan gratis.",
+ "opt.captionFix": "Perbaiki teks terjemahan otomatis",
+ "opt.captionFixHint": "Saat Anda memilih teks terjemahan otomatis YouTube: jika video memiliki teks bahasa Mandarin buatan manusia dan Anda ingin bahasa Mandarin Sederhana, teks tersebut akan digunakan. Jika tidak, TypeSafe memeriksa terjemahan YouTube. Jika hasilnya buruk, model terjemahan Anda akan menerjemahkan ulang teks saat Anda menonton (hanya bagian yang Anda tonton). Perlu kedua kunci.",
+ "tx.capConverted": "ClearFlow mengubah teks bahasa Mandarin Tradisional ini ke aksara Sederhana · klik untuk melihat teks asli",
+ "tx.capHuman": "Ini adalah teks bahasa Mandarin buatan manusia dari video (ditampilkan dalam aksara Sederhana), menggantikan terjemahan otomatis YouTube · klik untuk melihat teks YouTube",
+ "tx.capFixed": "Terjemahan otomatis YouTube untuk teks ini kurang baik, jadi ClearFlow menerjemahkannya ulang · klik untuk melihat terjemahan YouTube",
+ "tx.capOriginal": "Menampilkan teks asli · klik untuk kembali"
 }

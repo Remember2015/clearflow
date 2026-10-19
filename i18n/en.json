@@ -335,5 +335,13 @@
  "err.http": "Jev request failed: {msg}",
  "err.disabled": "Turned off in settings",
  "err.batch_miss": "The model skipped this item; it will be translated again",
- "pop.alert.jevCredit": "TypeSafe is out of credit, so replies can't be checked."
+ "pop.alert.jevCredit": "TypeSafe is out of credit, so replies can't be checked.",
+ "opt.captionConvert": "Show Traditional Chinese captions in Simplified",
+ "opt.captionConvertHint": "When you pick Traditional Chinese captions (Taiwan, Hong Kong) and YouTube's interface is in Simplified Chinese, they're shown in Simplified characters, with Taiwan and Hong Kong wording changed to mainland wording. Done on your computer; costs nothing.",
+ "opt.captionFix": "Improve auto-translated captions",
+ "opt.captionFixHint": "When you pick YouTube's auto-translated captions: if the video has human Chinese captions and you want Simplified Chinese, those are used instead. Otherwise TypeSafe checks YouTube's translation, and if it's poor your translation model retranslates the captions as you watch (only the parts you watch). Needs both keys.",
+ "tx.capConverted": "ClearFlow changed these Traditional Chinese captions to Simplified · click to see the original",
+ "tx.capHuman": "These are the video's human Chinese captions (shown in Simplified), used instead of YouTube's auto-translation · click to see YouTube's",
+ "tx.capFixed": "YouTube's auto-translation of these captions was poor, so ClearFlow retranslated them · click to see YouTube's",
+ "tx.capOriginal": "Showing the original captions · click to switch back"
 }

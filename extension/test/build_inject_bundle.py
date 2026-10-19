@@ -102,6 +102,13 @@ stub = r'''
       r = { scores: s };
     }
     // 帖子本身那一问（求推荐帖 rec）：网址加 ?rec=0.95 指定分，不加就是 0.02（普通帖子）；?recDelay=毫秒 让它晚点回来
+    // YouTube 字幕（0.29.0）：判 YouTube 的自动翻译——?capjudge=0.9 指定最低分（不给是 0.4，翻得不好）；重翻——每行前面加"【替身字幕】"
+    if (msg.type === "captionJudge" || msg.type === "captionTranslate") {
+      (window.__ffCapMsgs ||= []).push(JSON.parse(JSON.stringify(msg)));
+      const q = new URLSearchParams(location.search);
+      r = msg.type === "captionJudge" ? { min: q.has("capjudge") ? Number(q.get("capjudge")) : 0.4, scores: {}, tokens: 0, cached: false }
+        : { lines: msg.lines.map((l) => "【替身字幕】" + l), model: "stub/model", cost: 0, cached: false };
+    }
     if (msg.type === "jevPost") {
       (window.__ffJevPost ||= []).push(JSON.parse(JSON.stringify(msg)));
       const q = new URLSearchParams(location.search);

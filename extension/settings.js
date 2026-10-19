@@ -14,6 +14,9 @@
     translateModel: "openai/gpt-6-luna", translateFallback: "deepseek/deepseek-v4.1-flash",
     // images：回复里的图片也交给 Jev 一起判（0.18 起，默认关；打开时要用户给 IMAGE_ORIGINS 这几个图片网站的读取权限）
     images: false,
+    // YouTube 字幕（0.29.0，只有 YouTube 用）：captionConvert 你选了繁体中文字幕、界面是简体时显示成简体（连台湾、香港用词一起换，本地转、不花钱）；
+    // captionFix 你选了"自动翻译"时：视频有人工的中文字幕就换成它，没有的话判一下 YouTube 的机翻，差了用模型整段重翻（要两个 key）
+    captionConvert: true, captionFix: true,
     // filler：清理「赞」「mark」这类回复（0.22 起，默认开）——只有几个字的夸、附和、谢谢、mark，不带图和链接；
     // 整条藏起来，评论区最上面一行"清理了 N 条…· 查看"。门槛每个网站自己定（站点的 fillerThreshold），不给用户调
     filler: true });

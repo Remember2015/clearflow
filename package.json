@@ -1,6 +1,6 @@
 {
   "name": "clearflow",
-  "version": "0.28.14",
+  "version": "0.29.0",
   "private": true,
   "description": "Cleans up spam, abuse and empty replies and translates posts on X, Reddit, YouTube, Xiaohongshu and Hacker News.",
   "license": "MIT",

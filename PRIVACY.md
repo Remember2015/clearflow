@@ -21,6 +21,7 @@ Used for cleaning (spam, abuse, sexual content, and replies like "nice" or "+1")
 - On X posts that X translated automatically: the original text and X's (Grok's) translation. When ClearFlow retranslates such a post (below), its own translation too, so the two can be compared.
 - Only if you turn on "Look at images in replies" (off by default): images attached to those comments, downscaled, together with the text. To do this the extension asks for permission to read images from `pbs.twimg.com`, `i.redd.it`, `preview.redd.it` and `*.xhscdn.com`; it gives the permission back when you turn the option off.
 - Only if you have marked spam yourself on that site ("Hide this reply", or the funnel on a notice bar): your 10 most recently marked replies on that site (text up to 240 characters and the account), sent with those comments as examples, so TypeSafe can tell whether a comment is the same kind of spam. Right after you mark one, the comments on that page that weren't cleaned are checked once more against the examples (up to 25 per request).
+- On YouTube, only when you choose YouTube's auto-translated captions and "Improve auto-translated captions" is on (and the video has no human Chinese captions to use instead): the first lines (up to 40) of the original captions and YouTube's translation of them, to judge how good YouTube's translation is.
 - The same comment in the same context is not sent again for 7 days (results are cached locally).
 
 ### OpenRouter (`openrouter.ai`) — translating
@@ -28,6 +29,7 @@ Used for cleaning (spam, abuse, sexual content, and replies like "nice" or "+1")
 Only sent if you entered an OpenRouter key and translation is on for that site.
 
 - The text of posts and comments that need translating (or a better translation than X's). Not the author, not the post ID, not anything else on the page.
+- On YouTube, only when TypeSafe judged YouTube's auto-translated captions to be poor (above): the original captions of the part of the video you are watching, about 40 lines at a time, to retranslate them. Converting Traditional Chinese captions to Simplified happens on your computer and sends nothing.
 - OpenRouter passes the text to the translation model you choose in Settings (by default an OpenAI model, with a DeepSeek model as fallback). Each of those providers has its own data policy.
 
 ### Nobody else
@@ -93,6 +95,7 @@ developer@ohmyai.app
 - X 自动翻译过的帖子：原文和 X（Grok）的译文。清流重译了这条时（见下），它自己的译文也发过去，好和 Grok 的比。
 - 只有打开「看回复里的图片」（默认关）时：评论里的图片（缩小后）连同文字一起发。为此插件会请求读取 `pbs.twimg.com`、`i.redd.it`、`preview.redd.it`、`*.xhscdn.com` 上图片的权限，关掉这一项时把权限还回去。
 - 只有你在这个网站上自己标记过垃圾（「清理掉这条」，或提示条上的漏斗）时：你在这个网站上最近标记的 10 条（正文最多 240 字和账号），跟着这些评论一起发过去当样例，让 TypeSafe 判断一条评论是不是同一类垃圾。你刚标了一条时，这一页上没被清理的评论再按样例问一遍（每次最多 25 条）。
+- 只有在 YouTube 上选了「自动翻译」的字幕、又开着「改善自动翻译的字幕」（而且视频没有可以拿来代替的人工中文字幕）时：原文字幕的前面几行（最多 40 行）和 YouTube 对它们的翻译，用来判断 YouTube 翻得好不好。
 - 同一条评论在同样的上下文里 7 天内不再发（结果缓存在本机）。
 
 ### OpenRouter（`openrouter.ai`）——翻译
@@ -100,6 +103,7 @@ developer@ohmyai.app
 只有填了 OpenRouter 的 key、并且这个网站开着翻译才发。
 
 - 要翻译（或者比 X 的译文翻得更好）的帖子和评论的正文。不发作者、帖子 id 和页面上别的东西。
+- 只有 TypeSafe 判下来 YouTube 自动翻译的字幕不好时（见上）：你正在看的那一段的原文字幕，一次大约 40 行，用来重新翻译。繁体中文字幕转简体在你的电脑上完成，什么都不发。
 - OpenRouter 把文字转给你在设置里选的翻译模型（默认 OpenAI 的模型，后备 DeepSeek 的模型），这些提供方各有自己的数据政策。
 
 ### 不发给别人

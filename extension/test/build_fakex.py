@@ -1126,11 +1126,53 @@ yt_shorts = ypage("Synthetic short - YouTube", "/shorts/SHORTSVID01",
   '<div id="panel-footer" style="padding:12px 16px;border-top:1px solid #eee">添加评论…</div>'
   '</ytd-item-section-renderer></ytd-comments></div></ytd-reel-video-renderer></div>'
   f'<template id="yt-comments">{"".join(f"<ytd-comment-thread-renderer>{ycomment_av(cid, h, t)}</ytd-comment-thread-renderer>" for cid, h, t in YT_SHORTS)}</template>')
+# yt/captions.html → /watch?v=CAPSVID0001（0.29.0，字幕）：仿播放器——#movie_player 上有 getOption("captions","track") / getPlayerResponse()，
+#   window.__setTrack(语言, 翻成的语言) 换字幕：照真 YouTube 用 XHR 请求 /api/timedtext?…&pot=…&fmt=json3（测试服务按 lang、tlang 给 yt/timedtext/ 下的文件），
+#   再按 <video> 的时间把那一行画进 .ytp-caption-window-container（一行一个 .ytp-caption-segment，换一行就整块重画）；<video> 接一个画布的流，时间真的在走。
+#   字幕：en 原文 6 行（每行 1.5 秒）、en.zh-Hans 是 YouTube 一行一行的机翻、zh-TW 人工繁体 4 行（每行 2.25 秒，带台湾用词）。?nohuman：没有 zh-TW 那条。全是合成文字。
+CAP_EN = ["The researchers set out to measure", "how long people can stay focused", "on a single computer program", "before switching to another one.", "The answer they found was", "about forty seconds on average."]
+CAP_MT = ["研究人员开始测量", "人们能够保持专注多久", "在单个计算机程序上", "在切换到另一个之前。", "他们找到的答案是", "平均约四十秒。"]
+CAP_TW = ["這些研究人員想測量大家", "在一個軟體上能專心多久", "才會切換到別的程式和影片。", "答案是平均大約四十秒。"]
+def timedtext(lines, step):
+    return {"wireMagic": "pb3", "events": [{"tStartMs": int(k * step * 1000), "dDurationMs": int(step * 1000), "segs": [{"utf8": x}]} for k, x in enumerate(lines)]}
+os.makedirs(os.path.join(HERE, "fakex", "yt", "timedtext"), exist_ok=True)
+for name, lines, step in [("en", CAP_EN, 1.5), ("en.zh-Hans", CAP_MT, 1.5), ("zh-TW", CAP_TW, 2.25)]:
+    open(os.path.join(HERE, "fakex", "yt", "timedtext", name + ".json"), "w", encoding="utf-8").write(_json.dumps(timedtext(lines, step), ensure_ascii=False))
+cap_player = """<script>
+(() => {
+  const q = new URLSearchParams(location.search), P = document.getElementById("movie_player"), V = P.querySelector("video"), box = P.querySelector(".ytp-caption-window-container");
+  const TRACKS = [{ languageCode: "en", kind: "" }, ...(q.has("nohuman") ? [] : [{ languageCode: "zh-TW", kind: "" }])];
+  let cur = null, cues = [], shown = -2;
+  P.getOption = (m, k) => (m === "captions" && k === "track" ? (cur || {}) : null);
+  P.getPlayerResponse = () => ({ videoDetails: { videoId: "CAPSVID0001" }, captions: { playerCaptionsTracklistRenderer: { captionTracks: TRACKS } } });
+  window.__setTrack = (lang, tlang) => {
+    cur = { languageCode: lang, kind: "", ...(tlang ? { translationLanguage: { languageCode: tlang } } : {}) };
+    const x = new XMLHttpRequest();
+    x.open("GET", `/api/timedtext?v=CAPSVID0001&lang=${lang}${tlang ? `&tlang=${tlang}` : ""}&pot=fakepot&fmt=json3`);
+    x.onload = () => { cues = JSON.parse(x.responseText).events.map((e) => ({ t: e.tStartMs / 1000, d: e.dDurationMs / 1000, text: e.segs.map((s) => s.utf8).join("") })); shown = -2; };
+    x.send();
+  };
+  const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  setInterval(() => {
+    const now = V.currentTime, i = cues.findIndex((c) => c.t <= now && now < c.t + c.d);
+    if (i === shown) return;
+    shown = i;
+    box.innerHTML = i < 0 ? "" : `<div class="caption-window ytp-caption-window-bottom"><span class="captions-text">${cues[i].text.split("\\n").map((l) => `<span class="caption-visual-line"><span class="ytp-caption-segment">${esc(l)}</span></span>`).join("")}</span></div>`;
+  }, 50);
+  const c = document.createElement("canvas"); c.width = 16; c.height = 9;
+  setInterval(() => { const g = c.getContext("2d"); g.fillStyle = `hsl(${Date.now() % 360},50%,50%)`; g.fillRect(0, 0, 16, 9); }, 100);
+  V.muted = true; V.srcObject = c.captureStream(10); V.play().catch(() => {});
+})();
+</script>"""
+yt_captions = ypage("Synthetic captions - YouTube", f"/watch?v=CAPSVID0001",
+  '<div id="primary"><div id="movie_player" style="position:relative;width:640px;height:360px;background:#000">'
+  '<video style="width:640px;height:360px"></video><div class="ytp-caption-window-container" style="position:absolute;left:0;right:0;bottom:24px;text-align:center;color:#fff;font:20px sans-serif"></div></div>'
+  '<ytd-watch-metadata><div id="title"><h1 class="style-scope ytd-watch-metadata"><yt-formatted-string class="style-scope ytd-watch-metadata">合成的字幕测试视频</yt-formatted-string></h1></div></ytd-watch-metadata></div>' + cap_player)
 yt_results = ypage("engines - YouTube", "/results?search_query=engines", '<div id="primary"><ytd-section-list-renderer><div id="contents">'
   + yresult("SEARCHV0001", "Why synthetic engines are quieter than you think", "A long look at noise levels, materials and the tricks engineers use every day.")
   + yresult("SEARCHV0002", "合成发动机入门", "从零开始讲合成发动机。") + "</div></ytd-section-list-renderer></div>")
 os.makedirs(os.path.join(HERE, "fakex", "yt", "youtubei", "v1"), exist_ok=True)
-for name, html in [("watch", yt_watch), ("results", yt_results), ("native", yt_native), ("long", yt_long), ("shorts", yt_shorts)]:
+for name, html in [("watch", yt_watch), ("results", yt_results), ("native", yt_native), ("long", yt_long), ("shorts", yt_shorts), ("captions", yt_captions)]:
     open(os.path.join(HERE, "fakex", "yt", name + ".html"), "w", encoding="utf-8").write(html)
 open(os.path.join(HERE, "fakex", "yt", "youtubei", "v1", "next"), "w", encoding="utf-8").write(_json.dumps(yt_next, ensure_ascii=False))
 

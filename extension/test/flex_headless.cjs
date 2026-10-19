@@ -17,7 +17,8 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     // 每发一个请求，记下那一刻这条评论（帖子）在哪儿
     await page.evaluateOnNewDocument(() => {
       window.__ffAt = {};
-      const where = (id) => { const c = document.querySelector(`shreddit-comment[thingid="${id}"] [slot="comment"], shreddit-post[id="${id}"]`); return c ? c.getBoundingClientRect().top : null; };
+      // 藏起来了（被清理、折叠，量出来没有大小）当不在屏幕上：null（0.28.14，CI 上 Linux 慢一点，有一条先被清理了再发翻译请求，量出来 top 0）
+      const where = (id) => { const c = document.querySelector(`shreddit-comment[thingid="${id}"] [slot="comment"], shreddit-post[id="${id}"]`); if (!c) return null; const r = c.getBoundingClientRect(); return r.width || r.height ? r.top : null; };
       const arr = (window.__ffTxMsgs = []);
       const push = arr.push.bind(arr);
       arr.push = (...ms) => { for (const m of ms) if (m && m.id && !(m.id in window.__ffAt)) window.__ffAt[m.id] = where(m.id); return push(...ms); };

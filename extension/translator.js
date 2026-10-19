@@ -57,6 +57,19 @@ Rules:
 3. Write natural, casual ${name} the way native speakers post online. Translate slang, jokes, sarcasm and puns by meaning, not word for word, and keep the tone (swearing stays swearing).
 4. Keep the original line breaks and list structure.`;
 
+// YouTube 字幕（0.29.0）：YouTube 自己的"自动翻译"一行一行地翻，一句话跨两三行的就翻碎了（一行几乎是空的、下一行塞进整句）。
+// 这里把连着的几十行一起交给模型，当成一段连续的话翻，每一行的意思还放回它自己那个标记里（时间轴不变）
+export const CAPTION_SYSTEM_ZH = `你是资深的视频字幕译者，把 YouTube 视频的字幕翻成简体中文。
+要求：
+1. 下面是同一个视频里连着的几行字幕，每行用 <c1>…</c1> 这样的标记包着。当成一段连续的话来理解和翻译，一句话跨几行的按整句翻顺。
+2. 每一行的译文放回它自己的标记里，每个标记出现一次、按原来的顺序；为了每行读起来通顺，可以在相邻的两行之间挪几个词，但不要把整句挪走、不要合并或拆开标记。
+3. 全部翻完，不漏、不加、不解释；人名、产品名没有通行译名时保留原文；用自然的中文口语，像中文字幕组写的。只输出带标记的译文。`;
+export const captionSystemFor = (name) => `You are an experienced subtitle translator. Translate YouTube video subtitles into ${name}.
+Rules:
+1. Below are consecutive subtitle lines from one video, each wrapped in a marker like <c1>…</c1>. Read and translate them as one continuous piece of speech; a sentence that spans several lines is translated as a whole sentence.
+2. Put each line's translation back in its own marker - every marker exactly once, in the original order. You may move a few words between neighbouring lines so each one reads naturally, but never move a whole sentence and never merge or split markers.
+3. Translate everything - nothing dropped, added or explained; keep personal and product names in the original when there is no established ${name} name; write natural spoken ${name} like a good subtitle team. Output only the translated, marked lines.`;
+
 const sleep = (ms, signal) => new Promise((resolve, reject) => {
   const t = setTimeout(resolve, ms);
   signal?.addEventListener("abort", () => { clearTimeout(t); reject(signal.reason); }, { once: true });
@@ -102,7 +115,7 @@ export const BATCH_EN = "Below are several unrelated items, each wrapped in a ma
 // 0.28.5：flex 的请求一律流式——不流式的 OpenRouter 2–3 s 就先回头、再塞空白占着连接（实测），"回复头到了"不等于开始出字，
 // 计时形同虚设；流式的第一段字到了才算开始，而且中途放弃时 OpenRouter 会叫上游停下、不再计费
 const FLEX_OK = /^openai\//, FLEX_WAIT_MS = 10000;
-export async function translateOnce(orKey, model, { source, srcLang, truncated, markup, batch, target = "zh" }, { signal, fetchImpl = fetch, timeoutMs = 20000, onText, flex = false, flexWaitMs = FLEX_WAIT_MS } = {}) {
+export async function translateOnce(orKey, model, { source, srcLang, truncated, markup, batch, captions, target = "zh" }, { signal, fetchImpl = fetch, timeoutMs = 20000, onText, flex = false, flexWaitMs = FLEX_WAIT_MS } = {}) {
   const control = new AbortController();
   const stop = () => control.abort(signal.reason);
   signal?.addEventListener("abort", stop, { once: true });
@@ -126,7 +139,10 @@ export async function translateOnce(orKey, model, { source, srcLang, truncated, 
         model, temperature: 0.2, max_tokens: Math.min(8000, Math.max(400, source.length * 2 + 300)),
         reasoning: { enabled: false }, usage: { include: true }, ...(wantStream ? { stream: true } : {}),
         ...(flex ? { provider: { order: ["openai/flex"], allow_fallbacks: true } } : {}),
-        messages: isZhHans(target)
+        messages: captions
+          ? [{ role: "system", content: isZhHans(target) ? CAPTION_SYSTEM_ZH : captionSystemFor(targetName(target)) },
+            { role: "user", content: isZhHans(target) ? `字幕原文（${(srcLang && langName(srcLang, "zh-CN")) || "外语"}）：\n${source}` : `Subtitles (${(srcLang && langName(srcLang, "en")) || "another language"}):\n${source}` }]
+          : isZhHans(target)
           ? [{ role: "system", content: SYSTEM_PROMPT },
             { role: "user", content: `${batch ? BATCH_ZH + "\n" : ""}${markup ? MARKUP_ZH + "\n" : ""}原文（${(srcLang && langName(srcLang, "zh-CN")) || "外语"}${truncated ? "，后面被截断了：只翻这一段，末尾加“…”，不要补全" : ""}）：\n${source}` }]
           : [{ role: "system", content: systemPromptFor(targetName(target)) },
@@ -412,6 +428,50 @@ export async function fillInBatch({ orKey, settings, items, cache = idbCache, si
     await put(it, result);
     return { ...result, cached: false };
   }));
+}
+
+// YouTube 字幕一段（连着的几十行，0.29.0）：lines 是这几行原文，返回 {lines（一一对应的译文）, model, cost, cached}。
+// 模型回来的标记对不上（少了、多了、重复）：换后备模型再翻一次，还不对就报错（页面那头照旧用 YouTube 的）。缓存按这几行原文、目标语言、模型
+export const CAPTION_VERSION = "cap1";
+export async function translateCaptions({ orKey, settings, lines, srcLang, target = "zh", cache = idbCache, signal, fetchImpl, flex = false }) {
+  const key = await sha256(JSON.stringify([CAPTION_VERSION, settings.translateModel, settings.translateFallback || "", target, srcLang || "", lines]));
+  try { const hit = await cache.get(key); if (hit && Array.isArray(hit.lines) && hit.lines.length === lines.length) return { ...hit, cached: true }; } catch { /* 当没命中 */ }
+  const source = lines.map((l, k) => `<c${k + 1}>${String(l).replace(/\s*\n\s*/g, " ").trim()}</c${k + 1}>`).join("\n");
+  const parse = (text) => {
+    const got = new Map();
+    for (const m of String(text).matchAll(/<c(\d+)>([\s\S]*?)<\/c\1>/g)) {
+      const k = Number(m[1]) - 1;
+      if (k < 0 || k >= lines.length || got.has(k)) return null;
+      got.set(k, cleanOutput(m[2]).replace(/\s*\n\s*/g, " "));
+    }
+    return got.size === lines.length ? lines.map((_, k) => got.get(k)) : null;
+  };
+  let cost = 0, last = null, err = null;
+  const models = [settings.translateModel, settings.translateFallback].filter((m, i, a) => m && a.indexOf(m) === i);
+  for (const model of models) {
+    let r;
+    try { r = await translate(orKey, { ...settings, translateModel: model, translateFallback: "" }, { source, srcLang, captions: true, target }, { signal, fetchImpl, flex }); }
+    catch (e) { if (signal?.aborted || e.code === "or_badkey" || e.code === "or_credit") throw e; err = e; continue; } // 这个模型出错：换后备模型
+    cost += r.cost || 0;
+    const out = parse(r.text);
+    if (out) {
+      const result = { lines: out, model: r.model, cost };
+      try { await cache.put(key, result, capOf(settings)); } catch { /* 写不进也照样用 */ }
+      return { ...result, cached: false };
+    }
+    last = r.model;
+  }
+  if (err && !last) throw err;
+  throw Object.assign(new Error(`字幕译文的标记对不上（${last || "?"}）`), { code: "or_captions", retryable: false, spent: { cost } });
+}
+// 判 YouTube 自动翻译的字幕好不好（0.29.0）：前面一段原文和 YouTube 的译文整段交给 Jev 判（和判 X 的 Grok 译文同一套问题），结果缓存
+export async function judgeCaptions({ jevKey, settings, item, cache = idbCache, signal, fetchImpl }) {
+  const key = await sha256(JSON.stringify([CAPTION_VERSION, "judge", item.source, item.translation, item.srcLang || "", item.target || "zh"]));
+  try { const hit = await cache.get(key); if (hit && Number.isFinite(hit.min)) return { ...hit, tokens: 0, cached: true }; } catch { /* 当没命中 */ }
+  const g = await judge(jevKey, item, { signal, fetchImpl });
+  const result = { min: g.min, scores: g.scores };
+  try { await cache.put(key, result, capOf(settings)); } catch { /* 写不进也照样用 */ }
+  return { ...result, tokens: g.tokens, cached: false };
 }
 
 // item: {id, source, xText, srcLang, target}；返回 {action: "keep" | "replace", text?, model?, weak?（Grok 哪一问最差）, grok, ours?,
