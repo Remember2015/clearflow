@@ -8,6 +8,7 @@ import * as cache from "./cache.js";
 import * as feedback from "./feedback.js";
 import * as translator from "./translator.js";
 import { imageAsset, allowedImage } from "./images.js";
+import * as keyStore from "./keys.js";
 
 const { DEFAULTS, forSite, siteOf, SITES, IMAGE_ORIGINS } = globalThis.FFSettings;
 // 只管翻译的设置：改了不打断评论区（不取消评论区的 Jev 请求）
@@ -89,14 +90,50 @@ async function settings(site = null) {
   const { ff_settings } = await chrome.storage.local.get("ff_settings");
   return forSite(ff_settings, site);
 }
-async function apiKey() {
-  const { ff_key } = await chrome.storage.local.get("ff_key");
-  return typeof ff_key === "string" ? ff_key.trim() : "";
+// ---- 两个 key（0.28.12 起在 keys.js 的 IndexedDB 里，见那边的说明）----
+// storage.local 里还有 ff_key / ff_or_key 的（0.28.11 以前的版本存的、升级前开着的旧设置页刚写的）：挪进去、从 storage.local 删掉。
+// 每次取 key 前都看一眼（storage.local 读一下很便宜；没有就什么都不做）
+const LEGACY = [["ff_key", "jev"], ["ff_or_key", "or"]];
+const keyCache = new Map(); // 名字 → key（读过一次就记着，存 key 时一起改）
+let keyChain = Promise.resolve();
+function moveKeys() {
+  const task = keyChain.then(async () => {
+    const got = await chrome.storage.local.get(LEGACY.map(([old]) => old));
+    const old = LEGACY.filter(([k]) => k in got);
+    if (!old.length) return;
+    for (const [k, name] of old) await storeKey(name, typeof got[k] === "string" ? got[k] : "");
+    await chrome.storage.local.remove(old.map(([k]) => k));
+  });
+  keyChain = task.catch(() => {});
+  return task;
 }
-async function orKey() {
-  const { ff_or_key } = await chrome.storage.local.get("ff_or_key");
-  return typeof ff_or_key === "string" ? ff_or_key.trim() : "";
+async function readKey(name) {
+  await moveKeys().catch(() => {});
+  if (!keyCache.has(name)) keyCache.set(name, await keyStore.getKey(name).catch(() => ""));
+  return keyCache.get(name);
 }
+const apiKey = () => readKey("jev");
+const orKey = () => readKey("or");
+// 存一个 key（空的就是删掉）：写进库；变了的话更新 ff_keys（{jev, or} 填没填、at 换 key 的时间——内容脚本靠它知道换了 key），
+// 按换 key 处理（作废进行中的请求、清掉旧的"key 无效"）
+async function storeKey(name, value) {
+  const v = String(value || "").trim(), before = keyCache.has(name) ? keyCache.get(name) : await keyStore.getKey(name).catch(() => "");
+  await keyStore.setKey(name, v);
+  keyCache.set(name, v);
+  if (v === before) return;
+  const { ff_keys } = await chrome.storage.local.get("ff_keys");
+  await chrome.storage.local.set({ ff_keys: { jev: !!(ff_keys && ff_keys.jev), or: !!(ff_keys && ff_keys.or), [name]: !!v, at: Date.now() } });
+  // 原来没有（第一次填、升级时从 storage.local 挪过来）：没有用旧 key 在做的事，不用作废什么
+  if (before) keysChanged(name);
+}
+// ff_keys 和库里对不上（第一次装、库被清过）：照库里的重写一遍
+async function syncKeyFlags() {
+  await moveKeys().catch(() => {});
+  const flags = { jev: !!(await readKey("jev")), or: !!(await readKey("or")) };
+  const { ff_keys } = await chrome.storage.local.get("ff_keys");
+  if (!ff_keys || ff_keys.jev !== flags.jev || ff_keys.or !== flags.or) await chrome.storage.local.set({ ff_keys: { ...flags, at: Date.now() } });
+}
+syncKeyFlags().catch(() => {});
 const today = () => new Date().toLocaleDateString("sv-SE"); // YYYY-MM-DD
 
 // ---- 统计：按天累加，串行写避免并发覆盖 ----
@@ -152,17 +189,22 @@ let inflight = 0, configRevision = 0;
 const waiters = [];
 const controllers = new Set();
 const cancelled = () => new DOMException("设置已改变，请重试", "AbortError");
+// 换了 key（storeKey 调）：旧的"key 无效"不算了；进行中的翻译作废；换的是 Jev 的，评论区进行中的请求也作废（旧 key 的结果不能用）
+function keysChanged(name) {
+  health(name === "jev" ? "jev" : "or", null).catch(() => {});
+  for (const controller of txControllers) controller.abort(cancelled());
+  if (name !== "jev") return;
+  configRevision++;
+  for (const controller of controllers) controller.abort(cancelled());
+}
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "local") return;
-  if (changes.ff_key) health("jev", null).catch(() => {}); // 换了 key：旧的"key 无效"不算了
-  if (changes.ff_or_key) health("or", null).catch(() => {});
-  // 翻译：开关、模型、阈值或两个 key 变了，进行中的翻译作废（旧设置下的结果不能用）
-  if (changes.ff_key || changes.ff_or_key || (changes.ff_settings && changedFor(changes.ff_settings.oldValue, changes.ff_settings.newValue, TRANSLATE_KEYS))) {
-    for (const controller of txControllers) controller.abort(cancelled());
-  }
-  if (!changes.ff_settings && !changes.ff_key) return;
-  // 只动了首页那两样（记录开关、翻译设置）或值实际没变：不打断评论区进行中的请求
-  if (!changes.ff_key && !changedFor(changes.ff_settings.oldValue, changes.ff_settings.newValue, COMMENT_KEYS)) return;
+  if (LEGACY.some(([k]) => changes[k] && changes[k].newValue !== undefined)) moveKeys().catch(() => {}); // 旧页面写进 storage.local 的 key：挪走
+  if (!changes.ff_settings) return;
+  // 翻译：开关、模型、阈值变了，进行中的翻译作废（旧设置下的结果不能用）
+  if (changedFor(changes.ff_settings.oldValue, changes.ff_settings.newValue, TRANSLATE_KEYS)) for (const controller of txControllers) controller.abort(cancelled());
+  // 只动了不影响请求本身的设置（阈值这些）或值实际没变：不打断评论区进行中的请求
+  if (!changedFor(changes.ff_settings.oldValue, changes.ff_settings.newValue, COMMENT_KEYS)) return;
   configRevision++;
   for (const controller of controllers) controller.abort(cancelled());
 });
@@ -575,6 +617,10 @@ async function handleFillBatch(msg, sender, site = null) {
   }
 }
 
+// 插件自己的页面（设置页、引导页、弹窗）发来的：网址是 chrome-extension://本插件/…（网站页面里的内容脚本发来的，网址是那个网站的）
+function fromExtension(sender) {
+  try { return !!sender && typeof sender.url === "string" && sender.url.startsWith(chrome.runtime.getURL("")); } catch { return false; }
+}
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   // 哪个网站的页面发来的（弹窗、设置页、测试页不是网站：用默认的那一份设置）
   const site = siteOf(sender && sender.url);
@@ -654,8 +700,14 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       case "sloganClear":
         await feedback.clearSlogans();
         return { ok: true };
+      case "setKey": { // 设置页、引导页存 key（0.28.12）：只收插件自己的页面发来的，网站页面里的内容脚本不行
+        if (!fromExtension(sender)) return { error: "不是插件自己的页面", code: "invalid_request", retryable: false };
+        if ((msg.which !== "jev" && msg.which !== "or") || typeof msg.value !== "string" || msg.value.length > 500) return { error: "无效的 key", code: "invalid_request", retryable: false };
+        await storeKey(msg.which, msg.value);
+        return { ok: true };
+      }
       case "testKey": {
-        const key = (typeof msg.key === "string" ? msg.key : await apiKey()).trim();
+        const key = (typeof msg.key === "string" && msg.key.trim() ? msg.key : await apiKey()).trim(); // 没给（或空的）：测存着的那个
         if (!key) return { ok: false, error: "没有 key", code: "nokey" };
         const controller = new AbortController();
         controllers.add(controller);
@@ -699,7 +751,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         return { results };
       }
       case "orTest": {
-        const key = (typeof msg.key === "string" ? msg.key : await orKey()).trim();
+        const key = (typeof msg.key === "string" && msg.key.trim() ? msg.key : await orKey()).trim();
         if (!key) return { ok: false, error: "没有 OpenRouter key", code: "noorkey" };
         const st = await settings();
         try {

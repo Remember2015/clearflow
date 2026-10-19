@@ -461,8 +461,8 @@
   function stop() { clearInterval(tickT); tickT = null; io.disconnect(); observer.disconnect(); }
   try {
     chrome.storage.onChanged.addListener((ch) => {
-      if (ch.ff_key || ch.ff_or_key) { creditStop = 0; clearErrors(); } // 换了 key：因为 key 停下、出错的帖子重新来（0.28.9 以前这一页一直不再试）
-      if (ch.ff_settings || ch.ff_key || ch.ff_or_key) loadSettings();
+      if (ch.ff_keys) { creditStop = 0; clearErrors(); } // 换了 key（0.28.12 起看 ff_keys）：因为 key 停下、出错的帖子重新来（0.28.9 以前这一页一直不再试）
+      if (ch.ff_settings || ch.ff_keys || ch.ff_key || ch.ff_or_key) loadSettings();
     });
   } catch (e) { /* 插件刚重载 */ }
   loadSettings().then(() => { tickT = setInterval(tick, TICK); tick(); });

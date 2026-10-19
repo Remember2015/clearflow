@@ -62,6 +62,8 @@ await new Promise((res, rej) => {
   };
   q.onerror = () => rej(q.error);
 });
+// 0.28.12 起 key 存在插件自己的 IndexedDB（keys.js）：同一个来源的几个测试页共用它，先清掉
+await new Promise((r) => { const q = indexedDB.deleteDatabase("ff-keys"); q.onsuccess = q.onerror = q.onblocked = () => r(); });
 await import("/background.js");
 const call = (msg) => new Promise((res) => listener(msg, {}, res));
 const out = [];
@@ -86,9 +88,9 @@ try {
   r = await call(item("1"));
   ok("开关关着：disabled", r.code === "disabled" && net.jev === 0);
   store.ff_settings = { rev: 2 };
-  const k = store.ff_key; delete store.ff_key;
+  store.ff_key = ""; // 0.28.12 起 key 挪进了 IndexedDB：往 storage.local 写一个空的（旧版本那样）就是删掉
   ok("没有 Jev key：nokey", (await call(item("1"))).code === "nokey");
-  store.ff_key = k;
+  store.ff_key = "test-key";
 
   r = await call(item("1"));
   ok("Grok 差、重译好：replace", r.action === "replace" && r.text.startsWith("改进的译文") && r.weak === "natural" && r.cached === false, JSON.stringify(r));
@@ -141,7 +143,7 @@ try {
   // 帖子页补翻：只要 OpenRouter key，不调 Jev
   const fillMsg = (id, extra = {}) => ({ type: "translateFill", id, source: `And one more synthetic reply ${id}.`, srcLang: "en", ...extra });
   const jev0 = net.jev, or0 = net.or.length;
-  const savedJev = store.ff_key; delete store.ff_key;
+  store.ff_key = ""; // 删掉 Jev key（写空的，见上）
   r = await call(fillMsg("400"));
   ok("补翻：没有 Jev key 也能翻，不调 Jev", r.action === "fill" && r.text.startsWith("改进的译文") && net.jev === jev0 && net.or.length === or0 + 1, JSON.stringify(r));
   ok("补翻：请求里不开思考", net.or.at(-1).reasoning?.enabled === false);
@@ -243,9 +245,9 @@ try {
   ok("几条一起翻：不对的拒收（只有 1 条、超过 8 条、有换后备模型的、目标语言不一样、合计超过 6000 字、有一条不对、items 不是数组、rid 不对）",
     badBatches.every((x) => x.code === "invalid_request"), JSON.stringify(badBatches.map((x) => x.code)));
   store.ff_settings = savedSt;
-  const savedOr = store.ff_or_key; delete store.ff_or_key;
+  store.ff_or_key = "";
   ok("补翻：没有 OpenRouter key：noorkey", (await call(fillMsg("404"))).code === "noorkey");
-  store.ff_or_key = savedOr; store.ff_key = savedJev;
+  store.ff_or_key = "sk-or-other"; store.ff_key = "test-key";
 
   // 目标语言：页面那头传 X 的界面语言过来；别的语言用英文模板提示词，乱写的代码拒收
   r = await call({ ...fillMsg("405"), target: "ja" });
@@ -260,7 +262,7 @@ try {
   r = await call({ type: "orTest", key: "sk-or-bad" });
   ok("测 key：无效时报错", r.ok === false && /key 无效/.test(r.error), JSON.stringify(r));
   net.orStatus = 200;
-  ok("测 key：空 key 不发请求", (await call({ type: "orTest", key: "  " })).ok === false);
+  ok("测 key：没给（空的）就测存着的那个（0.28.12 起设置页看不到存着的 key）", (await call({ type: "orTest", key: "  " })).ok === true);
 
   // 译文缓存按占的地方算（0.13.7，和过滤结果的分开）：超过上限删最久没用的、删到九成；总量记得对；设置页一起报两边
   r = await call({ type: "cacheStats" });

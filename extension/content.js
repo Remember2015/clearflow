@@ -1067,13 +1067,13 @@
   const NOT_COMMENTS = new Set(["translate", "translateFill", "translateThreshold", "translateMargin", "translateModel", "translateFallback"]);
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area && area !== "local") return;
-    if (changes.ff_settings || changes.ff_key) {
+    if (changes.ff_settings || changes.ff_keys || changes.ff_key) { // 换了 key：0.28.12 起看 ff_keys（只有填没填），ff_key 是旧版本留下、刚挪走的
       // 只动了翻译设置（归 translate.js 管）或值实际没变：评论区这边不动，免得折叠全部闪一下、进行中的请求作废重发。
       // 别的设置一变就照旧：先停发送、暂停判断，读到新设置再重判（读失败宁可暂停，也不沿用旧规则）。
       const F = globalThis.FFSettings;
       const before = F.forSite(changes.ff_settings?.oldValue, "x"), after = F.forSite(changes.ff_settings?.newValue, "x");
       const changed = changes.ff_settings ? Object.keys(F.DEFAULTS).filter((k) => k !== "rev" && before[k] !== after[k]) : [];
-      if (changes.ff_key || changed.some((k) => !NOT_COMMENTS.has(k))) {
+      if (changes.ff_keys || changes.ff_key || changed.some((k) => !NOT_COMMENTS.has(k))) {
         if (changes.ff_settings && !after.enabled) { S.enabled = false; clearUI(); }
         refreshSettings();
       }

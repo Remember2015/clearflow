@@ -24,7 +24,9 @@ import { Input } from "@/components/ui/input";
 I18N.apply();
 // 只管翻译的设置：改了评论区不用重判
 const TX_KEYS = new Set(["translate", "translateFill", "translateThreshold", "translateMargin", "translateModel", "translateFallback"]);
-const KEYS = ["ff_settings", "ff_key", "ff_or_key", "ff_health", "ff_stats", "ff_confirmed_slogans"];
+// ff_keys：两个 key 填没填（0.28.12 起 key 本身存在后台的 IndexedDB 里，这边看不到；ff_key、ff_or_key 是旧版本的、后台会挪走）
+const KEYS = ["ff_settings", "ff_keys", "ff_key", "ff_or_key", "ff_health", "ff_stats", "ff_confirmed_slogans"];
+const hasKey = (d, which) => (d.ff_keys ? !!d.ff_keys[which] : !!String((which === "jev" ? d.ff_key : d.ff_or_key) || "").trim());
 
 async function save(patch) {
   try {
@@ -306,22 +308,23 @@ function stateOf(hasKey, code) {
   return !hasKey ? [MUTED_TONE, "opt.state.none"] : code === "or_credit" || code === "credit" ? [BAD_TONE, "opt.state.credit"] : code ? [BAD_TONE, "opt.state.bad"] : [null, "opt.state.ok"];
 }
 // link：去哪里拿 key（0.23，开源前检查：界面上没有一处告诉人去哪拿）；note：名字下面常显的一句（首次设置那一页用，设置页用问号）
-function KeyRow({ id, name, hint, storeKey, saved, code, placeholder, test, link, note }) {
+// has：这个 key 填了没有（key 本身在后台，这一页看不到；存 key 走后台的 setKey，0.28.12）
+function KeyRow({ id, name, hint, has, code, placeholder, test, link, note }) {
   const [editing, setEditing] = React.useState(false);
   const [value, setValue] = React.useState("");
   const [msg, setMsg] = React.useState(null);
-  const [tone, stateKey] = stateOf(!!saved.trim(), code);
-  const open = editing || !saved.trim(), usable = stateKey === "opt.state.ok";
+  const [tone, stateKey] = stateOf(has, code);
+  const open = editing || !has, usable = stateKey === "opt.state.ok";
   const doSave = async () => {
     if (!value.trim()) { setMsg([t("err.nokey"), "err"]); return; } // 空的不存（0.28.8 以前会把存着的 key 清掉、还说"已保存"）
     try {
-      await chrome.storage.local.set({ [storeKey]: value.trim() });
+      await send({ type: "setKey", which: id, value: value.trim() });
       setEditing(false); setValue(""); setMsg(null); toast(t("c.saved"));
     } catch (e) { setMsg([failText(e), "err"]); }
   };
   const doTest = async () => {
     setMsg([t("c.testing"), ""]);
-    try { setMsg([await test((open && value.trim()) || saved.trim()), "ok"]); } catch (e) { setMsg([failText(e), "err"]); } // 输入框空着：测存着的那个
+    try { setMsg([await test(open ? value.trim() : ""), "ok"]); } catch (e) { setMsg([failText(e), "err"]); } // 空的：后台测存着的那个
   };
   const msgTone = msg && (msg[1] === "err" ? "text-destructive" : msg[1] === "ok" ? "text-green-700 dark:text-green-400" : "text-muted-foreground");
   return (
@@ -348,7 +351,7 @@ function KeyRow({ id, name, hint, storeKey, saved, code, placeholder, test, link
           <Input type="password" id={id === "jev" ? "key" : "orKey"} className="h-8 flex-[1_1_14rem] text-sm md:text-sm" autoComplete="off" spellCheck={false} placeholder={placeholder}
             aria-label={`${name} API key`} value={value} onChange={(e) => setValue(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") doSave(); }} />
           <Button size="sm" className="btn" id={id === "jev" ? "saveKey" : "saveOrKey"} onClick={doSave}>{t("c.save")}</Button>
-          {saved.trim() && <Button variant="ghost" size="sm" className="btn" onClick={() => { setEditing(false); setValue(""); setMsg(null); }}>{t("c.cancel")}</Button>}
+          {has && <Button variant="ghost" size="sm" className="btn" onClick={() => { setEditing(false); setValue(""); setMsg(null); }}>{t("c.cancel")}</Button>}
         </div>
       )}
       {note && <p className="row-note mt-1 text-xs text-muted-foreground" id={`${id}Note`}>{note}</p>}
@@ -384,8 +387,8 @@ function Connections({ d }) {
   const h = d.ff_health || {};
   return (
     <Section id="conn" title={t("opt.connTitle")}>
-      <KeyRow id="jev" name="Jev (TypeSafe)" hint="opt.jevHint" storeKey="ff_key" saved={d.ff_key || ""} code={h.jev?.code} placeholder="apikey_…" test={testJev} link={KEY_URL.jev} />
-      <KeyRow id="or" name="OpenRouter" hint="opt.orHint" storeKey="ff_or_key" saved={d.ff_or_key || ""} code={h.or?.code} placeholder="sk-or-…" test={testOr} link={KEY_URL.or} />
+      <KeyRow id="jev" name="Jev (TypeSafe)" hint="opt.jevHint" has={hasKey(d, "jev")} code={h.jev?.code} placeholder="apikey_…" test={testJev} link={KEY_URL.jev} />
+      <KeyRow id="or" name="OpenRouter" hint="opt.orHint" has={hasKey(d, "or")} code={h.or?.code} placeholder="sk-or-…" test={testOr} link={KEY_URL.or} />
       <div className={ROW}><p className="text-sm text-muted-foreground" id="costLine">{costLine(d.ff_stats || {})}</p></div>
     </Section>
   );
@@ -566,7 +569,7 @@ function Welcome({ d }) {
       <div className="flex gap-1.5" aria-hidden="true">{[1, 2, 3].map((n) => <span key={n} className={cn("size-1.5 rounded-full", n === step ? "bg-foreground" : "bg-foreground/20")} />)}</div>
       <div className="flex items-center gap-2">
         {step > 1 && <Button variant="ghost" size="sm" className="btn" id="welcomeBack" onClick={() => setStep(step - 1)}>{t("welcome.back")}</Button>}
-        {step === 2 && !(d.ff_key || "").trim() && <Button variant="ghost" size="sm" className="btn" id="welcomeLater" onClick={() => setStep(3)}>{t("welcome.later")}</Button>}
+        {step === 2 && !hasKey(d, "jev") && <Button variant="ghost" size="sm" className="btn" id="welcomeLater" onClick={() => setStep(3)}>{t("welcome.later")}</Button>}
         {step < 3 ? <Button size="sm" className="btn" id="welcomeNext" onClick={() => setStep(step + 1)}>{t("welcome.next")}</Button>
           : <Button size="sm" className="btn" id="welcomeDone" onClick={finish}>{t("welcome.finish")}</Button>}
       </div>
@@ -607,9 +610,9 @@ function Welcome({ d }) {
           {/* key 放在哪（用户 10-18：引导页上要告诉用户密钥是放本地的）：单独一行带锁，填之前就看得到 */}
           <p className="flex items-start gap-2 px-1 text-sm text-muted-foreground" id="welcomeKeysLocal"><IconLock className="mt-0.5 size-4 shrink-0" />{t("welcome.keysLocal")}</p>
           <Section id="welcomeKeys" label={t("welcome.keysTitle")}>
-            <KeyRow id="jev" name="Jev (TypeSafe)" hint="opt.jevHint" storeKey="ff_key" saved={d.ff_key || ""} code={h.jev?.code} placeholder="apikey_…" test={testJev}
+            <KeyRow id="jev" name="Jev (TypeSafe)" hint="opt.jevHint" has={hasKey(d, "jev")} code={h.jev?.code} placeholder="apikey_…" test={testJev}
               link={KEY_URL.jev} note={t("welcome.jevNote")} />
-            {anyTx && <KeyRow id="or" name="OpenRouter" hint="opt.orHint" storeKey="ff_or_key" saved={d.ff_or_key || ""} code={h.or?.code} placeholder="sk-or-…" test={testOr}
+            {anyTx && <KeyRow id="or" name="OpenRouter" hint="opt.orHint" has={hasKey(d, "or")} code={h.or?.code} placeholder="sk-or-…" test={testOr}
               link={KEY_URL.or} note={t("welcome.orNote")} />}
           </Section>
         </>
@@ -630,7 +633,7 @@ function Welcome({ d }) {
                 ))}
               </div>
             )}
-            {!(d.ff_key || "").trim() && <p className="text-sm text-amber-800 dark:text-[#ffc46b]" id="welcomeNoKey">{t("welcome.doneNoKey")}</p>}
+            {!hasKey(d, "jev") && <p className="text-sm text-amber-800 dark:text-[#ffc46b]" id="welcomeNoKey">{t("welcome.doneNoKey")}</p>}
             <p className="text-xs text-muted-foreground">{t("welcome.donePopup")}</p>
             <div><Button variant="outline" size="sm" className="btn" id="welcomeOpts" onClick={() => { chrome.storage.local.set({ ff_onboarded: Date.now() }).catch(() => {}); location.hash = ""; }}>{t("welcome.openSettings")}</Button></div>
           </div>

@@ -605,11 +605,11 @@
     const NOT_FOLDING = new Set(["translate", "translateFill", "translateThreshold", "translateMargin", "translateModel", "translateFallback"]);
     chrome.storage.onChanged.addListener((changes, area) => {
       if (area && area !== "local") return;
-      if (changes.ff_settings || changes.ff_key) {
+      if (changes.ff_settings || changes.ff_keys || changes.ff_key) { // 换了 key：0.28.12 起看 ff_keys
         const F = globalThis.FFSettings;
         const before = F.forSite(changes.ff_settings?.oldValue, site.name), after = F.forSite(changes.ff_settings?.newValue, site.name);
         const changed = changes.ff_settings ? Object.keys(F.DEFAULTS).filter((k) => k !== "rev" && before[k] !== after[k]) : [];
-        if (changes.ff_key || changed.some((k) => !NOT_FOLDING.has(k))) loadSettings();
+        if (changes.ff_keys || changes.ff_key || changed.some((k) => !NOT_FOLDING.has(k))) loadSettings();
       }
       if (changes.ff_confirmed_slogans) {
         S.sloganVersion++;

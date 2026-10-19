@@ -40,7 +40,7 @@ When you click "Test connection" in Settings, a short fixed sample text is sent 
 
 All of the following is stored only in your browser's extension storage (`chrome.storage.local` and IndexedDB) and is never uploaded:
 
-- Your settings and your two API keys (stored as entered, in plain text, like other extension settings).
+- Your settings and your two API keys. The keys are kept in the extension's own database in this browser, which the websites you visit (and the extension's scripts running on them) can't read; only the extension's background worker uses them. They aren't encrypted.
 - Daily counters (how many items were cleaned or translated, estimated cost).
 - Your corrections ("not spam", "hide this reply") and the spam you marked, with the comment text (up to 300 characters; the last 3,000 corrections, the last 500 marked replies).
 - A cache of TypeSafe results (fingerprints and scores only, no text; deleted 7 days after the comment was judged) and a cache of translations (the translated text; deleted once it hasn't been used for 30 days). Each cache is capped at 50 MB by default; the oldest entries go first when it's full.
@@ -112,7 +112,7 @@ developer@ohmyai.app
 
 下面这些只存在你浏览器的插件存储里（`chrome.storage.local` 和 IndexedDB），从不上传：
 
-- 你的设置和两个 key（照你填的原样明文存，和别的插件设置一样）。
+- 你的设置和两个 key。key 存在这个浏览器里插件自己的数据库里，你打开的网站（以及插件在网站上运行的脚本）读不到，只有插件的后台用它；没有加密。
 - 每天的计数（清理、翻译了多少条，估算的花费）。
 - 你的纠错（「不是垃圾」「清理掉这条」）和你标记的垃圾，带那条评论的正文（最多 300 字；最近 3000 条纠错、最近 500 条标记）。
 - TypeSafe 结果的缓存（只有指纹和分数、没有正文，判完 7 天后删）和译文的缓存（译好的文字，30 天没用到就删）。每份缓存默认最多 50 MB，满了先删最旧的。

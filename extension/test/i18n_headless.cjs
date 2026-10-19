@@ -177,8 +177,9 @@ async function foldPage(browser, q, shot) {
       ["ar", "ar", { name: extName("ar"), rtl: true }]]) {
       const e = { h1: ALL[code]["opt.h1"], fold: ALL[code]["opt.foldTitle"], pop: ALL[code]["pop.today"], ...expect };
       const browser = await puppeteer.launch({ executablePath: CHROME, headless: "new", pipe: true,
-        // 界面语言：Linux / Windows 认 --lang；macOS 不认，要用 -AppleLanguages 覆盖系统偏好
+        // 界面语言：Windows 认 --lang；macOS 要用 -AppleLanguages 覆盖系统偏好；Linux 看环境变量 LANGUAGE / LANG（0.28.12 以前 CI 上全成了英文）
         args: ["--enable-unsafe-extension-debugging", "--no-first-run", `--lang=${lang}`, "-AppleLanguages", `(${lang})`],
+        env: { ...process.env, LANGUAGE: lang.replace("-", "_"), LANG: `${lang.replace("-", "_")}.UTF-8` }, // Linux 上 Chrome 的界面语言看这两个
         ignoreDefaultArgs: ["--disable-extensions"] });
       try {
         const { id } = await (await browser.target().createCDPSession()).send("Extensions.loadUnpacked", { path: EXT });

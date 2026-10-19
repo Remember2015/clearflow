@@ -9,7 +9,7 @@ globalThis.chrome = {
     get: async (k) => { const ks = k === null ? Object.keys(store) : Array.isArray(k) ? k : [k]; return Object.fromEntries(ks.filter((x) => x in store).map((x) => [x, store[x]])); },
     set: async (o) => Object.assign(store, o), remove: async (k) => { for (const x of Array.isArray(k) ? k : [k]) delete store[x]; },
   } },
-  runtime: { onMessage: { addListener: (f) => (listener = f) } },
+  runtime: { onMessage: { addListener: (f) => (listener = f) }, getURL: (p) => "chrome-extension://fakeid/" + p },
   action: { setIcon: async (o) => { (globalThis.__icons ||= []).push(o); } },
   permissions: { contains: async () => globalThis.__imgPerm !== false }, // 读图的权限（__imgPerm = false：用户收回了）
 };
@@ -23,6 +23,8 @@ globalThis.fetch = async (url, init) => {
   for (const k of Object.keys(body.questions)) answers[k] = { noul: k.endsWith("__disguised") ? 0.8 : k.endsWith("__marked") ? 0.77 : 0.1 };
   return new Response(JSON.stringify({ model: "fake", answers, usage: { input_tokens: 100 } }), { status: 200, headers: { "content-type": "application/json" } });
 };
+// 0.28.12 起 key 存在插件自己的 IndexedDB（keys.js）：同一个来源的几个测试页共用它，先清掉
+await new Promise((r) => { const q = indexedDB.deleteDatabase("ff-keys"); q.onsuccess = q.onerror = q.onblocked = () => r(); });
 const bg = await import("/background.js");
 const call = (msg) => new Promise((res) => listener(msg, {}, res));
 const callFrom = (url, msg) => new Promise((res) => listener(msg, { url }, res)); // 某个网站的页面发来的（后台按网址认是哪个网站）
@@ -232,7 +234,7 @@ ok("统计只收计数：数字照加，字符串、负数、无穷大、怪名�
 // ---- 0.11 去掉首页 Feed 记录：留在存储里的键删掉 ----
 store.ff_feed_generation = 3; store["ff_feed_outbox:p:1"] = { items: [] }; store.ff_feed_session = { id: 1 };
 await bg.dropFeedData();
-ok("首页记录留下的键删掉了，别的不动", !Object.keys(store).some((k) => k.startsWith("ff_feed_")) && store.ff_key === "test-key");
+ok("首页记录留下的键删掉了，别的不动", !Object.keys(store).some((k) => k.startsWith("ff_feed_")) && (await call({ type: "settings" })).hasKey);
 
 document.getElementById("out").textContent = out.join("\n");
 // 0.24：评测记录（"记录 Reddit 评论（评估用）"）和 Reddit 的结构探针去掉了：发 evalRecord 没人管，导出不带，升级时删掉它们留下的键
@@ -243,7 +245,31 @@ document.getElementById("out").textContent = out.join("\n");
   const ex = await call({ type: "export" });
   ok("导出数据不带评测记录", !("ff_eval_reddit" in (ex.data || {})), JSON.stringify(Object.keys(ex.data || {})));
   await bg.dropDevData();
-  ok("升级时删掉评测记录和探针留下的键，别的不动", !("ff_eval_reddit" in store) && !("ff_eval_reddit_n" in store) && !("ff_dev_reddit" in store) && store.ff_key === "test-key", JSON.stringify(Object.keys(store)));
+  ok("升级时删掉评测记录和探针留下的键，别的不动", !("ff_eval_reddit" in store) && !("ff_eval_reddit_n" in store) && !("ff_dev_reddit" in store) && (await call({ type: "settings" })).hasKey, JSON.stringify(Object.keys(store)));
+}
+// 0.28.12：key 不在 storage.local 里了（内容脚本读得到那里）：旧版本存的挪进插件自己的 IndexedDB、从 storage.local 删掉，
+// storage.local 只留 ff_keys（填没填）；存 key 只收插件自己的页面发来的
+{
+  const st = await call({ type: "settings" });
+  ok("升级：storage.local 里的 key 挪走了，只留填没填", !("ff_key" in store) && !("ff_or_key" in store) && store.ff_keys?.jev === true && store.ff_keys?.or === true && st.hasKey && st.hasOrKey,
+    JSON.stringify({ keys: Object.keys(store).filter((k) => /key/.test(k)), flags: store.ff_keys }));
+  const noKeyText = !JSON.stringify(store).includes("test-key") && !JSON.stringify(store).includes("test-or-key");
+  ok("storage.local 里哪儿都找不到 key 本身", noKeyText, JSON.stringify(store.ff_keys));
+  const bad = await callFrom("https://x.com/a/status/1", { type: "setKey", which: "jev", value: "evil-key" });
+  ok("网站页面里发来的 setKey 不收", bad.code === "invalid_request", JSON.stringify(bad));
+  const at0 = store.ff_keys.at;
+  await new Promise((r) => setTimeout(r, 5));
+  const good = await callFrom("chrome-extension://fakeid/options.html", { type: "setKey", which: "jev", value: " new-test-key " });
+  let sent = null;
+  const jevFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => { sent = init.headers.Authorization; return jevFetch(url, init); };
+  await call({ type: "jev", postId: "K1", post: "p", replies: [{ id: "1900000000000000999", text: "换了 key 以后" }] });
+  globalThis.fetch = jevFetch;
+  ok("设置页存 key：用新的、ff_keys 记下换 key 的时间、storage.local 里还是没有 key", good.ok && sent === "Bearer new-test-key" && store.ff_keys.at > at0 && !JSON.stringify(store).includes("new-test-key"),
+    JSON.stringify({ good, sent: !!sent, flags: store.ff_keys }));
+  const t = await call({ type: "testKey", key: "", lang: "zh-CN" });
+  ok("测试连接不给 key（设置页看不到存着的）：测存着的那个", t.ok === true, JSON.stringify(t));
+  await callFrom("chrome-extension://fakeid/options.html", { type: "setKey", which: "jev", value: "test-key" });
 }
 // 0.16.1：工具栏图标跟浏览器的深浅色（页面报的）：深色换 dark-*，一样的不重设，浅色换回 icon-*
 {

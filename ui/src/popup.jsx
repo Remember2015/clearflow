@@ -27,17 +27,19 @@ const sum = (c) => c.spam + c.abuse + c.sexual + (c.filler || 0);
 const catOf = (kind) => (kind === "abuse" ? "abuse" : kind === "sexual" ? "sexual" : "spam");
 const catText = (c) => CATS.filter((k) => c[k]).map((k) => `${t(`pop.cat.${k}`)} ${c[k]}`).join(" · ");
 const toSettings = (e) => { e?.preventDefault(); chrome.runtime.openOptionsPage(); };
-const KEYS = ["ff_stats", "ff_settings", "ff_key", "ff_or_key", "ff_health"];
+// ff_keys：两个 key 填没填（0.28.12 起 key 本身在后台的 IndexedDB 里）；ff_key、ff_or_key 是旧版本的、后台会挪走
+const KEYS = ["ff_stats", "ff_settings", "ff_keys", "ff_key", "ff_or_key", "ff_health"];
+const hasKey = (d, which) => (d.ff_keys ? !!d.ff_keys[which] : !!String((which === "jev" ? d.ff_key : d.ff_or_key) || "").trim());
 
 // ---------- 要你处理的事（只在出问题时出现；Jev key 的事只在这个网站开着清理时说） ----------
 function Alerts({ d, st }) {
   const list = [];
   const h = d.ff_health || {};
   // 高级设置里关了 Jev 的不提 Jev key 的事（0.28.8，review）
-  if (st.enabled && st.useJev && !(d.ff_key || "").trim()) list.push(["warn", t("pop.alert.noKey"), true]);
+  if (st.enabled && st.useJev && !hasKey(d, "jev")) list.push(["warn", t("pop.alert.noKey"), true]);
   else if (st.enabled && st.useJev && h.jev?.code === "badkey") list.push(["danger", t("pop.alert.badKey"), true]);
   else if (st.enabled && st.useJev && h.jev?.code === "credit") list.push(["danger", t("pop.alert.jevCredit"), true]);
-  if (st.translate && (d.ff_or_key || "").trim()) {
+  if (st.translate && hasKey(d, "or")) {
     if (h.or?.code === "or_credit") list.push(["danger", t("pop.alert.orCredit"), true]);
     else if (h.or?.code === "or_badkey") list.push(["danger", t("pop.alert.orBadKey"), true]);
   }
@@ -144,7 +146,7 @@ function SiteRow({ id, name, checked, note, onChange, disabled }) {
   );
 }
 function txNote(d, st, site) {
-  const hasOr = !!(d.ff_or_key || "").trim(), hasJev = !!(d.ff_key || "").trim();
+  const hasOr = hasKey(d, "or"), hasJev = hasKey(d, "jev");
   return !st.translate ? "" : !hasOr ? t("pop.txNeedKey") : site === "x" && !hasJev ? t("pop.txFillOnly") : "";
 }
 function cost(stats) {

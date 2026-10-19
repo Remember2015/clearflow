@@ -731,7 +731,7 @@
       pending = setTimeout(() => { pending = 0; if (alive()) { renderAll(); tick(); } }, 300);
     });
     observer.observe(document.documentElement, { childList: true, subtree: true });
-    try { chrome.storage.onChanged.addListener((ch) => { if (ch.ff_settings || ch.ff_or_key || ch.ff_key) loadSettings(); }); } catch (e) { /* 插件刚重载 */ }
+    try { chrome.storage.onChanged.addListener((ch) => { if (ch.ff_settings || ch.ff_keys || ch.ff_or_key || ch.ff_key) loadSettings(); }); } catch (e) { /* 插件刚重载 */ }
     setInterval(() => { if (alive()) tick(); }, 1500);
     loadSettings();
     return api;

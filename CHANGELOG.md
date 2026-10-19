@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.28.12 — 2026-10-19
+
+- Your API keys moved out of the extension's general storage into its own database, which the scripts ClearFlow runs on websites can't read. Existing keys are moved automatically; nothing to do.
+- CI: browser tests now run with the Chinese UI they check on Linux too.
+
 ## 0.28.11 — 2026-10-19
 
 - A post author's own reply that continues their post — an update, more details, an answer, or a link to the very thing the post is about — is no longer cleaned as promotion. ClearFlow asks TypeSafe one extra question for the author's replies only; an author using their own post to advertise something unrelated is still cleaned, and abuse, sexual content and spam you marked are handled as before.

@@ -44,6 +44,10 @@ SEED["ff_reply_override:" + SEED.ff_recent_folds[2].id] = { label: "missed", upd
     page.on("pageerror", (e) => out.push(`PAGEERROR ${e.message}`));
     await page.goto(`chrome-extension://${id}/options.html`, { waitUntil: "load" });
     await page.evaluate((seed) => chrome.storage.local.set(seed), SEED);
+    // 0.28.12：key 放在 storage.local 的旧版本数据（SEED 就是这样）——后台挪进自己的 IndexedDB，storage.local 只剩 ff_keys（填没填），内容脚本读不到 key
+    await wait(400);
+    const moved = await page.evaluate(async () => { const all = await chrome.storage.local.get(null); return { keys: Object.keys(all).filter((k) => /key/.test(k)), flags: all.ff_keys, leak: JSON.stringify(all).includes("fake-jev-key") || JSON.stringify(all).includes("fake-or-key") }; });
+    ok("升级：storage.local 里的 key 挪进插件自己的库，只留填没填", JSON.stringify(moved.keys) === '["ff_keys"]' && moved.flags?.jev === true && moved.flags?.or === true && !moved.leak, JSON.stringify(moved));
     // 弹窗当成普通标签页打开时，"当前标签页"是它自己：把 tabs 换成假的，假装当前是一个 X 帖子页（网址、页面里的插件脚本回什么）
     await page.evaluateOnNewDocument(() => {
       try {
@@ -261,7 +265,7 @@ SEED["ff_reply_override:" + SEED.ff_recent_folds[2].id] = { label: "missed", upd
     // 0.28.8：输入框空着点保存：不存（以前会把存着的 key 清掉、还说已保存）
     await page.click("#saveKey");
     await wait(300);
-    ok("空着点保存：说没填 key，存着的 key 不动", (await txt("#keyMsg")) === "没有填 key" && (await page.evaluate(async () => (await chrome.storage.local.get("ff_key")).ff_key)) === "fake-jev-key",
+    ok("空着点保存：说没填 key，存着的 key 不动", (await txt("#keyMsg")) === "没有填 key" && (await page.evaluate(async () => (await chrome.storage.local.get("ff_keys")).ff_keys?.jev)) === true,
       await txt("#keyMsg"));
     // 0.28.8：每月估计按 7 天平均（7 天里只用了一天的，以前把那一天乘 30）
     const keepStats = await page.evaluate(async () => (await chrome.storage.local.get("ff_stats")).ff_stats);

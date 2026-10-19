@@ -16,7 +16,8 @@ const settle = () => new Promise((r) => setImmediate(r));
 
 function backend({ fetchImpl, failWrite, initial = {} } = {}) {
   const store = { ff_key: "fake-key", ff_settings: { rev: 5, enabled: true, useJev: true, cacheMB: 50 }, ...initial };
-  const records = new Map(), changes = [];
+  const records = new Map(), changes = [], keyMap = new Map();
+  const keyStore = { getKey: async (n) => keyMap.get(n) || "", setKey: async (n, v) => { if (v) keyMap.set(n, v); else keyMap.delete(n); } }; // keys.js（IndexedDB）的替身
   let listener, calls = 0, writes = 0;
   const chrome = {
     storage: { onChanged: { addListener: (f) => changes.push(f) }, local: {
@@ -32,7 +33,7 @@ function backend({ fetchImpl, failWrite, initial = {} } = {}) {
     stats: async () => ({ count: records.size }), clear: async () => records.clear(),
   };
   const context = vm.createContext({
-    chrome, cache, validScores, cacheRequests, cleanExtra, askOf, JevError, markedRequests, askMarked, MARKED_MAX, MARKED_BATCH, TextEncoder, crypto: webcrypto,
+    chrome, cache, keyStore, validScores, cacheRequests, cleanExtra, askOf, JevError, markedRequests, askMarked, MARKED_MAX, MARKED_BATCH, TextEncoder, crypto: webcrypto,
     AbortController, DOMException, Date, Promise, console, URL, // URL：settings.js 按网址认网站（0.20）
     setTimeout: () => 0, // 0.28.5：后台起来 5 秒后清过期缓存（purgeCaches）；这里不跑
     scoreReplies: (key, post, replies, options) => scoreReplies(key, post, replies, {

@@ -72,7 +72,8 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     await page.type("#key", "fake-jev-key-for-test"); await page.click("#saveKey"); await wait(500);
     st = await stored();
     s = await step();
-    ok("回第 2 步填了 key（存进 ff_key）就没有稍后再填", st.ff_key === "fake-jev-key-for-test" && !s.later, JSON.stringify({ later: s.later }));
+    ok("回第 2 步填了 key（0.28.12 起存进后台的 IndexedDB，storage.local 只有 ff_keys 填没填）就没有稍后再填", st.ff_keys?.jev === true && !("ff_key" in st) && !JSON.stringify(st).includes("fake-jev-key-for-test") && !s.later,
+      JSON.stringify({ later: s.later, flags: st.ff_keys }));
     await page.click("#welcomeNext"); await wait(400);
     s = await step();
     ok("填了 key，第 3 步不再提醒", s.title === "好了" && !s.noKey, JSON.stringify(s));
