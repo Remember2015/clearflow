@@ -31,8 +31,10 @@
     pageKey: () => pageKey(),
     modeOf: (key) => (key.startsWith("r:") ? "post" : key.startsWith("rs:") ? "search" : "feed"),
     postContext() {
-      const p = D.mainPost(D.route().pid);
-      if (!p) return null;
+      const pid = D.route().pid, p = D.mainPost(pid);
+      // 找到的是别的帖子（站内跳转时网址先变、上一个帖子还在页面上）：先不定，下一轮再看（0.28.10，review：以前定下来就不再改，
+      // 整页的评论按上一个帖子判，缓存指纹也对不上）
+      if (!p || (pid && D.postId(p) && D.postId(p) !== pid)) return null;
       const a = D.postAuthor(p);
       return { text: D.postText(p), author: a ? author(a) : null };
     },

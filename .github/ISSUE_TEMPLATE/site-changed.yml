@@ -23,4 +23,4 @@ body:
     id: version
     attributes:
       label: ClearFlow version and browser
-      placeholder: "0.28.9, Chrome 141"
+      placeholder: "0.28.10, Chrome 141"

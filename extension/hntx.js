@@ -21,7 +21,7 @@
   function wantBody(e, key, id, box, near) {
     const text = H.readText(box);
     if (!text || !e.foreign(text)) return;
-    if (!e.wantRich(key, id, box, e.guessLang(text, ""), { whole: true })) e.want(key, id, text, e.guessLang(text, ""), false, near);
+    if (!e.wantRich(key, id, box, e.guessLang(text, ""), { whole: true, sig: text })) e.want(key, id, text, e.guessLang(text, ""), false, near);
   }
   globalThis.FFTx.start({
     name: "hn",

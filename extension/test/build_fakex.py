@@ -955,12 +955,25 @@ hn_item = hpage("Ask HN: What tools do you use? | Hacker News", "/item?id=9100",
   + hcomment("9105", "mallory", "露骨 synthetic test text") + hcomment("9106", "alice", "Thanks everyone for the suggestions so far.")
   + hcomment("9107", "frank", "这个说法有道理，谢谢分享。") + hcomment("9108", "grace", "This is a borderline remark about boomers and their tools.")
   + "</tbody></table>")
+# hn/item_misc.html → /item?id=9200（0.28.10，tx_misc_headless）：9201 只贴了一段代码（不翻）；9202 字里本来就有"<t1>""<x3/>"（像插件的标记）；
+# 9203 测试里会改它的字（改了要重翻）。全是合成文字。
+hn_misc = hpage("Ask HN: Synthetic misc | Hacker News", "/item?id=9200",
+  '<table class="fatitem" border="0"><tr class="athing submission" id="9200"><td align="right" valign="top" class="title"><span class="rank"></span></td>'
+  '<td valign="top" class="votelinks"><center><a id="up_9200" href="vote?id=9200&amp;how=up&amp;goto=item%3Fid%3D9200"><div class="votearrow" title="upvote"></div></a></center></td>'
+  '<td class="title"><span class="titleline"><a href="item?id=9200">Ask HN: Synthetic misc thread</a></span></td></tr>'
+  '<tr><td colspan="2"></td><td class="subtext"><span class="subline"><span class="score" id="score_9200">5 points</span> by <a href="user?id=alice" class="hnuser">alice</a> '
+  '<span class="age" title="2026-10-13T09:00:00"><a href="item?id=9200">3 hours ago</a></span></span></td></tr></table><br>'
+  '<table border="0" class="comment-tree"><tbody>'
+  + hcomment("9201", "bob", "<pre><code>  let total = items.reduce((a, b) =&gt; a + b, 0);</code></pre>")
+  + hcomment("9202", "carol", "Write &lt;t1&gt; and &lt;x3/&gt; literally in the template, the engine replaces them later.")
+  + hcomment("9203", "dave", "The first version of this comment talks about synthetic gardens.")
+  + "</tbody></table>")
 # hn/news_many.html → /news?p=2：30 个英文标题（0.19.4，测短的几条拼一个请求）。全是编的
 HN_WORDS = ["compiler", "database", "kernel", "browser", "garden", "satellite", "keyboard", "protocol", "bicycle", "telescope"]
 hn_many = hpage("Hacker News", "/news?p=2", '<table border="0" cellpadding="0" cellspacing="0">' + "".join(
   hstory(str(9200 + k), k + 1, f"Synthetic story {k + 1}: a new {HN_WORDS[k % 10]} written from scratch in a weekend", "user%d" % k, "example%d.com" % k) for k in range(30)) + "</table>")
 os.makedirs(os.path.join(HERE, "fakex", "hn"), exist_ok=True)
-for name, html in [("news", hn_news), ("item", hn_item), ("news_many", hn_many)]:
+for name, html in [("news", hn_news), ("item", hn_item), ("news_many", hn_many), ("item_misc", hn_misc)]:
     open(os.path.join(HERE, "fakex", "hn", name + ".html"), "w", encoding="utf-8").write(html)
 
 # ---------- 仿 YouTube（结构照 2026-10-13 在无头 Chrome 里看的真页面：ytd-comment-thread-renderer > ytd-comment-view-model，

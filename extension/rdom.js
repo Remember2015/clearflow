@@ -78,7 +78,7 @@
   const commentText = (c) => readText(commentBody(c));
   // 看图片（0.18）：评论里贴的图、帖子卡片上的图（只要用户传到 Reddit 的：i.redd.it、preview.redd.it；头像、徽章、表情不算）
   const REDDIT_IMG = /^https:\/\/(i|preview)\.redd\.it\//;
-  const imagesIn = (el) => (el ? [...new Set([...el.querySelectorAll("img")].filter((i) => !i.closest(`.${OWN}`)).map((i) => i.currentSrc || i.src).filter((u) => REDDIT_IMG.test(u)))] : []);
+  const imagesIn = (el) => (el ? [...new Set([...el.querySelectorAll("img")].filter((i) => !i.closest(`.${OWN}`)).map((i) => i.src || i.currentSrc).filter((u) => REDDIT_IMG.test(u)))] : []);
   const commentImages = (c) => imagesIn(commentBody(c));
   const commentTime = (c) => { const t = Date.parse(c.getAttribute("created") || ""); return Number.isFinite(t) ? t : null; };
   const comments = (root = document) => root.querySelectorAll(SEL.comment);

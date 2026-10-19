@@ -20,6 +20,7 @@
   // 10 条以上一个请求生成得久、反而慢；评论 4 条 / 1200 字一批，40 条 13 秒（一条一个、同时 8 个）→ 5 秒
   const BATCH_N = 4, BATCH_CHARS = 1200;
   const SMALL = 500, FIRST = 300, CHUNK = 800, MAX_TOTAL = 16000; // ≤500 字一次翻；超过 16000 字的只翻前面这些
+  const JOBS_KEEP = 1500; // 翻完了、不在页面上的任务最多留多少（见 pump）
   const LONG_BLOCK = 3000; // 带格式的一段比这还长：切成 ≤ CHUNK 的几截分开翻（richtext.js 的 pieces；后台一条最多收 5000 字）
   const SCRIPTS = [["han", /\p{Script=Han}/u], ["kana", /[\p{Script=Hiragana}\p{Script=Katakana}]/u], ["hangul", /\p{Script=Hangul}/u],
     ["cyrillic", /\p{Script=Cyrillic}/u], ["arabic", /\p{Script=Arabic}/u], ["thai", /\p{Script=Thai}/u], ["devanagari", /\p{Script=Devanagari}/u],
@@ -51,7 +52,14 @@
       if ((n.kana || 0) >= 6 && Object.entries(n).every(([k, v]) => k === "han" || k === "kana" || v <= cjk)) return "kana";
       return Object.entries(n).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
     }
-    const targetScript = () => SCRIPT_OF[target().toLowerCase().split("-")[0]] || "latin";
+    // 界面语言用的文字：表里没有的（乌克兰文、波斯文、希伯来文……）按 Intl.Locale 推（0.28.10，review：以前一律当拉丁字母，
+    // 乌克兰文界面把乌克兰文当外文翻、希伯来文界面认不准的英文反倒不翻）；推出来是插件不分的文字记成 "other"（和哪种都不一样）
+    const SCRIPT_CODE = { Hani: "han", Hans: "han", Hant: "han", Jpan: "kana", Kore: "hangul", Cyrl: "cyrillic", Arab: "arabic", Thai: "thai", Deva: "devanagari", Latn: "latin" };
+    const targetScript = () => {
+      const l = target(), own = SCRIPT_OF[l.toLowerCase().split("-")[0]];
+      if (own) return own;
+      try { const sc = new Intl.Locale(l).maximize().script; return sc ? SCRIPT_CODE[sc] || "other" : "latin"; } catch (e) { return "latin"; } // 推不出来的照旧当拉丁字母
+    };
     // 浏览器认不准时，光看文字定和界面是不是一种语言：文字不一样就不是（界面是中文、原文有假名的也算不一样）。
     // 日文界面看全是汉字的：当中文、翻（0.28.2，用户 10-18："自己算的结果准，那也应该走翻译"——x_multi 上浏览器认不准、全是汉字的
     // 50 条里 47 条是中文；以前当成和日文一样不翻，47 条全漏），但有一个假名就当日文（"東京の夜"这种只有一个假名的短日文）：
@@ -118,6 +126,7 @@
     });
     // 认出来和界面是同一种语言（或认不出、按文字也不用翻）的：键 → 当时的原文，下次扫到原文没变就不再认
     const sameUi = new Map();
+    const rememberSame = (key, sig) => { sameUi.delete(key); sameUi.set(key, sig); if (sameUi.size > 3000) sameUi.delete(sameUi.keys().next().value); }; // 最早的先丢
 
     // ---------- 切块 ----------
     // 先按空行分段；比一块还长的段落按句子切，句子还太长就在空白处硬切。sep 是它和下一段之间原来的分隔：
@@ -129,11 +138,13 @@
         const psep = pi < paras.length - 1 ? "\n\n" : "";
         if (p.length <= CHUNK) { out.push({ text: p, sep: psep }); return; }
         const pieces = [];
-        for (const sent of p.split(/(?<=[.!?。！？…])\s+/)) {
+        // 中日韩的句号后面不带空格（0.28.10，review：以前要求句末后面有空白，长段的中文、日文只能在 800 字处硬切、切在句子中间）
+        for (const sent of p.split(/(?<=[.!?…])\s+|(?<=[。！？])/)) {
           for (let rest = sent; rest; ) {
             if (rest.length <= CHUNK) { pieces.push(rest); break; }
             const i = rest.lastIndexOf(" ", CHUNK);
-            const at = i > CHUNK * 0.5 ? i : CHUNK;
+            let at = i > CHUNK * 0.5 ? i : CHUNK;
+            if (/[\uD800-\uDBFF]/.test(rest[at - 1])) at--; // 别把表情这类两个码元的字切成两半
             pieces.push(rest.slice(0, at));
             rest = rest.slice(at).trimStart();
           }
@@ -158,7 +169,10 @@
     // ---------- 任务 ----------
     // 一段字一个任务：评论的键是它的 id；帖子的标题、正文、列表里的摘要是 "id|t"、"id|b"、"id|p"（一个帖子可能只翻其中几段）。
     // 每个任务切成几块（短的就一块），块的状态：todo 没发、sending 在翻、done 翻好了、failed 出错等着重试、gave_up 试了三次放弃（照原文）
-    let on = false, inflight = 0, hasAlt = false;
+    // stopped：key 无效、余额不足这类停下来了（不再发，任务和换上的译文留着）；和 on（设置里开着）分开——0.28.10 以前停下来就把 on 置成 false，
+    // 接着你在设置里关掉翻译时以为本来就关着，换上的译文一直留在页面上（review）。设置或 key 一变就重新试；OpenRouter 余额不足的过 10 分钟再试
+    let on = false, stopped = null, inflight = 0, hasAlt = false;
+    const stopNow = (code) => { stopped = { code, at: Date.now() }; };
     const jobs = new Map(); // 键 → {key, id, lang, el, ready（认完语言、查完缓存了）, truncated, model, chunks: [{src, sep, state, text, tries}]}
     const showing = new Map(); // 评论 / 帖子的 id → false：你点了"看原文"
     const ours = (id) => showing.get(id) !== false;
@@ -178,6 +192,7 @@
       const st = globalThis.FFSettings.forSite(r.settings, site.name);
       const now = !!(st.translate && r.hasOrKey);
       hasAlt = !!(st.translateFallback && st.translateFallback !== st.translateModel);
+      stopped = null;
       if (now !== on) { on = now; if (!on) { jobs.clear(); showing.clear(); sameUi.clear(); renderAll(); } }
       tick();
     }
@@ -202,8 +217,15 @@
     // 太长的、正文里本来就有 <uN> 的也单独发
     const batchable = (job, c) => job.chunks.length === 1 && !c.alt && !c.solo && !job.truncated && c.src.length <= BATCH_CHARS && !/<\/?u\d+>/.test(c.src);
     function pump() {
-      if (!on || !alive() || inflight >= MAX_INFLIGHT) return;
-      const todo = [...jobs.values()].filter((j) => j.ready && j.chunks.some((c) => c.state === "todo"));
+      if (stopped && stopped.code === "or_credit" && Date.now() - stopped.at > 10 * 60e3) stopped = null; // 充值不会通知插件：过一会儿再试
+      if (!on || stopped || !alive() || inflight >= MAX_INFLIGHT) return;
+      // 那一块已经不在页面上了（翻走了、小红书的笔记层关了）：还没发出去过的删掉、不发（0.28.10，review：以前照样发、照样付费，只是排在最后）；
+      // 已经换上一部分的留着（站点只是换了个元素的话，want 会把任务挪到新元素上），剩下的块等它回到页面上再发。
+      // 翻完了的不在页面上的任务太多（超过 JOBS_KEEP）时最早的先丢（回来了照新元素重建，翻过的走缓存）
+      const gone = (j) => j.el && !j.el.isConnected;
+      for (const [k, j] of jobs) if (gone(j) && j.chunks.every((c) => c.state === "todo" || c.state === "failed")) jobs.delete(k);
+      if (jobs.size > JOBS_KEEP) for (const [k, j] of jobs) { if (jobs.size <= JOBS_KEEP) break; if (gone(j) && finished(j)) jobs.delete(k); }
+      const todo = [...jobs.values()].filter((j) => j.ready && !gone(j) && j.chunks.some((c) => c.state === "todo"));
       if (todo.length > 1) { const d = new Map(todo.map((j) => [j, distanceOf(j.el)])); todo.sort((a, b) => d.get(a) - d.get(b)); }
       let batch = [], chars = 0;
       const room = () => inflight + (batch.length ? 1 : 0) < MAX_INFLIGHT; // 还在攒的那一批也要占一个位置
@@ -247,7 +269,7 @@
       try {
         const r = await send({ type: "translateFill", ...reqOf(job, i), flex: !onScreen(job.el) });
         if (jobs.get(job.key) !== job || accept(job, c, r) || c.state === "todo") return;
-        if (STOP.includes(r && r.code)) { on = false; jobs.delete(job.key); }
+        if (STOP.includes(r && r.code)) { stopNow(r.code); jobs.delete(job.key); }
         else { // 别的错：等一会儿再试这一块，三次不行就照原文
           c.tries = (c.tries || 0) + 1;
           c.state = c.tries >= 3 ? "gave_up" : "failed";
@@ -293,7 +315,7 @@
           }
           if (jobs.get(job.key) !== job || c.state !== "sending") return;
           if (accept(job, c, x) || c.state === "todo") return;
-          if (STOP.includes(x && x.code)) { on = false; jobs.delete(job.key); return; }
+          if (STOP.includes(x && x.code)) { stopNow(x.code); jobs.delete(job.key); return; }
           c.solo = true;
           if (x && x.code === "batch_miss") { c.state = "todo"; return; }
           c.tries = (c.tries || 0) + 1;
@@ -344,10 +366,20 @@
       return out.sort((a, b) => d.get(a) - d.get(b));
     }
     // 建任务（不在这里发，pump 按先后发）；先认原文语言，认完才发。el：这一条在页面上的那一块（排先后用）
+    // 已有任务的原文和现在的对不上（作者改了、站点拿这个元素换着显示别的评论）：撤掉重来（0.28.10，review：以前有任务就不再看，
+    // 改过的评论一直是旧译文，YouTube 换元素时 id 和正文对不上的那一下也被钉死）。sig：建任务时的原文
+    // el：这一条现在在页面上的那一块；任务还挂在已经不在页面上的旧元素上（站点换了个元素）就挪过来
+    const stale = (key, sig, el) => {
+      const j = jobs.get(key);
+      if (!j) return;
+      if (sig != null && j.sig != null && j.sig !== sig && !j.chunks.some((c) => c.state === "sending")) { jobs.delete(key); return; }
+      if (el && j.el !== el && !(j.el && j.el.isConnected)) j.el = el;
+    };
     function want(key, id, text, lang, truncated = false, el = null) {
+      stale(key, text, el);
       if (jobs.has(key) || !text || !/\p{L}/u.test(text) || !foreign(text) || sameUi.get(key) === text) return;
       const [src, cutHere] = cut(text, MAX_TOTAL);
-      const job = { key, id, lang, el, ready: false, truncated: truncated || cutHere, chunks: split(src).map((c) => ({ src: c.text, sep: c.sep, state: "todo" })) };
+      const job = { key, id, lang, el, sig: text, ready: false, truncated: truncated || cutHere, chunks: split(src).map((c) => ({ src: c.text, sep: c.sep, state: "todo" })) };
       jobs.set(key, job);
       (async () => {
         if (!(await classify(job, src, text))) return;
@@ -360,13 +392,17 @@
     // whole：整格克隆着换（swapRichWhole），字和块可以混着放（HN 的评论）、只有一段字的也行；
     // 不是 whole 时（Reddit：逐个孩子克隆）内容里直接写着字、或者只有一段，就返回 false，退回纯文字
     const ownEl = (n) => n.nodeType === 1 && Dm.mine(n);
-    function wantRich(key, id, box, lang, { whole = false } = {}) {
+    function wantRich(key, id, box, lang, { whole = false, sig = null } = {}) {
+      stale(key, sig, box);
       if (jobs.has(key)) return true;
       if (!box) return false;
       if (!whole && [...box.childNodes].some((n) => n.nodeType === 3 && n.nodeValue.trim())) return false;
       const blocks = R.blocks(box, ownEl, { mixed: whole });
+      // 只有整块代码（<pre>）：不翻，也别退回纯文字去翻（0.28.10，review：Hacker News 只贴了代码的评论，以前走纯文字翻了、付了费，又不显示）
+      if (!blocks.length && box.querySelector("pre")) return true;
       if (!blocks.length || (!whole && blocks[0] === box)) return false;
-      const bl = blocks.map((el) => ({ el, ...R.serialize(el, ownEl) }));
+      // parts（链接、表情这些原元素）留一份快照：以后换上译文时照它克隆——站点拿同一个元素换着显示别的评论时，活的元素里已经是别人的链接了
+      const bl = blocks.map((el) => { const s = R.serialize(el, ownEl); return { el, ...s, parts: s.parts.map((x) => x && x.cloneNode(true)) }; });
       for (const b of bl) b.go = /\p{L}/u.test(b.text.replace(/<x\d+\/>/g, "").replace(/<\/?t\d+>/g, ""));
       const go = bl.filter((b) => b.go);
       const plain = go.map((b) => b.plain).join("\n\n");
@@ -388,7 +424,7 @@
         cur.len += s.plain.length;
       });
       if (cur) packs.push(cur);
-      const job = { key, id, lang, el: box, rich: true, whole, ready: false, blocks: bl, segs,
+      const job = { key, id, lang, el: box, sig, rich: true, whole, ready: false, blocks: bl, segs,
         chunks: packs.map((p) => ({ idx: p.idx, src: p.idx.map((si, k) => `<p${k + 1}>${segs[si].text}</p${k + 1}>`).join("\n"), state: "todo" })) };
       jobs.set(key, job);
       (async () => {
@@ -405,7 +441,7 @@
       job.lang = d.label;
       if (d.other) return true;
       jobs.delete(job.key);
-      sameUi.set(job.key, sig);
+      rememberSame(job.key, sig);
       return false;
     }
     // 模型没按段回（段数对不上）：整块译文放进第一段（去掉标记），这一块别的段藏起来
@@ -683,7 +719,7 @@
     const api = { want, wantRich, nearOnes, watch, ready, has, known, cut, previewMax, guessLang, foreign, mainScript,
       swapText, swapBox, swapRich, swapRichWhole, placeNote, placeIconNote, renderTitle, linesOf, isOn: () => on };
     // 弹窗问"这个页面"时：这一页翻了几条（折叠那边的 pageSummary 带上）
-    globalThis.FFTxSummary = () => ({ improved: 0, filled: site.count(api), on });
+    globalThis.FFTxSummary = () => ({ improved: 0, filled: site.count(api), on: on && !stopped });
 
     let pending = 0;
     // 插件自己的东西变了不用管；站点只换了字（YouTube 拿同一个元素换着显示别的评论，只改里面的字）也要重画

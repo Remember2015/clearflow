@@ -281,6 +281,10 @@
   // （0.28.6，review：以前拿全文比截过的样例，标过的一条 415 字的骗局一模一样再来也认不出）。链接另外从全文里取（links，0.28.6 起存），
   // 放在 300 字以后的联系方式也认得出；旧的没存 links，只认前 300 字里的
   const RAW_MAX = 300;
+  // 每个字出现几次；两句的编辑距离至少是"每个字多少的差"加起来的一半（换一个字最多补平两处）——差太多的不用算编辑距离
+  // （0.28.10，review：500 条样例每条评论都要算一遍带状编辑距离，标了新的一条时每个开着的页面都要重算）
+  const bagOf = (cs) => { const m = new Map(); for (const ch of cs) m.set(ch, (m.get(ch) || 0) + 1); return m; };
+  const bagGap = (a, b) => { let d = 0; for (const [k, v] of a) d += Math.abs(v - (b.get(k) || 0)); for (const [k, v] of b) if (!a.has(k)) d += v; return d / 2; };
   const rawCut = (t) => String(t || "").replace(/\s+/g, " ").trim().slice(0, RAW_MAX);
   function markedPrep(list) {
     return (list || []).map((x) => {
@@ -288,7 +292,8 @@
       const n = raw ? normSlogan(raw) : String(x.text || "");
       const links = markLinks(raw);
       for (const k of Array.isArray(x.links) ? x.links : []) if (typeof k === "string" && k) links.add(k);
-      return { full: raw ? squash(raw) : "", links, cs: [...n].slice(0, NEAR_MAX_CHARS), long: units(n) >= NEAR_LONG, link: HAS_LINK.test(raw), cut: raw.length >= RAW_MAX };
+      const cs = [...n].slice(0, NEAR_MAX_CHARS);
+      return { full: raw ? squash(raw) : "", links, cs, bag: bagOf(cs), long: units(n) >= NEAR_LONG, link: HAS_LINK.test(raw), cut: raw.length >= RAW_MAX };
     }).filter((x) => x.full || x.cs.length || x.links.size);
   }
   // 这条回复像不像哪一条样例：{kind: "same" | "link" | "near", detail}，都不像给 null
@@ -304,7 +309,7 @@
       if (!near && c.cs.length >= 3 && p.cs.length >= 3 && ((c.long && p.long) || (c.link && p.link))) {
         // 两成：1 - 0.8 是 0.19999…，5 个字乘出来 0.9999… 取整成 0，所以加一点再取整（D1 那边一直是这样算的，没动它）
         const max = Math.floor((1 - NEAR_SIM) * Math.max(c.cs.length, p.cs.length) + 1e-9);
-        if (editDistance(c.cs, p.cs, max) <= max) near = { kind: "near" };
+        if (Math.abs(c.cs.length - p.cs.length) <= max && (!p.bag || bagGap(c.bag ||= bagOf(c.cs), p.bag) <= max) && editDistance(c.cs, p.cs, max) <= max) near = { kind: "near" };
       }
     }
     return near;

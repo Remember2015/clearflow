@@ -65,7 +65,8 @@
     return new Promise((resolve) => {
       try {
         chrome.runtime.sendMessage(msg, (r) => {
-          if (chrome.runtime.lastError) resolve({ error: chrome.runtime.lastError.message });
+          // 传话出错（后台刚重启、"message port closed"）可以重试（0.28.10，review：以前没带 retryable，这一批整页都不再问）
+          if (chrome.runtime.lastError) resolve({ error: chrome.runtime.lastError.message, code: "network", retryable: true });
           else resolve(r || {});
         });
       } catch (e) {
@@ -871,7 +872,8 @@
     const groups = R.findDupSlogans([...S.items.values()], S.postText, { nearCache: S.near });
     const inGroup = new Map();
     for (const [n, ids] of groups) {
-      if (S.dupOff.has(n)) continue;
+      // 你在这一串里点过"不是垃圾"的：组里哪一句被点过都算（0.28.10，review：以前只看组的代表句，代表句换了整串又折回去）
+      if (S.dupOff.has(n) || ids.some((id) => { const x = S.items.get(id); return x && S.dupOff.has(R.normSlogan(x.text)); })) continue;
       for (const id of ids) inGroup.set(id, { n, count: ids.length });
     }
     const known = new Set(S.slogans);

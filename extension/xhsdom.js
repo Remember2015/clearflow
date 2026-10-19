@@ -56,7 +56,7 @@
   const commentText = (c) => { const t = readText(commentBody(c)); return DELETED.has(t) ? "" : t; };
   const isReply = (c) => c.classList.contains("comment-item-sub");
   // 看图片（0.18）：评论配图（.comment-picture 里的图；配图是 http 的 xhscdn 链接）
-  const commentImages = (c) => [...new Set([...inner(c).querySelectorAll(":scope > .right > .comment-picture img")].map((i) => i.currentSrc || i.src).filter((u) => /^https?:\/\//.test(u)))];
+  const commentImages = (c) => [...new Set([...inner(c).querySelectorAll(":scope > .right > .comment-picture img")].map((i) => i.src || i.currentSrc).filter((u) => /^https?:\/\//.test(u)))];
   // 作者那一行（名字、"作者"标签）：评论的翻译说明放在这一行后面
   const commentHeader = (c) => inner(c).querySelector(":scope > .right > .author-wrapper > .author");
   // 折叠时藏的：正文和评论配图；作者那一行、时间赞回复那一行、下面的回复留着

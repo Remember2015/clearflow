@@ -21,7 +21,10 @@
   window.addEventListener("message", (e) => {
     const d = e.data;
     if (e.source !== window || !d || d.source !== "ff-yt") return;
-    if (d.type === "comments" && Array.isArray(d.items)) for (const c of d.items) if (c && typeof c.id === "string") authors.set(c.id, c);
+    if (d.type === "comments" && Array.isArray(d.items)) for (const c of d.items) if (c && typeof c.id === "string") {
+      authors.delete(c.id); authors.set(c.id, c);
+      if (authors.size > 5000) authors.delete(authors.keys().next().value); // 最多 5000 条，最早的先丢（0.28.10 以前不封顶，一晚上越攒越多）
+    }
     if (d.type === "video" && d.videoId) video = { videoId: d.videoId, channelId: d.channelId || "", author: d.author || "" };
   });
   window.postMessage({ source: "ff-yt-ask" }, location.origin); // 插件晚到（页面已经开着）：问一声这个视频是谁的
@@ -57,8 +60,9 @@
   const rememberOriginal = (c) => {
     const id = rawId(c), t = readText(commentBody(c));
     if (!id || !t || ytTranslated(c)) return;
-    if (originals.size > 5000) originals.clear();
-    originals.set(id, t);
+    // 最早的先丢（0.28.10，review：以前满 5000 条一下全清，正显示着译文的那几条也没了原文，清理那边以为字变了、拿译文重判）
+    originals.delete(id); originals.set(id, t);
+    if (originals.size > 5000) originals.delete(originals.keys().next().value);
   };
   const commentText = (c) => {
     if (ytTranslated(c)) { const id = rawId(c); return (id && originals.get(id)) || commentInfo(c)?.text || readText(commentBody(c)); }

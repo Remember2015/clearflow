@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.28.10 — 2026-10-19
+
+- Comments that are only a code block are no longer sent for translation.
+- An edited comment is translated again with its new text.
+- Text that happens to contain things like "<t1>" or "<x3/>" is translated correctly (those characters used to disappear and the comment was translated twice).
+- Translations for comments that are no longer on the page aren't sent (and paid for) anymore.
+- After a key or credit problem stops translation, turning translation off in Settings now removes the translations already on the page; translation resumes on its own 10 minutes after an OpenRouter credit problem.
+- Long Chinese and Japanese paragraphs are split at sentence ends instead of mid-sentence.
+- Interface languages written in Cyrillic, Arabic or other scripts are recognized, so text in your own language isn't translated as foreign.
+- Cleaning: a brief connection problem with the extension's background (for example right after Chrome restarts it) no longer stops replies on the page from being checked; "Not spam" on a group of repeated replies sticks even when the group changes; Reddit and RedNote image replies keep their cache across window sizes.
+
 ## 0.28.9 — 2026-10-19
 
 - X: a reply that only embeds a quoted post is no longer translated as if the quoted text were its own, and ClearFlow no longer clicks "Show more" inside the quote card (which opened the quoted post).

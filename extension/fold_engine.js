@@ -53,7 +53,8 @@
       return new Promise((resolve) => {
         try {
           chrome.runtime.sendMessage(msg, (r) => {
-            if (chrome.runtime.lastError) resolve({ error: chrome.runtime.lastError.message });
+            // 传话出错（后台刚重启、"message port closed"）可以重试（0.28.10，review：以前没带 retryable，这一批整页都不再问）
+            if (chrome.runtime.lastError) resolve({ error: chrome.runtime.lastError.message, code: "network", retryable: true });
             else resolve(r || {});
           });
         } catch (e) { resolve({ error: String(e) }); }
@@ -204,7 +205,9 @@
       if (S.settings.dup === false || !folds.spam) { S.items.forEach((it) => { it.dup = null; it.known = null; }); return; }
       const groups = S.mode === "post" ? R.findDupSlogans([...S.items.values()], S.postText, { ...(site.dupMinUnits ? { minUnits: site.dupMinUnits } : {}), nearCache: S.near }) : new Map(); // D1 只在一个帖子的评论里算
       const inGroup = new Map();
-      for (const [n, ids] of groups) { if (S.dupOff.has(n)) continue; for (const id of ids) inGroup.set(id, { n, count: ids.length }); }
+      // 你在这一串里点过"不是垃圾"的：组里哪一句被点过都算（0.28.10，review：以前只看组的代表句，模板的另一种写法多了几条、代表句换了，整串又折回去）
+      const off = (n, ids) => S.dupOff.has(n) || ids.some((id) => { const x = S.items.get(id); return x && S.dupOff.has(R.normSlogan(x.text)); });
+      for (const [n, ids] of groups) { if (off(n, ids)) continue; for (const id of ids) inGroup.set(id, { n, count: ids.length }); }
       const known = new Set(S.slogans);
       for (const it of S.items.values()) {
         if (it.userLabel) continue;

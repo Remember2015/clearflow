@@ -58,14 +58,14 @@
           if (id && e.nearOnes([post]).length) {
             const title = D.postTitle(post), body = D.postBody(post);
             e.want(`${id}|t`, id, title, e.guessLang(title, postLang), false, D.postTitleEl(post) || post);
-            if (body && e.foreign(body) && !e.wantRich(`${id}|b`, id, D.postBodyBox(post), e.guessLang(body, postLang))) e.want(`${id}|b`, id, body, e.guessLang(body, postLang), false, post);
+            if (body && e.foreign(body) && !e.wantRich(`${id}|b`, id, D.postBodyBox(post), e.guessLang(body, postLang), { sig: body })) e.want(`${id}|b`, id, body, e.guessLang(body, postLang), false, post);
           }
         }
         for (const c of e.nearOnes([...D.comments()])) {
           const id = D.commentId(c);
           if (!id) continue;
           const text = D.commentText(c);
-          if (text && e.foreign(text) && !e.wantRich(id, id, D.commentBody(c), e.guessLang(text, postLang))) e.want(id, id, text, e.guessLang(text, postLang), false, c);
+          if (text && e.foreign(text) && !e.wantRich(id, id, D.commentBody(c), e.guessLang(text, postLang), { sig: text })) e.want(id, id, text, e.guessLang(text, postLang), false, c);
         }
       } else if (r.kind === "feed") {
         for (const p of e.nearOnes(D.feedPosts())) {

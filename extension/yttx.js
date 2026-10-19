@@ -84,7 +84,7 @@
     const text = Y.readText(box);
     if (!text || !e.foreign(text)) return;
     if (truncated) { e.want(key, id, text, e.guessLang(text, ""), true, near); return; } // 截断的（收起时的简介）：纯文字翻、告诉模型后面还有
-    if (!e.wantRich(key, id, box, e.guessLang(text, ""), { whole: true })) e.want(key, id, text, e.guessLang(text, ""), false, near);
+    if (!e.wantRich(key, id, box, e.guessLang(text, ""), { whole: true, sig: text })) e.want(key, id, text, e.guessLang(text, ""), false, near);
   }
   globalThis.FFTx.start({
     name: "yt",

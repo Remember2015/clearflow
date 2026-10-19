@@ -32,6 +32,9 @@
     judges: (mode) => mode === "post",
     // 主帖：视频标题和频道；楼主是频道主
     postContext() {
+      // 播放页还是上一个视频（站内跳转时网址先变）：先不定，下一轮再看（0.28.10，review）
+      const flexy = document.querySelector("ytd-watch-flexy[video-id]"), r = Y.route();
+      if (flexy && r.kind === "watch" && flexy.getAttribute("video-id") !== r.vid) return null;
       const o = Y.owner(), title = Y.watchTitle();
       if (!title && !o.name) return null;
       return { text: [title, o.name && `(channel: ${o.name})`].filter(Boolean).join("\n"), author: o.name ? { name: o.name, handle: o.name } : null };

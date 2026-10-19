@@ -18,6 +18,9 @@
   const SKIP = /^(SCRIPT|STYLE|TEMPLATE|NOSCRIPT)$/;
   const ATOM_TAG = /^(IMG|SVG|CODE|KBD|SAMP|VIDEO|AUDIO|IFRAME|PICTURE|CANVAS|INPUT|BUTTON|SELECT|TEXTAREA)$/;
   const isBlock = (n) => n.nodeType === 1 && BLOCK.test(n.tagName);
+  // 页面上的字里本来就像标记的（"<t1>" "</p1>" "<x3/>"）：送出去时把 < 转义成 &lt;，放回去时还原（0.28.10，review：以前当成真标记，
+  // 校验不过，多付一次后备模型，最后退回纯文字）
+  const MARKISH = /<(?=\/?[tpxu]\d+\/?>)/g, UNMARK = /&lt;(?=\/?[tpxu]\d+\/?>)/g;
   // 链接的字就是网址、账号、版块：原样留着（翻了也是一样，还容易被模型改坏）
   const LITERAL = /^(https?:\/\/\S+|www\.\S+|\/?(u|r|user)\/[\w-]+\/?|@[\w.]+|#[\p{L}\p{N}_]+|\$[A-Za-z]{1,6})$/iu;
   const atomic = (n, own) => {
@@ -89,7 +92,7 @@
     const walk = (el) => {
       let s = "";
       for (const n of el.run ? el.nodes : el.childNodes) {
-        if (n.nodeType === 3) { s += (pre ? n.nodeValue.replace(/\r\n?/g, "\n") : n.nodeValue).replace(ws, " "); continue; }
+        if (n.nodeType === 3) { s += (pre ? n.nodeValue.replace(/\r\n?/g, "\n") : n.nodeValue).replace(ws, " ").replace(MARKISH, "&lt;"); continue; }
         if (n.nodeType !== 1 || SKIP.test(n.tagName) || own(n)) continue;
         if (n.tagName === "BR") { s += "\n"; continue; }
         const i = parts.length;
@@ -104,7 +107,7 @@
   }
   // 带标记的文字 → 纯文字（<xN/> 换成它原来的字）：认语言、算长度、判断有没有字可翻用
   function plainOf(text, parts) {
-    return text.replace(/<x(\d+)\/>/g, (_, i) => (parts[i] ? ` ${(parts[i].textContent || "").trim()} ` : " ")).replace(/<\/?t\d+>/g, "").replace(/ {2,}/g, " ").trim();
+    return text.replace(/<x(\d+)\/>/g, (_, i) => (parts[i] ? ` ${(parts[i].textContent || "").trim()} ` : " ")).replace(/<\/?t\d+>/g, "").replace(UNMARK, "<").replace(/ {2,}/g, " ").trim(); // 真标记先换掉，再还原字里转义的
   }
 
   // 太长的一段切成几截（0.28.7，review：YouTube 一条评论就是一段，上万字的整段发过去超过后台一条 5000 字的上限，永远翻不出来）：
@@ -182,7 +185,7 @@
   function fill(blockEl, text, parts, src) {
     const { toks, ok } = tokens(text, parts, src);
     const frag = document.createDocumentFragment();
-    const addText = (parent, s) => s.split("\n").forEach((line, i) => { if (i) parent.append(document.createElement("br")); if (line) parent.append(line); });
+    const addText = (parent, s) => s.replace(UNMARK, "<").split("\n").forEach((line, i) => { if (i) parent.append(document.createElement("br")); if (line) parent.append(line); });
     const clean = (e) => { e.removeAttribute("id"); for (const x of e.querySelectorAll("[id]")) x.removeAttribute("id"); return e; };
     if (ok) {
       const stack = [frag];
