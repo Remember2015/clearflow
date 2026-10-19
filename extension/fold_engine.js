@@ -558,8 +558,7 @@
         if (it.decision.fold && !before && !it.counted) {
           it.counted = true;
           stat({ [`fold_${it.decision.kind}`]: 1 });
-          if (!it.decision.kind.startsWith("user")) send({ type: "folded", entry: { id: it.id, postId: S.key, page: site.pageOf(S.mode), handle: it.handle, name: it.name,
-            text: it.text.slice(0, 300), kind: it.decision.kind, reason: it.decision.reason || "", scores: it.scores || null } });
+          // 0.28.5 起不再把清理掉的回复发给后台存"最近清理的 50 条"（没有界面展示，少存）
         }
         if (it.decision.hide && !it.fillCounted) { it.fillCounted = true; stat({ fold_filler: 1 }); }
         render(it);
@@ -624,12 +623,15 @@
     chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
       if (!msg || msg.type !== "pageSummary" || !alive()) return;
       const key = site.pageKey();
-      const out = { kind: S.mode ? site.summaryKind(S.mode) : "other", site: site.name, enabled: S.enabled, tx: globalThis.FFTxSummary ? globalThis.FFTxSummary() : null };
+      // key：这一页的记号（弹窗不用；测试和排查用。0.28.5 以前靠发给后台的"最近清理"记录才看得到）
+      const out = { kind: S.mode ? site.summaryKind(S.mode) : "other", site: site.name, key: key || null, enabled: S.enabled, tx: globalThis.FFTxSummary ? globalThis.FFTxSummary() : null };
       if (key && key === S.key && (!site.judges || site.judges(S.mode))) {
         const n = { spam: 0, abuse: 0, sexual: 0 };
         let pending = 0, filler = 0;
         for (const it of S.items.values()) { const d = it.decision; if (d && d.fold) n[cat(d.kind)]++; else if (d && d.hide) filler++; else if (!d || d.kind === "pending") pending++; }
-        Object.assign(out, { folds: n, filler, pending, seen: S.items.size });
+        // folded：这一页清理掉的 [id, 类别]（弹窗不用；测试和排查用，问的时候现算、不存）
+        const folded = [...S.items.values()].filter((it) => it.decision && it.decision.fold).map((it) => [it.id, it.decision.kind]);
+        Object.assign(out, { folds: n, filler, pending, seen: S.items.size, folded });
       }
       reply(out);
     });

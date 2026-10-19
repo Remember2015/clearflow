@@ -97,7 +97,7 @@ const JEV = encodeURIComponent(JSON.stringify({ "I built a tool": 0.95, "borderl
     // ② 帖子页
     await page.goto(`${BASE}/fakex/hn/item.html?jev=${JEV}`, { waitUntil: "load" });
     await wait(3000);
-    const item = () => page.evaluate(() => {
+    const item = () => page.evaluate(async () => {
       const shown = (e) => !!e && e.getClientRects().length > 0 && getComputedStyle(e).display !== "none";
       const r = {};
       for (const c of document.querySelectorAll("tr.athing.comtr")) {
@@ -114,7 +114,7 @@ const JEV = encodeURIComponent(JSON.stringify({ "I built a tool": 0.95, "borderl
       r.main = { title: tc?.textContent || null, titleShown: shown(tc), origTitle: shown(ta), icon: !!fat.querySelector(".ff-tx-inote"), top: top ? top.textContent.replace(/\s+/g, " ").trim() : null,
         topI: top ? top.querySelectorAll("i").length : 0, topNote: fat.querySelector(".ff-rtx-bnote .ff-tx-label")?.textContent || null };
       r.jev = (window.__ffJevAll || []).map((m) => ({ post: m.post, author: m.author, ids: m.replies.map((x) => x.id) }));
-      r.folded = (window.__ffFolded || []).map((x) => x.id + "@" + x.postId + ":" + x.kind);
+      { const s = await new Promise((res) => { let done = false; for (const f of window.__ffOnMessage || []) f({ type: "pageSummary" }, {}, (s) => { if (!done) { done = true; res(s || {}); } }); setTimeout(() => { if (!done) res({}); }, 300); }); r.folded = (s.folded || []).map(([id, kind]) => id + "@" + s.key + ":" + kind); } // 0.28.5：从弹窗那条查询里拿（不再发"最近清理"）
       return r;
     });
     let I = await item();

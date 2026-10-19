@@ -128,6 +128,35 @@ await ok("flex：改进 Grok 译文的重译走 flex，换后备再翻的不带"
   assert.deepEqual(net.calls.or.map((b) => [b.model, !!b.provider]), [[S.translateModel, true], [S.translateFallback, false]]);
 });
 
+// 0.28.5（review）
+await ok("flex 的请求一律流式（不流式的回复头早到，计时不准）；标准通道的不流式", async () => {
+  const net = fakeNet({ judgeScores: () => good, orPlan: () => "译文" });
+  await translate("o", S, { source: "hello" }, { fetchImpl: net.fetchImpl, flex: true });
+  await translate("o", S, { source: "hello" }, { fetchImpl: net.fetchImpl });
+  assert.deepEqual(net.calls.or.map((b) => [!!b.provider, !!b.stream]), [[true, true], [false, false]]);
+});
+await ok("flex 输出被截断（or_truncated）：不换通道（换了也一样），照常同一个通道重试一次再换后备", async () => {
+  const net = fakeNet({ judgeScores: () => good, orPlan: (b, n) => (n <= 2 ? json({ model: b.model, choices: [{ message: { content: "半截" }, finish_reason: "length" }], usage: { cost: 0.00004 } }) : "后备的") });
+  const r = await translate("o", S, { source: "hello" }, { fetchImpl: net.fetchImpl, flex: true });
+  assert.equal(r.text, "后备的");
+  assert.deepEqual(net.calls.or.map((b) => [b.model, !!b.provider]), [[S.translateModel, true], [S.translateModel, true], [S.translateFallback, false]]);
+});
+await ok("换另一个模型：按设置里的模型名认（OpenRouter 回报的 model 带日期也不会再跑同一个）", async () => {
+  const luna = "翻差了的译文", ds = "后备模型翻得好的译文";
+  const net = fakeNet({ judgeScores: (t) => (t === item.xText ? { faithful: 0.62, complete: 0.8, natural: 0.7 } : t === luna ? { faithful: 0.5, complete: 0.8, natural: 0.7 } : good),
+    orPlan: (body) => (body.model === S.translateModel ? json({ model: S.translateModel + "-2026-09-01", choices: [{ message: { content: luna } }], usage: { cost: 0.00004 } }) : ds) });
+  const r = await improve({ jevKey: "j", orKey: "o", settings: S, item, cache: memCache(), fetchImpl: net.fetchImpl });
+  assert.deepEqual(net.calls.or.map((b) => b.model), [S.translateModel, S.translateFallback]);
+  assert.equal(r.text, ds); assert.equal(r.retried, true);
+});
+await ok("主模型失败、后备翻出来的比 Grok 还差：两个都试过了，不再回去试主模型", async () => {
+  const net = fakeNet({ judgeScores: (t) => (t === item.xText ? { faithful: 0.62, complete: 0.8, natural: 0.7 } : { faithful: 0.5, complete: 0.8, natural: 0.7 }),
+    orPlan: (body) => (body.model === S.translateModel ? json({ error: { message: "bad" } }, 400) : "后备翻差了的") });
+  const r = await improve({ jevKey: "j", orKey: "o", settings: S, item, cache: memCache(), fetchImpl: net.fetchImpl });
+  assert.deepEqual(net.calls.or.map((b) => b.model), [S.translateModel, S.translateFallback]);
+  assert.equal(r.action, "keep"); assert.equal(r.retried, false);
+});
+
 await ok("主模型 400（思考关不掉之类）：换后备模型", async () => {
   const net = fakeNet({ judgeScores: (t) => (t === item.xText ? bad : good),
     orPlan: (body) => (body.model === "openai/gpt-6-luna" ? json({ error: { message: "Reasoning is mandatory" } }, 400) : "后备的译文") });

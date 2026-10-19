@@ -20,7 +20,7 @@ const JEV = encodeURIComponent(JSON.stringify({ "同款低价": 0.9, "快看这�
 // 后台存"最近折叠"时认的 id、页面键（background.js 的 SITE_ID 和 cleanFold）
 const SITE_ID = /^(\d{1,25}|t[13]_[a-z0-9]{1,13}|[a-z]{2}_[\w.-]{1,100})$/;
 const POST_ID = /^(\d{1,25}|u:[a-z0-9_]{1,15}|s:[\w%.~!*'()-]{1,80}|r:t3_[a-z0-9]{1,13}|r[fs]:[\w%.~!*'()-]{1,90}|[a-z]{2}:[a-z]:[\w%.~!*'()-]{1,90})$/;
-const state = () => {
+const state = async () => {
   const shown = (e) => !!e && e.getClientRects().length > 0 && getComputedStyle(e).display !== "none";
   const r = { c: {} };
   for (const c of document.querySelectorAll(".comment-item")) {
@@ -48,7 +48,7 @@ const state = () => {
   r.bars = document.querySelectorAll(".ff-bar").length;
   r.jev = (window.__ffJevAll || []).map((m) => ({ post: m.post, author: m.author, ids: m.replies.map((x) => x.id), texts: m.replies.map((x) => x.text), extra: m.extra || null }));
   r.txSrc = (window.__ffTxMsgs || []).filter((m) => m.type === "translateFill").map((m) => ({ id: m.id, source: m.source }));
-  r.folded = (window.__ffFolded || []).map((e) => ({ id: e.id, postId: e.postId, kind: e.kind, page: e.page }));
+  { const s = await new Promise((res) => { let done = false; for (const f of window.__ffOnMessage || []) f({ type: "pageSummary" }, {}, (s) => { if (!done) { done = true; res(s || {}); } }); setTimeout(() => { if (!done) res({}); }, 300); }); r.folded = (s.folded || []).map(([id, kind]) => ({ id, postId: s.key, kind, page: "status" })); } // 0.28.5：从弹窗那条查询里拿
   return r;
 };
 
@@ -93,7 +93,7 @@ const openAll = async (pg) => {
     ok("小红书：发给 Jev 的主帖是标题加正文、楼主是笔记作者，评论按原文发（不是译文），不多问 setup",
       s.jev.length > 0 && s.jev.every((m) => /^Autumn outfit ideas for rainy days\nThree looks I wear/.test(m.post) && m.author && m.author.name === "合成作者小蓝" && !m.extra) &&
       s.jev.flatMap((m) => m.texts).every((x) => !/替身/.test(x)), JSON.stringify(s.jev.map((m) => ({ post: m.post.slice(0, 50), author: m.author, extra: m.extra }))));
-    ok("小红书：折叠记录的 id、页面键后台认得", s.folded.length >= 3 && s.folded.every((e) => SITE_ID.test(e.id) && e.id.startsWith("xh_") && POST_ID.test(e.postId) && e.postId === "xh:n:6f00000000000000000a0001" && e.page === "status"),
+    ok("小红书：清理掉的 id、页面键后台认得", s.folded.length >= 3 && s.folded.every((e) => SITE_ID.test(e.id) && e.id.startsWith("xh_") && POST_ID.test(e.postId) && e.postId === "xh:n:6f00000000000000000a0001" && e.page === "status"),
       JSON.stringify(s.folded));
     let sum = await page.evaluate(summary);
     ok("小红书笔记：弹窗答得出这个笔记折了几条", sum && sum.site === "xhs" && sum.kind === "status" && sum.folds.spam === 1 && sum.folds.abuse === 1 && sum.folds.sexual === 1, JSON.stringify(sum));

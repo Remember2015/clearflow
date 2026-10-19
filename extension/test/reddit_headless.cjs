@@ -66,8 +66,9 @@ const summary = () => new Promise((res) => {
     ok("请求里带上主帖（标题 + 正文）和楼主", /合成帖子：大家怎么看这件事/.test(jev?.post || "") && /随便聊聊/.test(jev?.post || "") && jev?.author?.handle === "u/op_user" && jev?.postId === "r:t3_abc123",
       JSON.stringify([jev?.post, jev?.author, jev?.postId]));
     ok("评论区广告不发 Jev（本地就认出来了）；楼主的照样发（0.21.3，用户：作者的评论也得过滤）", (jev?.replies || []).some((x) => x.id === "t1_r05") && !(jev?.replies || []).some((x) => /广告/.test(x.text)), JSON.stringify((jev?.replies || []).map((x) => x.id)) + sent);
-    const folded = await page.evaluate(() => (window.__ffFolded || []).map((x) => [x.id, x.postId, x.page, x.kind]));
-    ok("折掉的记给弹窗核对（帖子页、r:t3_ 这一页）", folded.length === 6 && folded.every(([, p, pg]) => p === "r:t3_abc123" && pg === "status"), JSON.stringify(folded));
+    // 这一页的记号：0.28.5 起不再给后台发"最近清理"的记录，改看发给 Jev 的请求里的 postId
+    const keys = await page.evaluate(() => [...new Set((window.__ffJevAll || []).map((m) => m.postId))]);
+    ok("这一页记成 r:t3_abc123（发给 Jev 的请求里）", JSON.stringify(keys) === JSON.stringify(["r:t3_abc123"]), JSON.stringify(keys));
     let sum = await page.evaluate(summary);
     ok("弹窗问这个页面：Reddit 的帖子页、三类加 D1", sum && sum.kind === "status" && sum.site === "reddit" && sum.folds.spam === 4 && sum.folds.abuse === 1 && sum.folds.sexual === 1, JSON.stringify(sum));
     // 展开、判错了
@@ -126,8 +127,7 @@ const summary = () => new Promise((res) => {
     sum = await page.evaluate(summary);
     ok("/news/ 这类页面（网址不认识、里面是标准帖子列表）：拉人的帖子折起来，弹窗当帖子列表答", ns.t3_n2 && !ns.t3_n1 && sum && sum.kind === "feed" && sum.folds.spam === 1,
       JSON.stringify([ns, sum]));
-    const nf = await page.evaluate(() => (window.__ffFolded || []).filter((x) => x.id === "t3_n2").map((x) => x.postId));
-    ok("/news/ 这一页的记号是 rf:news（和首页、版块分开）", JSON.stringify(nf) === JSON.stringify(["rf:news"]), JSON.stringify(nf));
+    ok("/news/ 这一页的记号是 rf:news（和首页、版块分开）", sum && sum.key === "rf:news", JSON.stringify(sum && sum.key));
 
     // 年度帖子页（/posts/2026/global/，"Reddit 最佳"）：不是 shreddit-post，一张张卡片；拉人的整张卡片折起来
     await page.goto(`${BASE}/fakex/reddit/posts.html?jev=${JEV}`, { waitUntil: "load" });
@@ -137,10 +137,9 @@ const summary = () => new Promise((res) => {
       return [x.getAttribute("post-id"), { bar: !!card.previousElementSibling?.classList.contains("ff-bar"), hidden: getComputedStyle(card).display === "none" }];
     })));
     sum = await page.evaluate(summary);
-    const yf = await page.evaluate(() => (window.__ffFolded || []).filter((x) => x.id === "t3_y2").map((x) => x.postId));
     ok("年度帖子页：拉人的整张卡片（版块、标题、缩略图、票数一起）折起来，别的不折；这一页记成 rf:posts-2026-global",
       yc.t3_y2.bar && yc.t3_y2.hidden && !yc.t3_y1.bar && !yc.t3_y1.hidden && !yc.t3_y3.bar && sum && sum.kind === "feed" && sum.folds.spam === 1 &&
-      JSON.stringify(yf) === JSON.stringify(["rf:posts-2026-global"]), JSON.stringify([yc, sum, yf]));
+      sum.key === "rf:posts-2026-global", JSON.stringify([yc, sum]));
 
     // 搜索结果
     await page.goto(`${BASE}/fakex/reddit/search.html?jev=${JEV}`, { waitUntil: "load" });
@@ -158,12 +157,12 @@ const summary = () => new Promise((res) => {
         r[id] = { bar: bar ? bar.querySelector(".ff-reason").textContent : null, hidden: getComputedStyle(u).display === "none" };
       }
       r.sent = (window.__ffJevAll || []).flatMap((m) => m.replies).filter((x) => x.id === "t3_s4").map((x) => x.text);
-      r.keys = (window.__ffFolded || []).filter((x) => x.id === "t3_s4").map((x) => x.postId);
       return r;
     });
+    pv.key = (await page.evaluate(summary))?.key;
     ok("搜索结果里带摘要的那种（没有 data-thingid）：标题加摘要一起判，摘要里拉人的整条折起来，正常的不折；这一页还是 rs:fake",
       /拉人/.test(pv.s4.bar || "") && pv.s4.hidden && !pv.s5.bar && !pv.s5.hidden && pv.sent.length >= 1 && pv.sent.every((x) => x === "分享一份合成的学习资料\n资料在这里，加我微信领资料，名额有限") &&
-      JSON.stringify([...new Set(pv.keys)]) === JSON.stringify(["rs:fake"]), JSON.stringify(pv));
+      pv.key === "rs:fake", JSON.stringify(pv));
     sum = await page.evaluate(summary);
     ok("弹窗问这个页面：搜索结果", sum && sum.kind === "search" && sum.folds.abuse === 1 && sum.folds.spam === 2, JSON.stringify(sum));
 
@@ -177,12 +176,12 @@ const summary = () => new Promise((res) => {
         r[inner.dataset.id] = { bar: bar ? bar.querySelector(".ff-reason").textContent : null, barFirst: c.firstElementChild === bar, hidden: getComputedStyle(inner).display === "none" };
       }
       r.gridBars = document.querySelectorAll("search-media-feed > .ff-bar").length;
-      r.keys = (window.__ffFolded || []).map((x) => x.id + "@" + x.postId);
       return r;
     });
+    md.key = (await page.evaluate(summary))?.key;
     ok("媒体那一栏：色情的折起来，折叠条在格子里面（不变成瀑布流的一格）、格子里的内容藏起来，别的不折；这一页记成 rs:media/idol",
       /色情/.test(md.t3_w4.bar || "") && md.t3_w4.barFirst && md.t3_w4.hidden && md.gridBars === 0 && ["t3_w1", "t3_w2", "t3_w3", "t3_w5", "t3_w6"].every((id) => !md[id].bar && !md[id].hidden) &&
-      JSON.stringify(md.keys) === JSON.stringify(["t3_w4@rs:media/idol"]), JSON.stringify(md));
+      md.key === "rs:media/idol", JSON.stringify(md));
     await page.evaluate(() => document.querySelector("search-media-feed .ff-bar").click());
     await wait(200);
     const opened = await page.evaluate(() => getComputedStyle(document.querySelector('[data-id="t3_w4"]')).display !== "none");

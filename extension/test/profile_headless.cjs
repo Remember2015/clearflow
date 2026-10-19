@@ -11,6 +11,8 @@ const out = [];
 const ok = (name, cond, extra = "") => out.push(`${cond ? "PASS" : "FAIL"} ${name} ${cond ? "" : extra}`);
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const JEV = encodeURIComponent(JSON.stringify({ "加我微信": 0.9 }));
+// 连着两条以上清理的合成一行（0.27）：先展开再读每一条的理由
+const openGroups = async (pg) => { await pg.evaluate(() => document.querySelectorAll('.ff-group[aria-expanded="false"]').forEach((b) => b.click())); await new Promise((r) => setTimeout(r, 300)); };
 // 每条帖子前面有没有折叠条、写的是什么理由
 const bars = () => {
   const r = {};
@@ -39,6 +41,7 @@ const summary = () => new Promise((res) => {
 
     await page.goto(`${BASE}/fakex/profile.html?jev=${JEV}`, { waitUntil: "load" });
     await wait(2500);
+    await openGroups(page);
     let b = await page.evaluate(bars);
     ok("主人自己骂人的帖子按辱骂折", /辱骂/.test(b["2002"] || ""), JSON.stringify(b));
     ok("别人的转帖按色情折", /色情/.test(b["2003"] || ""), JSON.stringify(b));
@@ -56,9 +59,9 @@ const summary = () => new Promise((res) => {
       JSON.stringify([jev?.post, jev?.author]));
     ok("广告不判", !(await page.evaluate(() => (window.__ffLog || []).length && [...document.querySelectorAll(".ff-bar")].some((x) => x.nextElementSibling?.textContent.includes("买它")))) &&
       !sent.includes("2006"), JSON.stringify(sent));
-    const folded = await page.evaluate(() => window.__ffFolded || []);
-    ok("折掉的记给弹窗核对（主页上的、带正文）", JSON.stringify(folded.map((x) => x.id).sort()) === '["2002","2003","2005"]' &&
-      folded.every((x) => x.page === "profile" && x.postId === "u:prof_user" && x.text), JSON.stringify(folded));
+    const ps = await page.evaluate(summary); // 0.28.5：清理掉的从弹窗那条查询里拿（不再发"最近清理"）
+    ok("清理掉的（主页上的、这一页记成 u:prof_user）", JSON.stringify((ps?.folded || []).map((x) => x[0]).sort()) === '["2002","2003","2005"]' &&
+      ps.kind === "profile" && ps.key === "u:prof_user", JSON.stringify(ps));
     let s = await page.evaluate(summary);
     ok("弹窗问这个页面：用户主页、三类各折 1 条", s && s.kind === "profile" && s.folds && s.folds.spam === 1 && s.folds.abuse === 1 && s.folds.sexual === 1 && s.owner === "prof_user",
       JSON.stringify(s));

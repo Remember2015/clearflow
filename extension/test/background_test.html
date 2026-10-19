@@ -104,34 +104,43 @@ r = await call({ type: "cachedForPost", postId: "P8", post: "p", replies: [{ id:
 ok("补问后整帖取回带辱骂分", r.scores["1900000000000000009"] && typeof r.scores["1900000000000000009"].abuse === "number");
 await call({ type: "cacheClear" });
 
-// ---- 最近折叠的回复（弹窗"判对了吗"用）----
-const fold = (id, extra = {}) => ({ id, postId: "P1".replace("P", "9"), page: "status", handle: "@bot", name: "Bot", text: "合成的垃圾回复 " + id, kind: "jev", reason: "为第三方导流 0.9", scores: { benefit: 0.9 }, ...extra });
-store.ff_recent_folds = [{ ...fold("1800000000000000001"), at: Date.now() - 8 * 864e5 }]; // 8 天前的：下次写的时候清掉
-for (let i = 0; i < 55; i++) await call({ type: "folded", entry: fold(String(1900000000000000100n + BigInt(i))) });
-ok("最多留 50 条、过了 7 天的清掉", store.ff_recent_folds.length === 50 && !store.ff_recent_folds.some((x) => x.id === "1800000000000000001") &&
-  store.ff_recent_folds[49].id === "1900000000000000154", JSON.stringify(store.ff_recent_folds.length));
-await call({ type: "folded", entry: fold("1900000000000000110", { text: "又折了一次" }) });
-ok("同一条再折一次：不重复，挪到最新", store.ff_recent_folds.filter((x) => x.id === "1900000000000000110").length === 1 &&
-  store.ff_recent_folds[49].id === "1900000000000000110" && store.ff_recent_folds[49].text === "又折了一次");
-const bad = await Promise.all([call({ type: "folded", entry: fold("1900000000000000200", { kind: "user" }) }), call({ type: "folded", entry: fold("abc") }),
-  call({ type: "folded", entry: fold("1900000000000000201", { postId: "../x" }) })]);
-ok("你自己标的、坏 id、坏帖子 id 不记", bad.every((r) => r.ok === false) && !store.ff_recent_folds.some((x) => ["1900000000000000200", "1900000000000000201"].includes(x.id)));
-await call({ type: "folded", entry: fold("1900000000000000202", { postId: "u:prof_user", page: "profile", text: "x".repeat(900) }) });
-const pf = store.ff_recent_folds.at(-1);
-ok("用户主页上的也记，正文截到 300 字", pf.page === "profile" && pf.postId === "u:prof_user" && pf.text.length === 300);
-// Hacker News 这类站点（0.14）：id 是"站点_号"，这一页是"站点:类型:…"
-await call({ type: "folded", entry: fold("hn_9103", { postId: "hn:i:9100", kind: "abuse" }) });
-const hnBad = await Promise.all([call({ type: "folded", entry: fold("hn:9104", { postId: "hn:i:9100" }) }), call({ type: "folded", entry: fold("hn_9105", { postId: "hn:9100" }) })]);
-ok("别的站点的也记（hn_…、hn:i:…）；写法不对的不记", store.ff_recent_folds.at(-1).id === "hn_9103" && store.ff_recent_folds.at(-1).postId === "hn:i:9100" &&
-  hnBad.every((r) => r.ok === false), JSON.stringify(hnBad));
+// ---- 0.28.5：不再存"最近清理的 50 条"（自 0.20.1 起没有界面展示，少存）：folded 回 ok、什么也不存；升级时把已存的删掉
+store.ff_recent_folds = [{ id: "1800000000000000001", text: "旧版存下的" }];
+await bg.dropDevData();
+ok("升级时删掉已存的最近清理", !("ff_recent_folds" in store));
+const fr = await call({ type: "folded", entry: { id: "1900000000000000100", postId: "9", page: "status", kind: "jev", text: "合成的垃圾回复" } });
+ok("folded 回 ok、什么也不存", fr.ok === true && !("ff_recent_folds" in store), JSON.stringify(fr));
 r = await call({ type: "translateFill", id: "hn_9101", source: "Hello there", srcLang: "en", target: "zh-CN" });
 ok("别的站点的翻译请求也认（hn_…）", r.code !== "invalid_request", JSON.stringify(r).slice(0, 200));
 // YouTube（0.15）：回复的评论 id 里有点，这一页是 yt:w:<视频 id>
-await call({ type: "folded", entry: fold("yt_UgxAbC123.AAA_bb-1", { postId: "yt:w:SYNTHVID001", kind: "imp" }) });
 r = await call({ type: "translateFill", id: "yt_v_SYNTHVID001", source: "Hello there", srcLang: "en", target: "zh-Hans-CN" });
 const ytJev = await call({ type: "jev", postId: "yt:w:SYNTHVID001", post: "p", replies: [{ id: "yt_UgxAbC123.AAA_bb-1", text: "合成的回复" }] });
-ok("YouTube 的也认：回复 id 里有点、视频 yt_v_…、这一页 yt:w:…", store.ff_recent_folds.at(-1).id === "yt_UgxAbC123.AAA_bb-1" && r.code !== "invalid_request" && ytJev.code !== "invalid_request",
-  JSON.stringify([store.ff_recent_folds.at(-1), r.code, ytJev.code]));
+ok("YouTube 的也认：回复 id 里有点、视频 yt_v_…、这一页 yt:w:…", r.code !== "invalid_request" && ytJev.code !== "invalid_request", JSON.stringify([r.code, ytJev.code]));
+// 0.28.5：导出带上你的纠正和标记的垃圾（以前漏了），不带 key；清空统计和记录时纠正一起清，标记的垃圾留着（设置里单独删）
+store["ff_reply_override:1900000000000000301"] = { label: "fp", updatedAt: 1 };
+store.ff_confirmed_slogans = [{ text: "合成的标记垃圾话术一句", raw: "合成的标记垃圾话术一句", site: "x", source: { id: "1900000000000000302", postId: "9", handle: "@bot" }, createdAt: 1 }];
+store.ff_or_key = "test-or-key";
+const exp = await call({ type: "export" });
+ok("导出带纠正和标记、不带 key", !!exp.data["ff_reply_override:1900000000000000301"] && exp.data.ff_confirmed_slogans?.length === 1 && !("ff_key" in exp.data) && !("ff_or_key" in exp.data),
+  Object.keys(exp.data).join(","));
+await call({ type: "clearLog" });
+ok("清空统计和记录：纠正一起清，标记的垃圾留着", !Object.keys(store).some((k) => k.startsWith("ff_reply_override:")) && store.ff_confirmed_slogans.length === 1 &&
+  Array.isArray(store.ff_log) && store.ff_log.length === 0, Object.keys(store).join(","));
+// 0.28.5：两份缓存过期的真删掉（以前只是读的时候不用）；一天最多跑一次
+await call({ type: "jev", postId: "9", post: "p", replies: [{ id: "1900000000000000401", text: "合成的回复 purge" }] });
+const tr = await import("/translator.js");
+await tr.idbCache.put("purge-test", { action: "fill", text: "合成的译文" });
+store.ff_purged_at = 0;
+const DAY = 864e5;
+let pg = await bg.purgeCaches(Date.now() + 2 * DAY);
+const jevLeft = (await call({ type: "cacheStats" })).count;
+ok("没到期的不删", pg && pg.jev === 0 && pg.tx === 0 && jevLeft > 0, JSON.stringify([pg, jevLeft]));
+ok("一天之内不再跑", (await bg.purgeCaches(Date.now() + 2 * DAY + 3600e3)) === null);
+store.ff_purged_at = 0;
+pg = await bg.purgeCaches(Date.now() + 31 * DAY);
+const after = await call({ type: "cacheStats" });
+ok("过期的真删掉：判过的结果 7 天、译文 30 天没用到", pg.jev >= 1 && pg.tx >= 1 && after.count === 0 && after.tx?.count === 0, JSON.stringify([pg, after]));
+store.ff_purged_at = 0;
 // 0.15.2：站点多问的问题（YouTube 的 setup）——请求里多问、分数里带上；不认识的丢掉；缓存和不多问的分开
 const beforeSetup = fetchCalls, sr = [{ id: "yt_UgxSetup1", text: "合成的回复 setup" }];
 r = await call({ type: "jev", postId: "yt:w:SYNTHVID002", post: "p", replies: sr, extra: ["setup", "bogus"] });
@@ -177,9 +186,9 @@ r = await callFrom(XU, { type: "markedCheck", postId: "P_x_mark", post: "p", rep
 ok("这个网站上没标过：markedCheck 不发请求", fetchCalls === f0 + 2 && JSON.stringify(r.scores) === "{}", JSON.stringify(r));
 store.ff_confirmed_slogans = [];
 const ex = await call({ type: "export" });
-ok("导出里有最近折叠的", Array.isArray(ex.data.ff_recent_folds) && ex.data.ff_recent_folds.length === 50);
+ok("导出里没有最近折叠的（0.28.5 起不存了）", !("ff_recent_folds" in ex.data));
 await call({ type: "clearLog" });
-ok("清空统计和记录也清掉最近折叠的", Array.isArray(store.ff_recent_folds) && store.ff_recent_folds.length === 0);
+ok("清空统计和记录以后也不会冒出最近折叠的", !("ff_recent_folds" in store));
 
 // ---- 0.15.3：帖子本身那一问（求推荐帖 rec）——一个帖子问一次，存进缓存；帖子原文或作者变了就重问 ----
 const beforeRec = fetchCalls, recPost = "兄弟们有没有好用的机场推荐一下", recAuthor = { name: "楼主", handle: "@op_user" };

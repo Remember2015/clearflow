@@ -37,10 +37,12 @@ const J = (o) => encodeURIComponent(JSON.stringify(o));
     await go(`${BASE}/fakex/status/135/?rec=0.95&jev=${J({ "医保很重要": 0.93 })}`);
     ok("X 求推荐帖：0.93 的照样折", /拉人/.test((await xBar("945")) || ""), String(await xBar("945")));
     await page.goto(`${BASE}/fakex/status/135/?rec=0.95&recDelay=2000&jev=${J({ "医保很重要": 0.7 })}`, { waitUntil: "load" });
+    // 盯着 945：它的清理条出现过没有（闪一下也算）
+    await page.evaluate(() => { window.__ff945 = false; new MutationObserver(() => { if (document.querySelector('.ff-bar[data-ff-id="945"]')) window.__ff945 = true; }).observe(document, { subtree: true, childList: true }); });
     await wait(1200);
     const early = await xBar("945");
     await wait(2200);
-    const late = await xBar("945"), flicker = await page.evaluate(() => (window.__ffFolded || []).some((x) => x.id === "945"));
+    const late = await xBar("945"), flicker = await page.evaluate(() => window.__ff945); // 0.28.5 起不再发"最近清理"记录，改在页面上盯
     ok("X：帖子那一问没回来之前不按普通阈值先折，回来以后也不折（不闪）", !early && !late && !flicker, JSON.stringify([early, late, flicker]));
     await go(`${BASE}/fakex/status/135/?jev=${J({ "医保很重要": { setup: 0.75 } })}`);
     ok("X：setup 0.75（阈值 0.6 + 0.1）折，理由写\"像是骗局的套路\"", (await xBar("945")) === "像是骗局的套路", String(await xBar("945")));

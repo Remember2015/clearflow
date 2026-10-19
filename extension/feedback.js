@@ -40,6 +40,24 @@ function initialize() {
   return migration;
 }
 
+// 每条纠正一个键：超过 OVERRIDE_MAX 条删最早的（0.28.5，review：以前一直攒、界面上删不掉；隐私政策写的是"最近 3000 条"）
+async function capOverrides() {
+  const all = await chrome.storage.local.get(null);
+  const keys = Object.keys(all).filter((k) => k.startsWith(PREFIX));
+  if (keys.length <= OVERRIDE_MAX) return;
+  keys.sort((a, b) => (all[a]?.updatedAt || 0) - (all[b]?.updatedAt || 0));
+  await chrome.storage.local.remove(keys.slice(0, keys.length - OVERRIDE_MAX));
+}
+// 设置里"清空统计和记录"：纠正一起清掉（0.28.5，用户 10-19 定）；旧日志也一起清了，不再从它迁移
+export function clearOverrides() {
+  return write(async () => {
+    const all = await chrome.storage.local.get(null);
+    const keys = Object.keys(all).filter((k) => k.startsWith(PREFIX));
+    if (keys.length) await chrome.storage.local.remove(keys);
+    await chrome.storage.local.set({ ff_feedback_rev: 1 });
+  });
+}
+
 export async function getOverrides(ids) {
   await initialize();
   const keys = [...new Set(ids.filter(validId))].map((id) => PREFIX + id);
@@ -49,7 +67,9 @@ export async function getOverrides(ids) {
 }
 
 // site：哪个网站上标的（background 按发消息的页面认，见 siteOf）。手动清理掉一条没被清理的（label "missed"，0.26 起）同时记进"你标记的垃圾"；
-// 点"判错了"（fp）的那条要是在里面，一起删掉
+// 点"判错了"（fp）的那条要是在里面，一起删掉。清理条上点"判对了"（label "confirm"）也存成 missed，但不算标记（0.28.5，review：
+// 以前 decision() 换算以后的 missed 也进了标记，违背用户定的"只有手动清理和漏斗算标记"）
+const OVERRIDE_MAX = 3000;
 export async function saveDecision(entry, site = "") {
   if (!entry || !validId(entry.id)) throw new Error("回复编号无效");
   const label = decision(entry);
@@ -59,8 +79,9 @@ export async function saveDecision(entry, site = "") {
     if (label === "fp") {
       const n = R.normSlogan(entry.text || "");
       updates[SLOGANS] = (await listSlogans()).filter((x) => !(x.text === n && R.sloganOk(n)) && x.source?.id !== entry.id);
-    } else if (label === "missed" && marked(entry, site)) updates[SLOGANS] = withMarked(await listSlogans(), marked(entry, site));
+    } else if (entry.label === "missed" && marked(entry, site)) updates[SLOGANS] = withMarked(await listSlogans(), marked(entry, site));
     await chrome.storage.local.set(updates);
+    await capOverrides();
     return label;
   });
 }
@@ -90,8 +111,9 @@ export async function listSlogans() {
   return (Array.isArray(data[SLOGANS]) ? data[SLOGANS] : []).filter((x) => x && typeof x.text === "string" && (R.sloganOk(x.text) || (typeof x.raw === "string" && x.raw.trim())));
 }
 // 发给 Jev 的样例：这个网站上标的（旧的没记网站，哪儿都算），最近的 n 条
+// 只用这个网站上标的（0.28.5：以前 0.26 以前没记网站的旧条目哪个网站都发，隐私政策写的是"那个网站上的"）
 export async function examplesFor(site, n = 20) {
-  return (await listSlogans()).filter((x) => !x.site || x.site === site).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, n)
+  return (await listSlogans()).filter((x) => x.site && x.site === site).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, n)
     .map((x) => ({ handle: x.source?.handle || "", text: x.raw || x.text }));
 }
 export function rememberSlogan(entry, site = "") {

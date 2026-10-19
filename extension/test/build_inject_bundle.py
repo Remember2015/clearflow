@@ -31,7 +31,7 @@ stub = r'''
     window.__ffLog.push(msg.type);
     let r = { ok: true };
     if (msg.type === "settings") r = { settings: { ...FFSettings.DEFAULTS, ...chrome.storage.local._d.ff_settings }, hasKey: !window.__ffNoJevKey, hasOrKey: true };
-    if (msg.type === "folded") (window.__ffFolded ||= []).push(JSON.parse(JSON.stringify(msg.entry))); // 折叠记录（弹窗"判对了吗"用）
+    if (msg.type === "stat") (window.__ffStats ||= []).push(JSON.parse(JSON.stringify(msg.delta || {}))); // 统计（折了一条记一次 fold_*；0.28.5 起拿它代替以前的"最近清理"记录）
     if (msg.type === "evalRecord") (window.__ffEval ||= []).push(JSON.parse(JSON.stringify(msg))); // 评测记录：0.24 起去掉了，不该再有人发（reddit_headless 查它是空的）
     if (msg.type === "translate") {
       (window.__ffTxMsgs ||= []).push(JSON.parse(JSON.stringify(msg)));

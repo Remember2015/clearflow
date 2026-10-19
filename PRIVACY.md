@@ -1,6 +1,6 @@
 # ClearFlow (清流) Privacy Policy
 
-Effective date: October 17, 2026 · [中文版本见下方](#中文)
+Effective date: October 19, 2026 · [中文版本见下方](#中文)
 
 ClearFlow is a browser extension that cleans up comment sections and translates posts on X, Reddit, YouTube, Xiaohongshu (RedNote) and Hacker News. It is published by OhMyAI. This policy explains what the extension reads, what it sends and to whom, and what it keeps on your device.
 
@@ -8,7 +8,7 @@ ClearFlow is a browser extension that cleans up comment sections and translates 
 
 ## Where it runs
 
-The extension's scripts run only on these sites: `x.com`, `twitter.com`, `www.reddit.com`, `www.youtube.com`, `www.xiaohongshu.com`, `www.rednote.com` and `news.ycombinator.com`. It does not read your browsing history, your account details on those sites, or any other website.
+The extension's scripts run only on these sites: `x.com`, `twitter.com`, `www.reddit.com`, `www.youtube.com`, `www.xiaohongshu.com`, `www.rednote.com` and `news.ycombinator.com`. It does not read your browsing history or any other website. On those sites it reads only your own username, locally, so it doesn't judge your own posts; it never sends it anywhere.
 
 ## What is sent, and to whom
 
@@ -18,7 +18,7 @@ Used for cleaning (spam, abuse, sexual content, and replies like "nice" or "+1")
 
 - For each comment on the page that local rules can't decide: the comment text (up to 600 characters), the commenter's display name and handle, the text of the post it belongs to (up to 400 characters) and the post author's name and handle. Up to 10 comments per request.
 - On profile and search pages on X and on list pages on Reddit, the posts in the list instead of comments, with a fixed one-line description in place of the post text.
-- On X posts that X translated automatically: the original text and X's (Grok's) translation.
+- On X posts that X translated automatically: the original text and X's (Grok's) translation. When ClearFlow retranslates such a post (below), its own translation too, so the two can be compared.
 - Only if you turn on "Look at images in replies" (off by default): images attached to those comments, downscaled, together with the text. To do this the extension asks for permission to read images from `pbs.twimg.com`, `i.redd.it`, `preview.redd.it` and `*.xhscdn.com`; it gives the permission back when you turn the option off.
 - Only if you have marked spam yourself on that site ("Hide this reply", or the funnel on a notice bar): your 10 most recently marked replies on that site (text up to 240 characters and the account), sent with those comments as examples, so TypeSafe can tell whether a comment is the same kind of spam. Right after you mark one, the comments on that page that weren't cleaned are checked once more against the examples (up to 25 per request).
 - The same comment in the same context is not sent again for 7 days (results are cached locally).
@@ -43,15 +43,14 @@ All of the following is stored only in your browser's extension storage (`chrome
 - Your settings and your two API keys (stored as entered, in plain text, like other extension settings).
 - Daily counters (how many items were cleaned or translated, estimated cost).
 - Your corrections ("not spam", "hide this reply") and the spam you marked, with the comment text (up to 300 characters; the last 3,000 corrections, the last 500 marked replies).
-- The last 50 replies ClearFlow cleaned in the past 7 days (text up to 300 characters), so you can review them.
-- A cache of TypeSafe results (fingerprints and scores only, no text; kept up to 7 days) and a cache of translations (the translated text; kept up to 30 days). Each cache is capped at 50 MB by default.
+- A cache of TypeSafe results (fingerprints and scores only, no text; deleted 7 days after the comment was judged) and a cache of translations (the translated text; deleted once it hasn't been used for 30 days). Each cache is capped at 50 MB by default; the oldest entries go first when it's full.
 
 On X and YouTube, two small scripts (`pagedata.js`, `ytdata.js`) run inside the page and read the site's own API responses that the page already received — to get a post's original (untranslated) text and who wrote a comment. They only read; they never send requests or change what the site receives.
 
 ## Your choices
 
 - Turn ClearFlow off for any site, or turn off cleaning or translation separately, in the popup or Settings.
-- Settings → Data and privacy: export your data, clear the caches, or clear all statistics and records.
+- Settings → Data and privacy: export your data (settings, statistics, your corrections and the spam you marked), clear the caches, or clear statistics and records, including your corrections. The spam you marked is listed in Settings, where you can delete entries one by one or all at once.
 - Uninstalling the extension deletes everything it stored.
 - You can revoke or rotate your API keys with TypeSafe or OpenRouter at any time.
 
@@ -73,7 +72,7 @@ developer@ohmyai.app
 
 # 清流（ClearFlow）隐私政策
 
-生效日期：2026 年 10 月 17 日
+生效日期：2026 年 10 月 19 日
 
 清流是一个浏览器插件，在 X、Reddit、YouTube、小红书和 Hacker News 上清理评论区、翻译帖子，由 OhMyAI 发布。这份政策说明插件读什么、发什么给谁、在你的设备上存什么。
 
@@ -81,7 +80,7 @@ developer@ohmyai.app
 
 ## 在哪里运行
 
-插件的脚本只在这些网站上运行：`x.com`、`twitter.com`、`www.reddit.com`、`www.youtube.com`、`www.xiaohongshu.com`、`www.rednote.com`、`news.ycombinator.com`。不读你的浏览记录、你在这些网站上的账号信息，也不读别的网站。
+插件的脚本只在这些网站上运行：`x.com`、`twitter.com`、`www.reddit.com`、`www.youtube.com`、`www.xiaohongshu.com`、`www.rednote.com`、`news.ycombinator.com`。不读你的浏览记录，也不读别的网站。在这些网站上只在本机认出你自己的账号名（不判你自己发的），不发给任何地方。
 
 ## 发什么、发给谁
 
@@ -91,7 +90,7 @@ developer@ohmyai.app
 
 - 页面上本地规则判不了的每条评论：评论正文（最多 600 字）、评论者的昵称和账号、所在帖子的正文（最多 400 字）和帖子作者的昵称和账号。每次最多 10 条。
 - X 的用户主页、搜索结果和 Reddit 的列表页上，发的是列表里的帖子，帖子正文那一栏换成一句固定的说明。
-- X 自动翻译过的帖子：原文和 X（Grok）的译文。
+- X 自动翻译过的帖子：原文和 X（Grok）的译文。清流重译了这条时（见下），它自己的译文也发过去，好和 Grok 的比。
 - 只有打开「看回复里的图片」（默认关）时：评论里的图片（缩小后）连同文字一起发。为此插件会请求读取 `pbs.twimg.com`、`i.redd.it`、`preview.redd.it`、`*.xhscdn.com` 上图片的权限，关掉这一项时把权限还回去。
 - 只有你在这个网站上自己标记过垃圾（「清理掉这条」，或提示条上的漏斗）时：你在这个网站上最近标记的 10 条（正文最多 240 字和账号），跟着这些评论一起发过去当样例，让 TypeSafe 判断一条评论是不是同一类垃圾。你刚标了一条时，这一页上没被清理的评论再按样例问一遍（每次最多 25 条）。
 - 同一条评论在同样的上下文里 7 天内不再发（结果缓存在本机）。
@@ -116,15 +115,14 @@ developer@ohmyai.app
 - 你的设置和两个 key（照你填的原样明文存，和别的插件设置一样）。
 - 每天的计数（清理、翻译了多少条，估算的花费）。
 - 你的纠错（「不是垃圾」「清理掉这条」）和你标记的垃圾，带那条评论的正文（最多 300 字；最近 3000 条纠错、最近 500 条标记）。
-- 最近 7 天清理的最后 50 条回复（正文最多 300 字），方便你回看。
-- TypeSafe 结果的缓存（只有指纹和分数、没有正文，最多留 7 天）和译文的缓存（译好的文字，最多留 30 天）。每份缓存默认最多 50 MB。
+- TypeSafe 结果的缓存（只有指纹和分数、没有正文，判完 7 天后删）和译文的缓存（译好的文字，30 天没用到就删）。每份缓存默认最多 50 MB，满了先删最旧的。
 
 在 X 和 YouTube 上，有两个小脚本（`pagedata.js`、`ytdata.js`）在页面里读这个网站自己的接口返回（页面本来就收到了的），用来拿帖子的原文（没被翻译的）和评论是谁写的。它们只读，不发请求，也不改网站收到的东西。
 
 ## 你能做什么
 
 - 在弹窗或设置里，对任何网站关掉清流，或者单独关掉清理、翻译。
-- 设置 → 数据和隐私：导出你的数据、清空缓存、清空全部统计和记录。
+- 设置 → 数据和隐私：导出你的数据（设置、统计、你的纠错和标记的垃圾）、清空缓存、清空统计和记录（连你的纠错一起）。你标记的垃圾在设置里有一份列表，可以一条条删，也可以全部删掉。
 - 卸载插件会删掉它存的所有东西。
 - 你随时可以在 TypeSafe、OpenRouter 那边作废或更换 key。
 

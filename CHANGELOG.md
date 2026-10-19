@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.28.5 — 2026-10-19
+
+- Privacy: expired cache entries are now actually deleted (TypeSafe scores 7 days after judging, translations once unused for 30 days); before, they were only ignored until the cache filled up. ClearFlow no longer keeps a list of the last 50 cleaned replies (nothing showed it), and deletes the one already stored. Export now includes your corrections and the spam you marked; "Clear statistics and records" also clears your corrections; corrections are capped at the latest 3,000. The privacy policy and the Settings page describe this, and now also say that ClearFlow's own retranslations of X posts are sent to TypeSafe to compare them with X's.
+- Fixed: clicking "judged right" on a notice bar no longer adds the reply to "spam you marked" (only hiding a reply yourself or the funnel does). Marked examples sent to TypeSafe are only the ones marked on that site.
+- Translation: flex requests are always streamed, so the "nothing within 10 seconds" switch to the standard tier works and an abandoned request stops being billed; truncated or empty output no longer switches tiers; "try the other model" picks a model that wasn't tried yet.
+
 ## 0.28.4 — 2026-10-19
 
 - Translation requests that aren't urgent — posts and comments just outside the screen being translated ahead of time, and improving X's own translations — now go through OpenAI's flex tier on OpenRouter, the same model at half the price. Anything on screen still uses the standard tier. If flex is busy or slow (nothing within 10 seconds), the request switches to the standard tier right away.

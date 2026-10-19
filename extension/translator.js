@@ -98,7 +98,9 @@ export const BATCH_EN = "Below are several unrelated items, each wrapped in a ma
 // OpenAI 忙的时候排在后面、可能没资源。2026-10-19 量的（30 条真实评论 / 30 条长帖，8 路并发）：flex 中位 1.96 s / 2.59 s、
 // 最慢 3.1 s / 4.3 s，标准 2.26 s / 3.51 s、最慢 3.7 s / 6.5 s，都 30/30 成功。只有 OpenAI 的模型有 flex（后备的 DeepSeek 没有）。
 // provider.order 先排 flex、allow_fallbacks 让 OpenRouter 在 flex 出错时自己换标准端点；FLEX_WAIT_MS 还没出字（流式的第一段 /
-// 不流式的整个回复）就放弃 flex、改走标准通道（translate() 里，不算一次重试）。`:batch` 变体不能走 chat/completions（404），用不了
+// 不流式的整个回复）就放弃 flex、改走标准通道（translate() 里，不算一次重试）。`:batch` 变体不能走 chat/completions（404），用不了。
+// 0.28.5：flex 的请求一律流式——不流式的 OpenRouter 2–3 s 就先回头、再塞空白占着连接（实测），"回复头到了"不等于开始出字，
+// 计时形同虚设；流式的第一段字到了才算开始，而且中途放弃时 OpenRouter 会叫上游停下、不再计费
 const FLEX_OK = /^openai\//, FLEX_WAIT_MS = 10000;
 export async function translateOnce(orKey, model, { source, srcLang, truncated, markup, batch, target = "zh" }, { signal, fetchImpl = fetch, timeoutMs = 20000, onText, flex = false, flexWaitMs = FLEX_WAIT_MS } = {}) {
   const control = new AbortController();
@@ -109,6 +111,8 @@ export async function translateOnce(orKey, model, { source, srcLang, truncated, 
   flex = flex && FLEX_OK.test(model);
   let slow = flex ? setTimeout(() => control.abort(fail("flex 通道太慢", "flex_slow", true)), flexWaitMs) : 0;
   const started = () => { if (slow) { clearTimeout(slow); slow = 0; } };
+  if (flex && !onText) onText = () => {}; // flex 一律流式（见上）
+  const wantStream = !!onText;
   if (onText && slow) { const f = onText; onText = (...a) => { started(); return f(...a); }; }
   const t0 = Date.now();
   try {
@@ -119,7 +123,7 @@ export async function translateOnce(orKey, model, { source, srcLang, truncated, 
       body: JSON.stringify({
         // 上限给足（按实际输出计费，给大了不多花钱）：中文译文的 token 数和英文原文的字数差不多，长帖 2000 不够用
         model, temperature: 0.2, max_tokens: Math.min(8000, Math.max(400, source.length * 2 + 300)),
-        reasoning: { enabled: false }, usage: { include: true }, ...(onText ? { stream: true } : {}),
+        reasoning: { enabled: false }, usage: { include: true }, ...(wantStream ? { stream: true } : {}),
         ...(flex ? { provider: { order: ["openai/flex"], allow_fallbacks: true } } : {}),
         messages: isZhHans(target)
           ? [{ role: "system", content: SYSTEM_PROMPT },
@@ -135,7 +139,7 @@ export async function translateOnce(orKey, model, { source, srcLang, truncated, 
       if (resp.status === 402) throw fail(`OpenRouter 余额不足（${body}）`, "or_credit", false);
       throw fail(`OpenRouter HTTP ${resp.status}: ${body}`, "or_http", resp.status === 429 || resp.status >= 500);
     }
-    const streamed = onText && resp.body && /event-stream/i.test(resp.headers.get("content-type") || "");
+    const streamed = wantStream && resp.body && /event-stream/i.test(resp.headers.get("content-type") || "");
     if (!streamed) started(); // 不流式的：回复头到了就是整个回复好了
     const data = streamed ? await readStream(resp, onText) : await resp.json();
     const text = cleanOutput(data?.choices?.[0]?.message?.content);
@@ -194,20 +198,26 @@ async function readStream(resp, onText) {
 
 // 主模型一次、可重试的错误再一次，还不行换后备模型；key 无效、余额不足不换（换了也一样）。
 // opts.flex：不急的（不在屏幕上的预翻译、X 上改进 Grok 译文）先走 flex 通道，出错或太慢马上改走标准通道（不等、不算一次重试）
+// 返回里多两项：slug（设置里的模型名，OpenRouter 回报的 model 可能带日期之类，不能拿来比）、tried（试过的模型）
+// flex 只在通道的问题上换标准：忙（429、5xx）、超时、太慢、网络断了；输出被截断、空的（or_truncated、or_empty）、400 这种
+// 换通道也一样，照常重试或换后备（0.28.5，review：以前截断也换通道，一条翻坏的长帖能付 5 次钱）
+const laneIssue = (e) => !e.code || e.code === "timeout" || e.code === "flex_slow" || (e.code === "or_http" && e.retryable);
 export async function translate(orKey, settings, item, opts = {}) {
   const models = [settings.translateModel, settings.translateFallback].filter((m, i, a) => m && a.indexOf(m) === i);
+  const tried = [];
   let last;
   for (const model of models) {
+    tried.push(model);
     let flex = !!opts.flex && FLEX_OK.test(model);
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        return await translateOnce(orKey, model, item, { ...opts, flex, ...(opts.onText ? { onText: (text) => opts.onText(text, model) } : {}) });
+        const r = await translateOnce(orKey, model, item, { ...opts, flex, ...(opts.onText ? { onText: (text) => opts.onText(text, model) } : {}) });
+        return { ...r, slug: model, tried: [...tried] };
       } catch (e) {
         if (opts.signal?.aborted) throw e;
         last = e;
         if (e.code === "or_badkey" || e.code === "or_credit") throw e;
-        // flex 忙、太慢（429、5xx、超时）：同一个模型马上走标准通道；400 这种是模型本身的问题，换通道也一样，照常换后备
-        if (flex && e.retryable) { flex = false; attempt--; continue; }
+        if (flex && laneIssue(e)) { flex = false; attempt--; continue; }
         if (!e.retryable) break; // 比如这个模型的思考关不掉（400）：直接换后备
         await sleep(600 * (attempt + 1), opts.signal);
       }
@@ -285,6 +295,25 @@ export const idbCache = {
     });
     meta.put(Math.max(bytes, 0), "bytes"); meta.put(Math.max(count, 0), "count");
     await done(tx);
+  },
+  // 超过 TTL 没用过的真删掉（0.28.5，隐私政策：译文 30 天没用到就删；以前只是读的时候不用）；返回删了几条
+  async purgeExpired(now = Date.now()) {
+    const db = await open();
+    const tx = db.transaction([STORE, META], "readwrite"), st = tx.objectStore(STORE), meta = tx.objectStore(META);
+    let [bytes, count] = await totals(tx), removed = 0;
+    await new Promise((res, rej) => {
+      const cur = st.index("ts").openCursor(IDBKeyRange.upperBound(now - TTL));
+      cur.onsuccess = () => {
+        const c = cur.result;
+        if (!c) return res();
+        bytes -= c.value.size || sizeOf(c.value); count--; removed++;
+        c.delete(); c.continue();
+      };
+      cur.onerror = () => rej(cur.error);
+    });
+    meta.put(Math.max(bytes, 0), "bytes"); meta.put(Math.max(count, 0), "count");
+    await done(tx);
+    return removed;
   },
   async stats() {
     const db = await open();
@@ -397,10 +426,11 @@ export async function improve({ jevKey, orKey, settings, item, cache = idbCache,
     // 重译的反倒比 Grok 还差：换另一个模型（主模型 / 后备模型里没用过的那个）再翻一次，两份里取分高的（0.28.3，用户 10-18：
     // 同一条韩文帖子 Luna 两次翻出来一次 0.40、一次 0.61，Grok 0.53。translate_eval 的数据上重译的 31 条里有 2 条比 Grok 还差，
     // DeepSeek 再翻救回 1 条）。只有这种时候多花一次翻译和一次判分；再翻出错就用第一份
-    const other = [settings.translateModel, settings.translateFallback].find((m) => m && m !== pick.model);
+    // 另一个：设置里的两个模型里没试过的那个（按 translate() 返回的 tried 认，不按 OpenRouter 回报的 model 名）
+    const other = [settings.translateModel, settings.translateFallback].find((m) => m && !(pick.tried || [pick.model]).includes(m));
     if (judged.min < grok.min && other) {
       try {
-        const again = await translate(orKey, { ...settings, translateModel: other, translateFallback: null }, item, { signal, fetchImpl });
+        const again = await translate(orKey, { ...settings, translateModel: other, translateFallback: null }, item, { signal, fetchImpl, flex: true });
         const j2 = await judge(jevKey, { source: item.source, translation: again.text, srcLang: item.srcLang, target: item.target }, jevOpts);
         cost += again.cost || 0; jevTokens += j2.tokens; retried = true;
         if (j2.min > judged.min) { pick = again; judged = j2; }

@@ -32,10 +32,23 @@ export async function dropFeedData() {
   const keys = Object.keys(all).filter((k) => k.startsWith("ff_feed_"));
   if (keys.length) await chrome.storage.local.remove(keys);
 }
-// 0.24 去掉了"记录 Reddit 评论（评估用）"和 Reddit 的结构探针（开发时用的，用户：不留）：删掉它们留在本机的东西
+// 0.24 去掉了"记录 Reddit 评论（评估用）"和 Reddit 的结构探针（开发时用的，用户：不留）：删掉它们留在本机的东西。
+// 0.28.5 不再存"最近清理的 50 条"（review：自 0.20.1 起没有界面展示，却一直存着别人的原文、昵称和你在 X 上的搜索词、看过的主页；
+// 用户 10-19 定少存）：已存的也删掉
 export async function dropDevData() {
-  await chrome.storage.local.remove(["ff_eval_reddit", "ff_eval_reddit_n", "ff_dev_reddit"]);
+  await chrome.storage.local.remove(["ff_eval_reddit", "ff_eval_reddit_n", "ff_dev_reddit", "ff_recent_folds"]);
 }
+// 两份缓存过期的真删掉（0.28.5，见 cache.js / translator.js 的 purgeExpired）：service worker 每次起来看一眼，距上次超过一天才跑
+const PURGE_EVERY = 864e5;
+export async function purgeCaches(now = Date.now()) {
+  const { ff_purged_at = 0 } = await chrome.storage.local.get("ff_purged_at");
+  if (now - ff_purged_at < PURGE_EVERY && ff_purged_at <= now) return null;
+  const [jev, tx] = await Promise.all([cache.purgeExpired(now).catch(() => 0), translator.idbCache.purgeExpired(now).catch(() => 0)]);
+  await chrome.storage.local.set({ ff_purged_at: now });
+  return { jev, tx };
+}
+setTimeout(() => { purgeCaches().catch(() => {}); }, 5000);
+dropDevData().catch(() => {});
 // 首次安装（0.23）：打开首次设置那一页（选网站和功能、填两个 key）；升级、重新加载不弹
 chrome.runtime.onInstalled?.addListener((details) => {
   dropFeedData().catch(() => {});
@@ -97,34 +110,10 @@ function bump(delta) {
   statChain = task.catch(() => {});
   return task;
 }
-// ---- 最近折叠的回复：弹窗里"判对了吗"给你核对（最多 50 条、7 天，只存在本机；你自己标的不记）----
-const FOLDS_MAX = 50, FOLDS_MS = 7 * 864e5;
 // 一条（回复、评论、帖子）的 id：X 是数字，Reddit 是 t1_… / t3_…，别的站点是"两个字母_id"（Hacker News：hn_123；YouTube：yt_<评论 id>，
 // 回复的评论 id 里有点，视频是 yt_v_<视频 id>）
 const SITE_ID = /^(\d{1,25}|t[13]_[a-z0-9]{1,13}|[a-z]{2}_[\w.-]{1,100})$/;
-const str = (v, n) => (typeof v === "string" ? v.slice(0, n) : "");
-function cleanFold(e) {
-  // id：X 的帖子是数字，Reddit 的评论 / 帖子是 t1_… / t3_…，别的站点是"站点_id"（hn_123）；postId 是"这一页"：X 的帖子 id、u:账号、s:搜的词，
-  // Reddit 的 r:t3_…、rf:版块、rs:搜的词，别的站点是"站点:类型:…"（hn:i:123 帖子页）
-  if (!e || typeof e.id !== "string" || !SITE_ID.test(e.id) || typeof e.kind !== "string" || !/^[a-z0-9_]{1,24}$/.test(e.kind) || e.kind.startsWith("user")) return null;
-  if (typeof e.postId !== "string" || !/^(\d{1,25}|u:[a-z0-9_]{1,15}|s:[\w%.~!*'()-]{1,80}|r:t3_[a-z0-9]{1,13}|r[fs]:[\w%.~!*'()-]{1,90}|[a-z]{2}:[a-z]:[\w%.~!*'()-]{1,90})$/.test(e.postId) || typeof e.text !== "string") return null;
-  const scores = {};
-  for (const [k, v] of Object.entries(e.scores && typeof e.scores === "object" ? e.scores : {})) if (/^[a-z_]{1,20}$/.test(k) && typeof v === "number" && Number.isFinite(v)) scores[k] = v;
-  return { id: e.id, postId: e.postId, page: ["profile", "search", "feed"].includes(e.page) ? e.page : "status", handle: str(e.handle, 20), name: str(e.name, 60),
-    text: str(e.text, 300), kind: e.kind, reason: str(e.reason, 120), scores };
-}
-let foldChain = Promise.resolve();
-function rememberFold(entry) {
-  const task = foldChain.then(async () => {
-    const { ff_recent_folds = [] } = await chrome.storage.local.get("ff_recent_folds");
-    const now = Date.now();
-    const list = (Array.isArray(ff_recent_folds) ? ff_recent_folds : []).filter((x) => x && x.id !== entry.id && now - x.at < FOLDS_MS);
-    list.push({ ...entry, at: now });
-    await chrome.storage.local.set({ ff_recent_folds: list.slice(-FOLDS_MAX) });
-  });
-  foldChain = task.catch(() => {});
-  return task;
-}
+// "最近清理的 50 条"（rememberFold）0.28.5 起不存了（见 dropDevData）；页面那头也不再发 folded
 let themeNow = null; // 工具栏图标现在是哪一套："icon"（浅色）/ "dark"；service worker 重启后不知道，下次页面报了再设
 // ---- 出问题时给弹窗留个标记：Jev key 无效、OpenRouter key 无效或余额不足。下次成功、换了 key 就清掉 ----
 let healthChain = Promise.resolve();
@@ -602,12 +591,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       case "stat":
         await bump(msg.delta);
         return { ok: true };
-      case "folded": {
-        const entry = cleanFold(msg.entry);
-        if (!entry) return { ok: false, error: "无效的折叠记录" };
-        await rememberFold(entry);
+      case "folded": // 0.28.5 起不存了；升级时还没刷新的页面照样会发，回个 ok
         return { ok: true };
-      }
       case "theme": { // 工具栏图标跟浏览器的深浅色（页面报的，见 theme.js）
         const t = msg.dark ? "dark" : "icon";
         if (t !== themeNow && chrome.action && chrome.action.setIcon) {
@@ -706,15 +691,18 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       case "txCacheClear":
         await translator.idbCache.clear();
         return { ok: true };
-      case "export": {
-        const data = await chrome.storage.local.get(["ff_stats", "ff_log", "ff_settings", "ff_recent_folds"]);
+      case "export": { // 0.28.5：也导出你标记的垃圾、每条纠正（以前漏了）；key 不导出
+        const all = await chrome.storage.local.get(null);
+        const data = Object.fromEntries(Object.entries(all).filter(([k]) => ["ff_stats", "ff_log", "ff_settings", "ff_confirmed_slogans"].includes(k) || k.startsWith("ff_reply_override:")));
         return { data, pricePerToken: PRICE_PER_TOKEN };
       }
-      case "clearLog": {
-        await feedback.getOverrides([]); // 先把旧日志中的人工纠错迁移出来，清日志不能清掉用户决定。
-        const clearing = Promise.all([statChain, logChain, foldChain]).then(() =>
-          chrome.storage.local.set({ ff_log: [], ff_stats: {}, ff_recent_folds: [] }));
-        statChain = logChain = foldChain = clearing.catch(() => {});
+      case "clearLog": { // 清空统计和记录：0.28.5 起连你的纠正（"不是垃圾""漏判了"）也清掉（用户 10-19 定；以前特意留着，界面上删不掉）。
+        // 你标记的垃圾是另一份列表，在设置里单独删
+        const clearing = Promise.all([statChain, logChain]).then(async () => {
+          await feedback.clearOverrides();
+          await chrome.storage.local.set({ ff_log: [], ff_stats: {} });
+        });
+        statChain = logChain = clearing.catch(() => {});
         await clearing;
         return { ok: true };
       }

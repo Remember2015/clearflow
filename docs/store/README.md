@@ -46,7 +46,7 @@ Make comment sections on supported social sites readable: hide junk and content-
 
 | Permission | Why |
 |---|---|
-| `storage` | Settings, the user's two API keys, daily counters, the user's corrections and remembered phrases, the last 50 cleaned replies. |
+| `storage` | Settings, the user's two API keys, daily counters, the user's corrections and the spam they marked. |
 | `unlimitedStorage` | Local caches of judging results and translations (50 MB each by default, adjustable), so the same content isn't sent or paid for twice. |
 | Host permission `https://api.typesafe.ai/*` | The background worker sends comments to TypeSafe's classifier with the user's own key. |
 | Host permission `https://openrouter.ai/*` | The background worker sends text to be translated to OpenRouter with the user's own key. |

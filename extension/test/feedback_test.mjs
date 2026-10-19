@@ -9,7 +9,7 @@ const store = {
 };
 let fail = false;
 globalThis.chrome = { storage: { local: {
-  async get(keys) { return Object.fromEntries((Array.isArray(keys) ? keys : [keys]).filter((k) => k in store).map((k) => [k, structuredClone(store[k])])); },
+  async get(keys) { if (keys == null) return structuredClone(store); return Object.fromEntries((Array.isArray(keys) ? keys : [keys]).filter((k) => k in store).map((k) => [k, structuredClone(store[k])])); },
   async set(data) { if (fail) { fail = false; throw new Error("disk failure"); } Object.assign(store, structuredClone(data)); },
   async remove(keys) { for (const k of Array.isArray(keys) ? keys : [keys]) delete store[k]; },
 } } };
@@ -45,9 +45,11 @@ await F.saveDecision({ id: "8", postId: "97", handle: "@h", text: "撤销用的�
 await F.undoMark("8");
 assert.equal((await F.getOverrides(["8"]))["8"], undefined, "撤销后没有纠错");
 assert.ok(!(await F.listSlogans()).some((x) => x.source.id === "8"), "撤销后不在你标记的垃圾里");
-// 旧的（0.26 以前存的，只有 text、没 raw、没 site）照样生效：哪个网站都当样例
+// 旧的（0.26 以前存的，只有 text、没 raw、没 site）：留在列表里（本地照样认），但 0.28.5 起不当样例发给 TypeSafe
+// （隐私政策写的是"那个网站上的"）
 await chrome.storage.local.set({ ff_confirmed_slogans: [...(await F.listSlogans()), { text: "旧版记住的一句很长的话术", source: { id: "9", postId: "1", handle: "" }, createdAt: 0 }] });
-assert.ok((await F.examplesFor("hn")).some((x) => x.text === "旧版记住的一句很长的话术"), "旧的没记网站，哪儿都算");
+assert.ok((await F.listSlogans()).some((x) => x.text === "旧版记住的一句很长的话术"), "旧的留在列表里");
+assert.ok(!(await F.examplesFor("hn")).some((x) => x.text === "旧版记住的一句很长的话术"), "旧的没记网站：不当样例发");
 await chrome.storage.local.set({ ff_confirmed_slogans: (await F.listSlogans()).filter((x) => x.source.id !== "9") });
 await F.saveDecision({ ...entry, label: "fp" });
 assert.equal((await F.listSlogans()).length, 0, "误判同时撤销已确认口号");
@@ -62,4 +64,18 @@ assert.equal((await F.listSlogans()).length, 1);
 await F.clearSlogans();
 assert.equal((await F.listSlogans()).length, 0);
 await assert.rejects(F.saveDecision({ id: "5", label: "unknown" }));
-console.log("PASS 纠错迁移、独立持久化、你标记的垃圾（手动清理记进去、样例按网站、短的也留、按 id 删、撤销、旧格式）、误判撤销、失败恢复和并发保存");
+// 0.28.5：清理条上点"判对了"（confirm）存成 missed，但不算标记（只有手动清理和漏斗算）
+await F.saveDecision({ id: "10", postId: "96", handle: "@spam", label: "confirm", kind: "jev", text: "判对了的那条垃圾回复，不该进你标记的垃圾" }, "yt");
+assert.equal((await F.getOverrides(["10"]))["10"], "missed", "判对了照样存成 missed");
+assert.ok(!(await F.listSlogans()).some((x) => x.source.id === "10"), "判对了不算标记");
+// 纠正最多留 3000 条（删最早的）
+for (let i = 0; i < 3005; i++) store["ff_reply_override:c" + i] = { label: "fp", updatedAt: 1000 + i };
+await F.saveDecision({ id: "11", label: "fp" });
+const overrideKeys = () => Object.keys(store).filter((k) => k.startsWith("ff_reply_override:"));
+assert.equal(overrideKeys().length, 3000, "纠正最多 3000 条");
+assert.ok(!("ff_reply_override:c0" in store) && "ff_reply_override:11" in store, "删的是最早的，刚存的留着");
+// 清空统计和记录时纠正一起清掉
+await F.clearOverrides();
+assert.equal(overrideKeys().length, 0, "纠正清掉了");
+assert.deepEqual(await F.getOverrides(["11", "3"]), {}, "清掉以后不再从旧日志迁回来");
+console.log("PASS 纠错迁移、独立持久化、你标记的垃圾（手动清理记进去、样例按网站、短的也留、按 id 删、撤销、旧格式不当样例）、误判撤销、失败恢复和并发保存、判对了不算标记、纠正上限 3000、清空纠正");

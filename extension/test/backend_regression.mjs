@@ -20,9 +20,9 @@ function backend({ fetchImpl, failWrite, initial = {} } = {}) {
   let listener, calls = 0, writes = 0;
   const chrome = {
     storage: { onChanged: { addListener: (f) => changes.push(f) }, local: {
-      get: async (keys) => Object.fromEntries((Array.isArray(keys) ? keys : [keys]).filter((k) => k in store).map((k) => [k, structuredClone(store[k])])),
+      get: async (keys) => (keys == null ? structuredClone(store) : Object.fromEntries((Array.isArray(keys) ? keys : [keys]).filter((k) => k in store).map((k) => [k, structuredClone(store[k])]))),
       set: async (o) => { writes++; if (failWrite?.(o, writes)) throw new Error("temporary write failure"); Object.assign(store, structuredClone(o)); },
-      remove: async (k) => { delete store[k]; },
+      remove: async (k) => { for (const x of Array.isArray(k) ? k : [k]) delete store[x]; },
     } },
     runtime: { onMessage: { addListener: (f) => { listener = f; } } },
   };
@@ -34,6 +34,7 @@ function backend({ fetchImpl, failWrite, initial = {} } = {}) {
   const context = vm.createContext({
     chrome, cache, validScores, cacheRequests, cleanExtra, askOf, JevError, markedRequests, askMarked, MARKED_MAX, MARKED_BATCH, TextEncoder, crypto: webcrypto,
     AbortController, DOMException, Date, Promise, console, URL, // URL：settings.js 按网址认网站（0.20）
+    setTimeout: () => 0, // 0.28.5：后台起来 5 秒后清过期缓存（purgeCaches）；这里不跑
     scoreReplies: (key, post, replies, options) => scoreReplies(key, post, replies, {
       ...options, totalTimeoutMs: 500, requestTimeoutMs: 200,
       fetchImpl: async (...args) => {
@@ -46,7 +47,7 @@ function backend({ fetchImpl, failWrite, initial = {} } = {}) {
   });
   vm.runInContext(readFileSync(new URL("../rules.js", import.meta.url), "utf8"), context);
   const feedbackSource = readFileSync(new URL("../feedback.js", import.meta.url), "utf8").replace(/^import .*;$/mg, "").replace(/^export /mg, "");
-  context.feedback = vm.runInContext(`(() => { ${feedbackSource}; return { getOverrides, saveDecision, listSlogans, rememberSlogan, removeSlogan, clearSlogans, examplesFor, undoMark }; })()`, context);
+  context.feedback = vm.runInContext(`(() => { ${feedbackSource}; return { getOverrides, saveDecision, listSlogans, rememberSlogan, removeSlogan, clearSlogans, examplesFor, undoMark, clearOverrides }; })()`, context);
   vm.runInContext(readFileSync(new URL("../settings.js", import.meta.url), "utf8"), context);
   const source = readFileSync(new URL("../background.js", import.meta.url), "utf8").replace(/^import .*;$/mg, "").replaceAll("export async function", "async function");
   vm.runInContext(source, context);
@@ -225,7 +226,8 @@ test("background marks bad keys permanent and invalid scores retryable", async (
 });
 
 
-test("clearing logs before first use migrates and retains old user decisions", async () => {
+// 0.28.5（用户 10-19 定）："清空统计和记录"连你的纠正一起清（以前特意留着，界面上删不掉）
+test("clearing stats and records also clears user decisions, including ones still only in the old log", async () => {
   const h = backend({ initial: { ff_log: [
     { id: "1", label: "missed", ts: "2026-10-10T01:00:00Z" },
     { id: "1", label: "fp", ts: "2026-10-10T02:00:00Z" },
@@ -234,14 +236,13 @@ test("clearing logs before first use migrates and retains old user decisions", a
   assert.equal((await h.call({ type: "clearLog" })).ok, true);
   assert.equal(h.store.ff_log.length, 0);
   assert.equal(Object.keys(h.store.ff_stats).length, 0);
-  // 再建一个后台上下文，验证保留的是持久决定，不是旧实例内存。
+  // 再建一个后台上下文：纠正没了，也不会从旧日志迁回来
   const restarted = backend({ initial: structuredClone(h.store) });
   const restored = await restarted.call({ type: "replyOverrides", ids: ["1", "2"] });
-  assert.equal(restored.overrides["1"], "fp");
-  assert.equal(restored.overrides["2"], "missed_abuse");
+  assert.equal(Object.keys(restored.overrides).length, 0);
 });
 
-test("failed migration preserves source logs and a later clear can recover", async () => {
+test("a failed clear keeps the log; clearing again succeeds and the decisions are gone", async () => {
   let failMigration = true;
   const h = backend({
     initial: { ff_log: [{ id: "7", label: "fp", ts: "2026-10-10T01:00:00Z" }] },
@@ -251,5 +252,5 @@ test("failed migration preserves source logs and a later clear can recover", asy
   assert.equal(h.store.ff_log.length, 1, "清理失败时必须保留唯一的旧纠错来源");
   assert.equal((await h.call({ type: "clearLog" })).ok, true);
   assert.equal(h.store.ff_log.length, 0);
-  assert.equal((await h.call({ type: "replyOverrides", ids: ["7"] })).overrides["7"], "fp");
+  assert.equal((await h.call({ type: "replyOverrides", ids: ["7"] })).overrides["7"], undefined);
 });

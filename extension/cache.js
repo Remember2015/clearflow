@@ -88,6 +88,30 @@ export async function putMany(recs, capBytes) {
   return { bytes, count, evicted };
 }
 
+// 过期的真删掉（0.28.5，隐私政策写的"最多 7 天"；以前过期的只是读的时候不用，要等缓存满了才按访问时间删）。
+// 后台每天跑一次（background.js 的 purgeCaches）；返回删了几条
+export async function purgeExpired(now = Date.now()) {
+  const db = await open();
+  const tx = db.transaction([STORE, META], "readwrite");
+  const st = tx.objectStore(STORE), meta = tx.objectStore(META);
+  let bytes = (await reqp(meta.get("bytes"))) || 0, count = (await reqp(meta.get("count"))) || 0, removed = 0;
+  await new Promise((res, rej) => {
+    const cur = st.openCursor();
+    cur.onsuccess = () => {
+      const c = cur.result;
+      if (!c) return res();
+      const r = c.value;
+      if (!Number.isFinite(r.scoredAt) || now - r.scoredAt >= CACHE_TTL_MS || r.scoredAt > now) { bytes -= r.size || 0; count--; removed++; c.delete(); }
+      c.continue();
+    };
+    cur.onerror = () => rej(cur.error);
+  });
+  meta.put(Math.max(bytes, 0), "bytes");
+  meta.put(Math.max(count, 0), "count");
+  await done(tx);
+  return removed;
+}
+
 export async function stats() {
   const db = await open();
   const tx = db.transaction(META, "readonly");

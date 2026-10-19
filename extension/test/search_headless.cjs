@@ -56,9 +56,9 @@ const summary = () => new Promise((res) => {
     const sent = (jev?.replies || []).map((x) => x.id);
     ok("你自己的、广告不发 Jev", !sent.includes("6005") && sent.every((id) => /^600[1-4]$/.test(id)), JSON.stringify(sent));
     ok("请求里说明是搜索结果、不带作者；缓存不按搜的词分", /search results/.test(jev?.post || "") && !jev?.author && jev?.postId === "s:search", JSON.stringify([jev?.post, jev?.author, jev?.postId]));
-    const folded = await page.evaluate(() => window.__ffFolded || []);
-    ok("折掉的记给弹窗核对（搜索结果、按搜的词记）", JSON.stringify(folded.map((x) => x.id).sort()) === '["6002","6003","6004"]' &&
-      folded.every((x) => x.page === "search" && x.postId === "s:idol" && x.text), JSON.stringify(folded.map((x) => [x.id, x.page, x.postId])));
+    const ps = await page.evaluate(summary); // 0.28.5：清理掉的从弹窗那条查询里拿（不再发"最近清理"）
+    ok("清理掉的（搜索结果、这一页按搜的词记成 s:idol）", JSON.stringify((ps?.folded || []).map((x) => x[0]).sort()) === '["6002","6003","6004"]' &&
+      ps.kind === "search" && ps.key === "s:idol", JSON.stringify(ps));
     let s = await page.evaluate(summary);
     ok("弹窗问这个页面：搜索结果、三类各折 1 条", s && s.kind === "search" && s.folds && s.folds.spam === 1 && s.folds.abuse === 1 && s.folds.sexual === 1, JSON.stringify(s));
 

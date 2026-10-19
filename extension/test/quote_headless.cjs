@@ -18,7 +18,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     await wait(2500);
     await page.evaluate(() => document.querySelectorAll('.ff-group[aria-expanded="false"]').forEach((b) => b.click())); // 连着两条（0.27 起两条就合）：点开看每条
     await wait(300);
-    const r = await page.evaluate(() => {
+    const r = await page.evaluate(async () => {
       const bars = {};
       for (const a of document.querySelectorAll('article[data-testid="tweet"]')) {
         const id = a.querySelector('a[href*="/status/"]').getAttribute("href").match(/status\/(\d+)/)[1];
@@ -26,7 +26,8 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
         bars[id] = b ? b.querySelector(".ff-reason").textContent : null;
       }
       const sent = (window.__ffLastJev?.replies || []).map((x) => [x.id, x.text]);
-      return { bars, sent, folded: (window.__ffFolded || []).map((x) => [x.id, x.page, x.postId, x.kind, !!x.text]) };
+      const s = await new Promise((res) => { let done = false; for (const f of window.__ffOnMessage || []) f({ type: "pageSummary" }, {}, (s) => { if (!done) { done = true; res(s || {}); } }); setTimeout(() => { if (!done) res({}); }, 300); }); // 0.28.5：清理掉的从弹窗那条查询里拿（不再发"最近清理"）
+      return { bars, sent, folded: (s.folded || []).map(([id, kind]) => [id, s.kind, s.key, kind]) };
     });
     const SELF = "只贴了自己的另一条帖子";
     ok("没写字、只引用自己另一条帖子的回复折叠", r.bars["941"] === SELF, JSON.stringify(r.bars));
@@ -35,8 +36,8 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     ok("楼主引用自己的帖子不按这条折（0.21.2 起楼主的回复照样判，只是\"只贴自己的另一条帖子\"不管楼主）", !r.bars["946"], JSON.stringify(r.bars));
     const ids = r.sent.map((x) => x[0]);
     ok("折掉的两条不发 Jev，别的照常发", !ids.includes("941") && !ids.includes("942") && ["943", "944", "945"].every((i) => ids.includes(i)), JSON.stringify(ids));
-    ok("折掉的两条记给弹窗核对（帖子页、带正文）", JSON.stringify(r.folded.filter((x) => ["941", "942"].includes(x[0])).sort()) ===
-      JSON.stringify([["941", "status", "135", "selfquote", true], ["942", "status", "135", "selfquote", true]]), JSON.stringify(r.folded));
+    ok("清理掉的两条（帖子页、这一页记成 135）", JSON.stringify(r.folded.filter((x) => ["941", "942"].includes(x[0])).sort()) ===
+      JSON.stringify([["941", "status", "135", "selfquote"], ["942", "status", "135", "selfquote"]]), JSON.stringify(r.folded));
     ok("回复自己写了的话照常按自己的话判（不混进引用的那条）", r.sent.find((x) => x[0] === "944")?.[1].startsWith("我之前专门算过一笔账"), JSON.stringify(r.sent));
     // 帖子页的回复：三问都照常用（"在 @ 别人做推广"就是冲着回复问的）
     await page.goto(`${BASE}/fakex/status/135/?jev=${encodeURIComponent(JSON.stringify({ "医保很重要": { promo_mention: 0.86 } }))}`, { waitUntil: "load" });
