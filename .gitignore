@@ -11,3 +11,5 @@ extension/test/inject_reddit.js
 extension/test/inject_hn.js
 extension/test/inject_yt.js
 extension/test/inject_xhs.js
+# scripts/build-zhconv.py downloads OpenCC dictionaries here
+.cache/
