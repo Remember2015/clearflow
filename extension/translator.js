@@ -432,8 +432,10 @@ export async function fillInBatch({ orKey, settings, items, cache = idbCache, si
 
 // YouTube 字幕一段（连着的几十行，0.29.0）：lines 是这几行原文，返回 {lines（一一对应的译文）, model, cost, cached}。
 // 模型回来的标记对不上（少了、多了、重复）：换后备模型再翻一次，还不对就报错（页面那头照旧用 YouTube 的）。缓存按这几行原文、目标语言、模型
+// onLine(k, 译文)：流式（0.29.5，用户 10-20 要字幕跟得上）——第 k 行（从 0 数）的 </cN> 一到就先给，页面先换上这一行。GPT-6 Luna 40 行
+// 整段 6.6–6.9 秒，第一行 1.4–1.6 秒就到（10-20 量的）；换后备模型重翻时那个模型的每一行重新给一遍
 export const CAPTION_VERSION = "cap1";
-export async function translateCaptions({ orKey, settings, lines, srcLang, target = "zh", cache = idbCache, signal, fetchImpl, flex = false }) {
+export async function translateCaptions({ orKey, settings, lines, srcLang, target = "zh", cache = idbCache, signal, fetchImpl, flex = false, onLine }) {
   const key = await sha256(JSON.stringify([CAPTION_VERSION, settings.translateModel, settings.translateFallback || "", target, srcLang || "", lines]));
   try { const hit = await cache.get(key); if (hit && Array.isArray(hit.lines) && hit.lines.length === lines.length) return { ...hit, cached: true }; } catch { /* 当没命中 */ }
   const source = lines.map((l, k) => `<c${k + 1}>${String(l).replace(/\s*\n\s*/g, " ").trim()}</c${k + 1}>`).join("\n");
@@ -449,8 +451,19 @@ export async function translateCaptions({ orKey, settings, lines, srcLang, targe
   let cost = 0, last = null, err = null;
   const models = [settings.translateModel, settings.translateFallback].filter((m, i, a) => m && a.indexOf(m) === i);
   for (const model of models) {
+    const given = new Set();
+    const onText = onLine && ((all) => {
+      for (const m of String(all).matchAll(/<c(\d+)>([\s\S]*?)<\/c\1>/g)) {
+        const k = Number(m[1]) - 1;
+        if (k < 0 || k >= lines.length || given.has(k)) continue;
+        const text = cleanOutput(m[2]).replace(/\s*\n\s*/g, " ");
+        if (!text) continue;
+        given.add(k);
+        try { onLine(k, text); } catch { /* 那头出错不影响 */ }
+      }
+    });
     let r;
-    try { r = await translate(orKey, { ...settings, translateModel: model, translateFallback: "" }, { source, srcLang, captions: true, target }, { signal, fetchImpl, flex }); }
+    try { r = await translate(orKey, { ...settings, translateModel: model, translateFallback: "" }, { source, srcLang, captions: true, target }, { signal, fetchImpl, flex, ...(onText ? { onText } : {}) }); }
     catch (e) { if (signal?.aborted || e.code === "or_badkey" || e.code === "or_credit") throw e; err = e; continue; } // 这个模型出错：换后备模型
     cost += r.cost || 0;
     const out = parse(r.text);

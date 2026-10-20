@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.29.5 — 2026-10-20
+
+- YouTube captions: when ClearFlow retranslates poor auto-translated captions, each line now appears as soon as it's translated (the first within a second or two) instead of after the whole block of 40 lines, and after you jump to another point in the video it starts from the line on screen rather than from the start of that block.
+
 ## 0.29.4 — 2026-10-19
 
 - Japanese: the YouTube caption settings and the notes behind the ✦ after captions were shown in Chinese; they're in Japanese now.

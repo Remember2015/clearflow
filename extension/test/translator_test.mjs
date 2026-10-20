@@ -1,7 +1,7 @@
 // 翻译增强后台逻辑（translator.js）的离线测试：Jev 和 OpenRouter 都用假的 fetch，缓存用内存，不需要任何 key。
 // node test/translator_test.mjs
 import assert from "node:assert/strict";
-import { improve, fillIn, fillInBatch, fillCached, translate, cleanOutput, OR_API, SYSTEM_PROMPT, BATCH_ZH } from "../translator.js";
+import { improve, fillIn, fillInBatch, fillCached, translate, translateCaptions, cleanOutput, OR_API, SYSTEM_PROMPT, BATCH_ZH } from "../translator.js";
 
 const S = { translateThreshold: 0.7, translateMargin: 0.1, translateModel: "openai/gpt-6-luna", translateFallback: "deepseek/deepseek-v4.1-flash" };
 const item = { id: "1900000000000000101", source: "Why is it so hard to hire good people? Because the good ones are not for hire!", xText: "为什么雇佣好人这么难？因为好人不是雇佣兵！", srcLang: "en" }; // 合成的
@@ -405,6 +405,23 @@ await ok("流式：输出到上限被截断（finish_reason length）：这份�
     : sseResp([delta("<u1>一</u1><u2>二</u2><u3>三</u3>"), endEv(0.00003)]));
   const r = await fillInBatch({ orKey: "o", settings: S, items: three, cache: memCache(), fetchImpl, onItem: () => {} });
   assert.equal(n, 2); assert.deepEqual(r.map((x) => x.text), ["一", "二", "三"]);
+});
+
+await ok("字幕流式（0.29.5）：带 onLine 时请求带 stream，每一行的 </cN> 一到就先给那一行（不等整段）；整段照旧返回、进缓存；不带 onLine 不流式", async () => {
+  const log = [], bodies = [];
+  const fetchImpl = async (url, init) => { bodies.push(JSON.parse(init.body));
+    return sseResp([delta("<c1>第一行</c1>\n<c2>第二"), delta("行</c2>\n<c3>第三行</c3>"), endEv(0.00003)], log); };
+  const cache = memCache();
+  const r = await translateCaptions({ orKey: "o", settings: S, lines: ["one", "two", "three"], srcLang: "en", cache, fetchImpl, onLine: (k, t) => log.push(`line${k}:${t}`) });
+  assert.equal(bodies[0].stream, true);
+  assert.deepEqual(r.lines, ["第一行", "第二行", "第三行"]); assert.equal(r.cached, false); assert.equal(cache.m.size, 1);
+  assert.ok(log.indexOf("line0:第一行") > log.indexOf("chunk0") && log.indexOf("line0:第一行") < log.indexOf("chunk1"), "第一行在第二块到之前就给了：" + log.join(","));
+  assert.ok(log.indexOf("line1:第二行") > log.indexOf("chunk1"), "第二行要等它的 </c2>");
+  assert.equal(log.filter((x) => x.startsWith("line")).length, 3, "每行只给一次");
+  const plain = [];
+  await translateCaptions({ orKey: "o", settings: S, lines: ["four"], srcLang: "en", cache: memCache(),
+    fetchImpl: async (url, init) => { plain.push(JSON.parse(init.body)); return json({ model: S.translateModel, choices: [{ message: { content: "<c1>四</c1>" } }], usage: { cost: 0.00001 } }); } });
+  assert.equal(plain[0].stream, undefined);
 });
 
 await ok("模型输出去掉多余的引号和前缀", async () => {

@@ -5,8 +5,8 @@
 // 2. 你选了"自动翻译 → 某种语言"（YouTube 一行一行地机翻，一句话跨两三行的就翻碎了）、设置里 captionFix 开着：
 //    a. 翻成的是简体中文、视频有人工的中文字幕：换成它（繁体的照 1 转）；
 //    b. 不然拿前面一段原文和 YouTube 的译文问 Jev（和判 X 的 Grok 译文同一套），最低分不到重译阈值（设置里 translateThreshold）就用模型重翻：
-//       原文字幕每 CHUNK 行一段整段翻（background.js 的 captionTranslate），一行一行放回原来的时间；看到哪儿翻到哪儿（眼前这段走标准通道，
-//       往后预翻一段走 flex），没看到的不花钱。还没翻好的那几行照样用 YouTube 的。
+//       原文字幕从眼前这一行起最多 CHUNK 行一段整段翻（background.js 的 captionTranslate），一行一行放回原来的时间；看到哪儿翻到哪儿
+//       （眼前这段走标准通道，往后预翻一段走 flex），没看到的不花钱。流式：翻好一行先换上一行（0.29.5）。还没翻好的那几行照样用 YouTube 的。
 // 不动 YouTube 的菜单和播放器：字幕画在 #movie_player .ytp-caption-window-container 里（每个 .caption-window 一块，一行一个 .ytp-caption-segment），
 // 1 是每次画出来就把字换成简体；2 是按视频现在的时间找到我们这一行，换进 YouTube 画的那一块（那一刻 YouTube 没有字幕就不显示）。
 // 换过的那一块后面一个小 ✦：鼠标停上去说是怎么换的，点它看 YouTube 原来的，再点换回来。
@@ -25,11 +25,19 @@
   // 人工的简体中文字幕（zh、zh-CN、zh-SG、zh-Hans……；不是自动生成的）
   const humanHans = (list) => list.find((x) => x.kind !== "asr" && ZH.test(x.lang) && !HANT.test(x.lang)) || null;
   const schemeOf = (lang) => (/^zh-(hk|mo)\b/i.test(lang) ? "hk2sp" : /^zh-tw\b/i.test(lang) ? "tw2sp" : "t2s");
-  const CHUNK = 40, SAMPLE = 40, AHEAD = 20; // 一段几行；判 YouTube 的译文用前面几行；离已经翻好的结尾还剩几行时去翻下一段
+  const CHUNK = 40, SAMPLE = 40, AHEAD = 20; // 一段最多几行；判 YouTube 的译文用前面几行；离已经翻了的结尾还剩几行时去翻下一段
   // 拖进度（0.29.0，用户 10-19："播放器可以调进度"）：拖的过程中时间一路在变，路过的每一段都去翻就白花钱了——停下来 SETTLE 毫秒不再拖了才翻
   // 停在的那一段；显示不用等（每次重画、每次时间变了都按现在的时间找那一行，没翻好的那几行先用 YouTube 的）
   const SETTLE = 600;
   let lastSeek = 0, settleTimer = 0;
+  // 后台流式推回来的字幕行（txPart；rid 是 "cap:" 开头的，和 tx_engine.js 的批不会撞）
+  const parts = new Map(), RID = Math.random().toString(36).slice(2, 10);
+  let ridN = 0;
+  try {
+    chrome.runtime.onMessage.addListener((msg) => {
+      if (msg && msg.type === "txPart" && typeof msg.rid === "string" && msg.rid.startsWith("cap:")) { const f = parts.get(msg.rid); if (f) f(msg.k, msg.result); }
+    });
+  } catch (e) { /* 插件刚重载 */ }
   const SPARK = '<path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4z"/>';
 
   let st = null, hasKey = false, hasOrKey = false;
@@ -101,29 +109,40 @@
     const j = await send({ type: "captionJudge", source: src.slice(0, n).map((c) => c.text).join("\n").slice(0, 5000),
       translation: yt.slice(0, n).map((c) => c.text).join("\n").slice(0, 5000), srcLang: track.lang, target: track.tlang });
     if (my !== epoch || j.error || !(j.min < (Number(st.translateThreshold) || 0.7))) return;
-    mode = { kind: "replace", why: "fixed", cues: src.map((c) => ({ t: c.t, d: c.d, text: null })), src, lang: track.lang, tlang: track.tlang, asked: new Set(), failed: false };
+    mode = { kind: "replace", why: "fixed", cues: src.map((c) => ({ t: c.t, d: c.d, text: null })), src, lang: track.lang, tlang: track.tlang, asked: [], failed: false };
     ensureAhead();
   }
-  // fixed：眼前这一段没翻就去翻（标准通道），离翻好的结尾不到 AHEAD 行就预翻下一段（flex）
+  // fixed：眼前这一行还没人翻就从这一行起翻一段（标准通道），已经在翻了、离翻了的那一截的结尾不到 AHEAD 行就接着往后预翻一段（flex）。
+  // 0.29.5（用户 10-20：字幕要跟得上）：段从眼前这一行起（以前按 40 行对齐，拖到一段中间要等前面跳过的那些行一起翻完）；
+  // m.asked[k] 记第 k 行有没有人在翻 / 翻好了，一段到下一个已经有人翻的行为止；后台流式推回来的行先换上（txPart，按 rid 认）
   function ensureAhead() {
     const m = mode;
     if (!m || m.why !== "fixed" || m.failed) return;
     const v = video();
     if ((v && v.seeking) || Date.now() - lastSeek < SETTLE) return; // 还在拖：等停下来（seeked 以后 SETTLE 再来）
-    const i = Math.max(0, cueIndex(m.cues, now()));
-    const want = [Math.floor(i / CHUNK)];
-    if ((i % CHUNK) >= CHUNK - AHEAD) want.push(want[0] + 1);
-    for (const [k, c] of want.entries()) {
-      if (c * CHUNK >= m.cues.length || m.asked.has(c)) continue;
-      m.asked.add(c);
-      const my = epoch, lines = m.src.slice(c * CHUNK, (c + 1) * CHUNK).map((x) => x.text);
-      send({ type: "captionTranslate", lines, srcLang: m.lang, target: m.tlang, flex: k > 0 }).then((r) => {
-        if (my !== epoch || mode !== m) return;
-        if (r.error || !Array.isArray(r.lines) || r.lines.length !== lines.length) { if (!r.retryable) m.failed = true; else m.asked.delete(c); return; }
-        r.lines.forEach((x, k2) => { m.cues[c * CHUNK + k2].text = x; });
-        render();
-      });
-    }
+    const n = m.cues.length, i = Math.min(n - 1, Math.max(0, cueIndex(m.cues, now())));
+    let start = -1, flex = false;
+    if (!m.asked[i]) start = i;
+    else { let j = i; while (j < n && m.asked[j]) j++; if (j < n && j - i < AHEAD) { start = j; flex = true; } }
+    if (start < 0) return;
+    let end = start;
+    while (end < n && end - start < CHUNK && !m.asked[end]) m.asked[end++] = true;
+    const my = epoch, lines = m.src.slice(start, end).map((x) => x.text), rid = `cap:${RID}:${++ridN}`;
+    parts.set(rid, (k, x) => {
+      if (my !== epoch || mode !== m || !x || typeof x.text !== "string" || !x.text || !(k >= 0 && k < lines.length)) return;
+      m.cues[start + k].text = x.text;
+      scheduleRender();
+    });
+    send({ type: "captionTranslate", lines, srcLang: m.lang, target: m.tlang, flex, rid }).then((r) => {
+      parts.delete(rid);
+      if (my !== epoch || mode !== m) return;
+      if (r.error || !Array.isArray(r.lines) || r.lines.length !== lines.length) {
+        if (!r.retryable) m.failed = true; else for (let k = start; k < end; k++) if (m.cues[k].text == null) m.asked[k] = false;
+        return;
+      }
+      r.lines.forEach((x, k2) => { m.cues[start + k2].text = x; });
+      render();
+    });
   }
 
   // ---------- 画出来 ----------

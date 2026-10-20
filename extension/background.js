@@ -562,7 +562,7 @@ const validCapLang = (l) => l == null || (typeof l === "string" && /^[a-z]{2,3}(
 const validCapJudge = (m) => typeof m.source === "string" && m.source.trim() && m.source.length <= 5000 && typeof m.translation === "string" && m.translation.trim() &&
   m.translation.length <= 5000 && validCapLang(m.srcLang) && validLang(m.target);
 const validCapLines = (m) => Array.isArray(m.lines) && m.lines.length >= 1 && m.lines.length <= 60 && m.lines.every((l) => typeof l === "string" && l.length <= 400) &&
-  m.lines.join("").length <= 6000 && validCapLang(m.srcLang) && validLang(m.target);
+  m.lines.join("").length <= 6000 && validCapLang(m.srcLang) && validLang(m.target) && (m.rid == null || (typeof m.rid === "string" && /^[\w:.-]{1,64}$/.test(m.rid)));
 async function capAccess(site, need) {
   if (site !== "yt") return { error: "disabled", code: "disabled", retryable: false };
   const st = await settings(site);
@@ -592,7 +592,8 @@ async function handleCaptionJudge(msg, site) {
     if (acquired) txRelease();
   }
 }
-async function handleCaptionTranslate(msg, site) {
+// rid（0.29.5）：流式，每一行一译完就推给发来的那个页面（txPart {rid, k, result: {text}}，和几条一起补翻的一样），页面先换上这一行
+async function handleCaptionTranslate(msg, site, sender) {
   if (!validCapLines(msg)) return { error: "无效的字幕", code: "invalid_request", retryable: false };
   const a = await capAccess(site, "or");
   if (a.error) return a;
@@ -603,7 +604,9 @@ async function handleCaptionTranslate(msg, site) {
     await txSlot(controller.signal);
     acquired = true;
     await sameKeys(a.key);
-    const r = await translator.translateCaptions({ orKey: a.key, settings: a.st, signal: controller.signal, lines: msg.lines, srcLang: msg.srcLang, target: msg.target || "zh", flex: msg.flex === true });
+    const push = partSender(msg, sender);
+    const r = await translator.translateCaptions({ orKey: a.key, settings: a.st, signal: controller.signal, lines: msg.lines, srcLang: msg.srcLang, target: msg.target || "zh", flex: msg.flex === true,
+      ...(push ? { onLine: (k, text) => push(k, { text }) } : {}) });
     if (!r.cached) { bump({ tx_captions: 1, tx_usd: r.cost || 0 }).catch(() => {}); health("or", null).catch(() => {}); }
     return r;
   } catch (e) {
@@ -762,7 +765,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       case "captionJudge":
         return await handleCaptionJudge(msg, site);
       case "captionTranslate":
-        return await handleCaptionTranslate(msg, site);
+        return await handleCaptionTranslate(msg, site, sender);
       case "setKey": { // 设置页、引导页存 key（0.28.12）：只收插件自己的页面发来的，网站页面里的内容脚本不行
         if (!fromExtension(sender)) return { error: "不是插件自己的页面", code: "invalid_request", retryable: false };
         if ((msg.which !== "jev" && msg.which !== "or") || typeof msg.value !== "string" || msg.value.length > 500) return { error: "无效的 key", code: "invalid_request", retryable: false };
