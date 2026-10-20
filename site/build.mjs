@@ -394,7 +394,7 @@ function keys(lang) {
   return shell({ lang, C, title: K.title, description: K.description, pathFor: (l) => `/${l}/keys/`, body });
 }
 
-// ---------- privacy: PRIVACY.md (English half / Chinese half) ----------
+// ---------- privacy: PRIVACY.md (English / Chinese), privacy.ja.md (Japanese) ----------
 function inline(s) {
   return esc(s)
     .replace(/`([^`]+)`/g, "<code>$1</code>")
@@ -428,13 +428,13 @@ function privacy(lang) {
   const C = COPY[lang], P = C.privacyPage;
   const md = fs.readFileSync(PRIVACY, "utf8");
   const [en, zh] = md.split(/<a id="中文"><\/a>/);
-  const part = (lang === "zh" ? zh : en).replace(/\s*·\s*\[中文版本见下方\]\(#中文\)/, "");
+  const part = (lang === "ja" ? fs.readFileSync(path.join(SITE, "privacy.ja.md"), "utf8") : lang === "zh" ? zh : en).replace(/\s*·\s*\[中文版本见下方\]\(#中文\)/, "");
   const body = `
 <section class="page-head">
   <div class="wrap narrow"><p class="src">${esc(P.source)} <a href="${REPO}/blob/main/PRIVACY.md">PRIVACY.md</a></p></div>
 </section>
 <section class="sec tight">
-  <article class="wrap narrow prose" lang="${lang === "zh" ? "zh-CN" : "en"}">
+  <article class="wrap narrow prose" lang="${LANGS[lang].html}">
 ${markdown(part)}
   </article>
 </section>`;

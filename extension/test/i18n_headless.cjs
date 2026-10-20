@@ -76,7 +76,7 @@ async function foldPage(browser, q, shot) {
     try {
       const en = await foldPage(plain, "?lang=en");
       const tags = en.bars.map((b) => b.tag);
-      ok("英文界面：折叠条的标签是英文", tags.length >= 4 && tags.includes("Likely spam") && tags.includes("Likely abuse") && tags.includes("Likely sexual"), JSON.stringify(tags));
+      ok("英文界面：折叠条的标签是英文", tags.length >= 4 && tags.includes("Likely spam") && tags.includes("Likely abuse") && tags.includes("Likely sexual content"), JSON.stringify(tags));
       ok("英文界面：理由和按钮没有中文", en.bars.every((b) => !HAN.test(b.reason || "") && b.buttons.every((x) => !HAN.test(x || ""))), JSON.stringify(en.bars));
       ok("英文界面：理由说的是人话", en.bars.some((b) => /accounts posted the same line/.test(b.reason || "")) && en.bars.some((b) => /^@-mentions an account/.test(b.reason || "")),
         JSON.stringify(en.bars.map((b) => b.reason)));
@@ -171,7 +171,7 @@ async function foldPage(browser, q, shot) {
       ok(`弹窗和设置页：${Object.keys(ALL).length} 种语言都放得下、三档 / 类别 / 按钮不折行、开关不被挤扁`, misfit.length === 0, misfit.join(" | "));
     }
 
-    for (const [lang, code, expect] of [["en-US", "en", { h1: "Settings", fold: "Cleanup rules", pop: "Hidden for you today", name: "ClearFlow" }],
+    for (const [lang, code, expect] of [["en-US", "en", { h1: "Settings", fold: "Filtering rules", pop: "Hidden for you today", name: "ClearFlow" }],
       ["zh-CN", "zh-CN", { h1: "设置", fold: "清理规则", pop: "今天帮你清理", name: "清流" }],
       ["ja", "ja", { name: extName("ja") }],
       ["ar", "ar", { name: extName("ar"), rtl: true }]]) {

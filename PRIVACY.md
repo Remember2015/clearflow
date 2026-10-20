@@ -1,10 +1,10 @@
 # ClearFlow (清流) Privacy Policy
 
-Effective date: October 19, 2026 · [中文版本见下方](#中文)
+Effective date: October 20, 2026 · [中文版本见下方](#中文)
 
 ClearFlow is a browser extension that cleans up comment sections and translates posts on X, Reddit, YouTube, Xiaohongshu (RedNote) and Hacker News. It is published by OhMyAI. This policy explains what the extension reads, what it sends and to whom, and what it keeps on your device.
 
-**The short version:** ClearFlow sends the comments and posts you are looking at to two services you choose and pay for — TypeSafe (to judge them) and OpenRouter (to translate them) — using API keys you enter yourself. It sends nothing to us, the developers. It has no analytics, no tracking and no remote code. Everything else stays in your browser.
+**The short version:** ClearFlow sends the comments and posts you are looking at to two services you choose and pay for — TypeSafe (to judge them) and OpenRouter (to translate them) — using API keys you enter yourself. It sends nothing to us, the developers. It does not upload usage statistics or track browsing behavior, and it runs no remote code. Other stored data stays in your browser.
 
 ## Where it runs
 
@@ -19,10 +19,10 @@ Used for cleaning (spam, abuse, sexual content, and replies like "nice" or "+1")
 - For each comment on the page that local rules can't decide: the comment text (up to 600 characters), the commenter's display name and handle, the text of the post it belongs to (up to 400 characters) and the post author's name and handle. Up to 10 comments per request.
 - On profile and search pages on X and on list pages on Reddit, the posts in the list instead of comments, with a fixed one-line description in place of the post text.
 - On X posts that X translated automatically: the original text and X's (Grok's) translation. When ClearFlow retranslates such a post (below), its own translation too, so the two can be compared.
-- Only if you turn on "Look at images in replies" (off by default): images attached to those comments, downscaled, together with the text. To do this the extension asks for permission to read images from `pbs.twimg.com`, `i.redd.it`, `preview.redd.it` and `*.xhscdn.com`; it gives the permission back when you turn the option off.
+- Only if you turn on "Check images in replies" (off by default): images attached to those comments, downscaled, together with the text. To do this the extension asks for permission to read images from `pbs.twimg.com`, `i.redd.it`, `preview.redd.it` and `*.xhscdn.com`; it gives the permission back when you turn the option off.
 - Only if you have marked spam yourself on that site ("Hide this reply", or the funnel on a notice bar): your 10 most recently marked replies on that site (text up to 240 characters and the account), sent with those comments as examples, so TypeSafe can tell whether a comment is the same kind of spam. Right after you mark one, the comments on that page that weren't cleaned are checked once more against the examples (up to 25 per request).
 - On YouTube, only when you choose YouTube's auto-translated captions and "Improve auto-translated captions" is on (and the video has no human Chinese captions to use instead): the first lines (up to 40) of the original captions and YouTube's translation of them, to judge how good YouTube's translation is.
-- The same comment in the same context is not sent again for 7 days (results are cached locally).
+- Results are cached locally for up to 7 days to reduce repeat requests for the same comment in the same context. A comment may be sent again if the cache is cleared or an entry is removed, or if a new judgment is needed.
 
 ### OpenRouter (`openrouter.ai`) — translating
 
@@ -34,13 +34,13 @@ Only sent if you entered an OpenRouter key and translation is on for that site.
 
 ### Nobody else
 
-ClearFlow sends nothing to OhMyAI or anyone other than the two services above. There is no analytics, crash reporting, advertising or tracking code. All code is in the extension package; nothing is downloaded and run later.
+ClearFlow sends nothing to OhMyAI or anyone other than the two services above. Usage and cost statistics stay on your device. There is no analytics reporting, crash reporting, advertising or tracking code. All code is in the extension package; nothing is downloaded and run later.
 
 When you click "Test connection" in Settings, a short fixed sample text is sent to the service being tested.
 
 ## What is stored on your device
 
-All of the following is stored only in your browser's extension storage (`chrome.storage.local` and IndexedDB) and is never uploaded:
+The following data is stored in your browser's extension storage (`chrome.storage.local` and IndexedDB). API keys authenticate requests to the respective services, and marked spam may be sent to TypeSafe as examples, as described above. Other stored data is not uploaded:
 
 - Your settings and your two API keys. The keys are kept in the extension's own database in this browser, which the websites you visit (and the extension's scripts running on them) can't read; only the extension's background worker uses them. They aren't encrypted.
 - Daily counters (how many items were cleaned or translated, estimated cost).
@@ -74,11 +74,11 @@ developer@ohmyai.app
 
 # 清流（ClearFlow）隐私政策
 
-生效日期：2026 年 10 月 19 日
+生效日期：2026 年 10 月 20 日
 
 清流是一个浏览器插件，在 X、Reddit、YouTube、小红书和 Hacker News 上清理评论区、翻译帖子，由 OhMyAI 发布。这份政策说明插件读什么、发什么给谁、在你的设备上存什么。
 
-**一句话：** 清流用你自己填的 key，把你正在看的评论和帖子发给你选的两个付费服务——TypeSafe（判断）和 OpenRouter（翻译）。它不发任何东西给我们（开发者），没有统计、没有追踪、没有远程代码。别的都留在你的浏览器里。
+**一句话：** 清流用你自己填的密钥，把你正在看的评论和帖子发给你选的两个付费服务——TypeSafe（判断）和 OpenRouter（翻译）。它不发任何东西给我们（开发者），不上传使用统计、不追踪浏览行为，也不运行远程代码。其他存储的数据留在你的浏览器里。
 
 ## 在哪里运行
 
@@ -88,19 +88,19 @@ developer@ohmyai.app
 
 ### TypeSafe（`api.typesafe.ai`）——判断评论
 
-用于清理（垃圾、辱骂、色情，以及「赞」「mark」这类回复），以及在 X 上判断 X 自己的译文好不好。只有填了 TypeSafe（Jev）的 key 才发。
+用于清理（垃圾、辱骂、色情，以及「赞」「mark」这类回复），以及在 X 上判断 X 自己的译文好不好。只有填了 TypeSafe（Jev）的密钥才发。
 
 - 页面上本地规则判不了的每条评论：评论正文（最多 600 字）、评论者的昵称和账号、所在帖子的正文（最多 400 字）和帖子作者的昵称和账号。每次最多 10 条。
 - X 的用户主页、搜索结果和 Reddit 的列表页上，发的是列表里的帖子，帖子正文那一栏换成一句固定的说明。
 - X 自动翻译过的帖子：原文和 X（Grok）的译文。清流重译了这条时（见下），它自己的译文也发过去，好和 Grok 的比。
-- 只有打开「看回复里的图片」（默认关）时：评论里的图片（缩小后）连同文字一起发。为此插件会请求读取 `pbs.twimg.com`、`i.redd.it`、`preview.redd.it`、`*.xhscdn.com` 上图片的权限，关掉这一项时把权限还回去。
+- 只有打开「检查回复中的图片」（默认关）时：评论里的图片（缩小后）连同文字一起发。为此插件会请求读取 `pbs.twimg.com`、`i.redd.it`、`preview.redd.it`、`*.xhscdn.com` 上图片的权限，关掉这一项时把权限还回去。
 - 只有你在这个网站上自己标记过垃圾（「清理掉这条」，或提示条上的漏斗）时：你在这个网站上最近标记的 10 条（正文最多 240 字和账号），跟着这些评论一起发过去当样例，让 TypeSafe 判断一条评论是不是同一类垃圾。你刚标了一条时，这一页上没被清理的评论再按样例问一遍（每次最多 25 条）。
 - 只有在 YouTube 上选了「自动翻译」的字幕、又开着「改善自动翻译的字幕」（而且视频没有可以拿来代替的人工中文字幕）时：原文字幕的前面几行（最多 40 行）和 YouTube 对它们的翻译，用来判断 YouTube 翻得好不好。
-- 同一条评论在同样的上下文里 7 天内不再发（结果缓存在本机）。
+- 判定结果在本机最多缓存 7 天，减少同一条评论在相同上下文中的重复请求。缓存清空、条目被移除或需要重新判断时，可能再次发送。
 
 ### OpenRouter（`openrouter.ai`）——翻译
 
-只有填了 OpenRouter 的 key、并且这个网站开着翻译才发。
+只有填了 OpenRouter 的密钥、并且这个网站开着翻译才发。
 
 - 要翻译（或者比 X 的译文翻得更好）的帖子和评论的正文。不发作者、帖子 id 和页面上别的东西。
 - 只有 TypeSafe 判下来 YouTube 自动翻译的字幕不好时（见上）：你正在看的那一段的原文字幕，一次大约 40 行，用来重新翻译。繁体中文字幕转简体在你的电脑上完成，什么都不发。
@@ -108,15 +108,15 @@ developer@ohmyai.app
 
 ### 不发给别人
 
-清流除了上面两个服务，不发任何东西给 OhMyAI 或其他任何人。没有统计、崩溃上报、广告或追踪代码。所有代码都在插件包里，不会事后下载代码来运行。
+清流除了上面两个服务，不发任何东西给 OhMyAI 或其他任何人。使用次数和费用统计只保存在本机，没有统计上报、崩溃上报、广告或追踪代码。所有代码都在插件包里，不会事后下载代码来运行。
 
 在设置里点「测试连接」时，会把一小段固定的示例文字发给被测试的那个服务。
 
 ## 在你的设备上存什么
 
-下面这些只存在你浏览器的插件存储里（`chrome.storage.local` 和 IndexedDB），从不上传：
+下面这些保存在浏览器的插件存储里（`chrome.storage.local` 和 IndexedDB）。API 密钥用于向对应服务验证请求，标记的垃圾回复可能按上文说明发给 TypeSafe 作为样例；其他存储的数据不上传：
 
-- 你的设置和两个 key。key 存在这个浏览器里插件自己的数据库里，你打开的网站（以及插件在网站上运行的脚本）读不到，只有插件的后台用它；没有加密。
+- 你的设置和两个密钥。密钥存在这个浏览器里插件自己的数据库里，你打开的网站（以及插件在网站上运行的脚本）读不到，只有插件的后台用它；没有加密。
 - 每天的计数（清理、翻译了多少条，估算的花费）。
 - 你的纠错（「不是垃圾」「清理掉这条」）和你标记的垃圾，带那条评论的正文（最多 300 字；最近 3000 条纠错、最近 500 条标记）。
 - TypeSafe 结果的缓存（只有指纹和分数、没有正文，判完 7 天后删）和译文的缓存（译好的文字，30 天没用到就删）。每份缓存默认最多 50 MB，满了先删最旧的。
@@ -128,7 +128,7 @@ developer@ohmyai.app
 - 在弹窗或设置里，对任何网站关掉清流，或者单独关掉清理、翻译。
 - 设置 → 数据和隐私：导出你的数据（设置、统计、你的纠错和标记的垃圾）、清空缓存、清空统计和记录（连你的纠错一起）。你标记的垃圾在设置里有一份列表，可以一条条删，也可以全部删掉。
 - 卸载插件会删掉它存的所有东西。
-- 你随时可以在 TypeSafe、OpenRouter 那边作废或更换 key。
+- 你随时可以在 TypeSafe、OpenRouter 那边作废或更换密钥。
 
 ## 儿童
 

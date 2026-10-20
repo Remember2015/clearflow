@@ -27,7 +27,7 @@ const MAX_CASES = { clean: 5, tx: 5 }; // crops per page for the case walls
 // "before": the same page without the line that loads the extension
 const unplug = (html) => html.replace(/const sc = document\.createElement\("script"\);[^<]*/, "");
 const OG = {
-  en: ["Comment sections without the junk", "Spam and bot replies cleaned up — each says why. Foreign-language comments translated in place."],
+  en: ["Comment sections without the junk", "Hide junk replies and see why. Read foreign-language comments in your language."],
   "zh-CN": ["评论区，清清爽爽", "垃圾回复自动清理、写明原因；外文评论原地翻成中文。"],
   ja: ["返信欄を、すっきりと", "スパムやボットの返信を理由つきで片付け、外国語のコメントはその場で日本語に。"],
 };

@@ -44,7 +44,7 @@ ok("语言代码对得上：X 的 ar-x-fm / en-gb / zh-cn / zh-tw，浏览器的
   for (const [from, to] of Object.entries(cases)) assert.equal(I.pick(from), to, from);
 });
 ok("单复数（0.24）：数字 n 按这种语言的复数规则挑 键.one / 键.few，变体里也带 {n}（俄语的 one 还包括 21）", () => {
-  for (const [l, k, n, want] of [["en", "filler.line", 1, "Cleared 1 reply like"], ["en", "filler.line", 2, "Cleared 2 replies like"], ["de", "filler.lineShown", 1, "1 Antwort wie"],
+  for (const [l, k, n, want] of [["en", "filler.line", 1, "Hid 1 reply like"], ["en", "filler.line", 2, "Hid 2 replies like"], ["de", "filler.lineShown", 1, "1 Antwort wie"],
     ["pl", "filler.lineShown", 21, "21 odpowiedzi"], ["zh-CN", "filler.line", 1, "清理了 1 条"]]) {
     const d = all[l], rule = new Intl.PluralRules(l).select(n), s = (d[`${k}.${rule}`] ?? d[k]).replace("{n}", n);
     assert.ok(s.startsWith(want), `${l} ${n}: ${s}`);

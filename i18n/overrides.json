@@ -53,7 +53,7 @@
   "filler.lineShown.few": "{n} Antworten wie „Top“ oder „+1“"
  },
  "ja": {
-  "reason.thread": "このスレッドで{n}件のアカウントが会話を演出",
+  "reason.thread": "このスレッドで{n}個のアカウントが会話を演出",
   "reason.setup": "詐欺の手口のようです",
   "filler.line.one": "「いいね」や「+1」などの返信を{n}件非表示にしました",
   "filler.lineShown.one": "「いいね」や「+1」などの返信{n}件",

@@ -51,7 +51,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
       s.sites.find((x) => x.id === "hn").checks.length === 0, JSON.stringify(st.ff_settings));
     await page.click("#welcomeNext"); await wait(400);
     s = await step();
-    ok("第 2 步：Jev 和 OpenRouter 两个 key，各带去哪里拿、各有一句说明；没填有稍后再填", s.title === "填两个 key" && JSON.stringify(s.keys) === JSON.stringify(["Jev (TypeSafe)", "OpenRouter"]) &&
+    ok("第 2 步：Jev 和 OpenRouter 两个 key，各带去哪里拿、各有一句说明；没填有稍后再填", s.title === "设置 API 密钥" && JSON.stringify(s.keys) === JSON.stringify(["Jev (TypeSafe)", "OpenRouter"]) &&
       JSON.stringify(s.links) === JSON.stringify(["https://typesafe.ai", "https://openrouter.ai/keys"]) && s.notes.length === 2 && s.later, JSON.stringify(s));
     ok("第 2 步：填之前就告诉 key 只存在本地（带锁）、只发给 TypeSafe 和 OpenRouter、不发给开发者", s.lock && /只保存在这个浏览器里/.test(s.local || "") && /TypeSafe、OpenRouter/.test(s.local) && /不会发给开发者/.test(s.local), JSON.stringify(s.local));
     if (SHOT) await page.screenshot({ path: path.join(SHOT, "welcome-2.png"), fullPage: true });

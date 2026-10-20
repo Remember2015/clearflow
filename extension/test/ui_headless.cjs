@@ -122,7 +122,7 @@ SEED["ff_reply_override:" + SEED.ff_recent_folds[2].id] = { label: "missed", upd
     await page.evaluate((st) => chrome.storage.local.set({ ff_settings: { ...st, useJev: true } }), keepSt);
     await page.reload({ waitUntil: "load" });
     await wait(600);
-    ok("关了 Jev：不提没填 Jev key；开着才提", !/Jev key/.test(noJev) && /Jev key/.test(await txt("#alerts")), JSON.stringify([noJev, await txt("#alerts")]));
+    ok("关了 Jev：不提没填 Jev 密钥；开着才提", !/Jev 密钥/.test(noJev) && /Jev 密钥/.test(await txt("#alerts")), JSON.stringify([noJev, await txt("#alerts")]));
     await page.evaluate((st) => chrome.storage.local.set({ ff_key: "fake-jev-key", ff_settings: st, ff_health: { or: { code: "or_credit", at: Date.now() } } }), keepSt);
     await page.reload({ waitUntil: "load" });
     await wait(600);
@@ -155,7 +155,7 @@ SEED["ff_reply_override:" + SEED.ff_recent_folds[2].id] = { label: "missed", upd
     const logo = () => page.$eval("header.pop-head .site-logo", (e) => e.getAttribute("aria-label")).catch(() => null);
     ok("Reddit 帖子页：清理几条、翻译几条（插件自己翻的）一句话；标题旁边是 Reddit 的 logo", here === "当前页：清理 2 条（垃圾和推广 1 · 色情 1），翻译 3 条。" && (await logo()) === "Reddit", here);
     here = await redditHere({ kind: "other", site: "reddit", enabled: true, tx: { improved: 0, filled: 0, on: true } });
-    ok("插件不管的 Reddit 页面：说 Reddit 上哪里管", /^当前页插件不管。Reddit 上/.test(here) && !/首页|主页/.test(here), here);
+    ok("插件不管的 Reddit 页面：说 Reddit 上哪里管", /^当前页面暂不支持。Reddit/.test(here) && !/首页|主页/.test(here), here);
     here = await redditHere({ kind: "list", site: "hn", enabled: true, tx: { improved: 0, filled: 29, on: true } }, "https://news.ycombinator.com/news");
     ok("只翻标题的列表页：只说翻了几条（0.20.1 起不说\"不收起，只翻标题\"）；Hacker News 的清理开关叫\"清理辱骂和色情评论\"", here === "当前页翻译了 29 条。" &&
       (await txt("#row-fold .label")) === "清理辱骂和色情评论", here);
@@ -175,7 +175,7 @@ SEED["ff_reply_override:" + SEED.ff_recent_folds[2].id] = { label: "missed", upd
       const u = await page.evaluate(() => ({ box: !!document.getElementById("unsupported"), switches: document.querySelectorAll("[data-switch]").length, today: !!document.getElementById("today"),
         text: document.getElementById("unsupported")?.innerText.replace(/\s+/g, " ") || "", sites: [...document.querySelectorAll("#siteList .chip")].map((e) => e.textContent),
         logos: [...document.querySelectorAll("#siteList .chip .site-logo")].map((e) => e.dataset.site), opts: !!document.getElementById("openOpts") }));
-      ok(`不支持的网站（${url || "网址读不到、没有插件脚本"}）：没有开关和统计，说这个网站用不了、列出能用的网站、能去设置；中文界面插件叫清流（0.24 起；英文名 ClearFlow）`, u.box && u.switches === 0 && !u.today && /这个网站用不了/.test(u.text) &&
+      ok(`不支持的网站（${url || "网址读不到、没有插件脚本"}）：没有开关和统计，说这个网站用不了、列出能用的网站、能去设置；中文界面插件叫清流（0.24 起；英文名 ClearFlow）`, u.box && u.switches === 0 && !u.today && /^清流 暂不支持此网站 /.test(u.text) &&
         /^清流/.test(u.text) &&
         JSON.stringify(u.sites) === JSON.stringify(["X", "Reddit", "YouTube", "小红书", "Hacker News"]) && JSON.stringify(u.logos) === JSON.stringify(["x", "reddit", "yt", "xhs", "hn"]) && u.opts, JSON.stringify(u));
     }
@@ -230,7 +230,7 @@ SEED["ff_reply_override:" + SEED.ff_recent_folds[2].id] = { label: "missed", upd
       return txt;
     };
     let tip = await helpText("#row-threshold .help");
-    ok("悬停\"垃圾回复和推广\"的问号：说明弹出来", /机器人、拉人/.test(tip[0] || "") && /1411 条正常回复/.test(tip[0] || ""), JSON.stringify(tip));
+    ok("悬停\"垃圾回复和推广\"的问号：说明弹出来", /机器人刷屏/.test(tip[0] || "") && /误伤正常回复/.test(tip[0] || ""), JSON.stringify(tip));
     ok("移开就收起", (await page.$$(".help-pop")).length === 0);
     // 看回复里的图片（0.18）：默认关；打开先要图片网站的权限（chrome.permissions.request 换成假的），给了才存；不给就提示、不打开；关掉把权限还回去
     const imgOn = () => page.evaluate(async () => !!(await chrome.storage.local.get("ff_settings")).ff_settings?.images);
@@ -250,13 +250,13 @@ SEED["ff_reply_override:" + SEED.ff_recent_folds[2].id] = { label: "missed", upd
     await wait(500);
     ok("关掉：存下、权限还回去", !(await imgOn()) && (await page.evaluate(() => window.__permDrop.length)) === 1);
     tip = await helpText("#row-images .help");
-    ok("看图片的问号里说清：发给 Jev、多花多少、准头、要权限", /二维码/.test(tip[0] || "") && /768/.test(tip[0] || "") && /试验/.test(tip[0] || "") && /允许/.test(tip[0] || ""), JSON.stringify(tip));
+    ok("看图片的问号里说清：发给 Jev、多花多少、准头、要权限", /二维码/.test(tip[0] || "") && /768/.test(tip[0] || "") && /试验/.test(tip[0] || "") && /授权/.test(tip[0] || ""), JSON.stringify(tip));
     ok("key 的状态：Jev 已填、OpenRouter 余额不足", o.jev === "已填" && o.or === "余额不足", `${o.jev}/${o.or}`);
     // 0.19.2：能用的 key 只打一个勾（读屏念"已填"）、不放测试连接；用不了的照旧写字、有测试连接
     const keyUi = await page.evaluate(() => ({ jevIcon: !!document.querySelector("#jevState svg"), jevBadge: !!document.querySelector('#jevState[data-slot="badge"]'),
       jevTest: !!document.getElementById("jevTest"), orTest: !!document.getElementById("orTest"), orBadge: !!document.querySelector('#orState[data-slot="badge"]') }));
     ok("能用的 key：一个勾、没有测试连接；余额不足的：写字、有测试连接", keyUi.jevIcon && !keyUi.jevBadge && !keyUi.jevTest && keyUi.orTest && keyUi.orBadge, JSON.stringify(keyUi));
-    ok("本月花费和每月估计", /^本月：Jev \$[\d.]+，翻译 \$[\d.]+。照最近 7 天的用法，每月约 \$[\d.]+。$/.test(o.cost), o.cost);
+    ok("本月花费和每月估计", /^本月：Jev \$[\d.]+，翻译 \$[\d.]+。按近 7 天用量估算，每月约 \$[\d.]+。$/.test(o.cost), o.cost);
     // key 填过了：平时只显示状态和"更换""测试连接"，点"更换"才出输入框
     ok("填过的 key 不显示输入框", !(await page.$("#key")) && !!(await page.$("#jevChange")));
     await page.click("#jevChange");
@@ -265,7 +265,7 @@ SEED["ff_reply_override:" + SEED.ff_recent_folds[2].id] = { label: "missed", upd
     // 0.28.8：输入框空着点保存：不存（以前会把存着的 key 清掉、还说已保存）
     await page.click("#saveKey");
     await wait(300);
-    ok("空着点保存：说没填 key，存着的 key 不动", (await txt("#keyMsg")) === "没有填 key" && (await page.evaluate(async () => (await chrome.storage.local.get("ff_keys")).ff_keys?.jev)) === true,
+    ok("空着点保存：说没填密钥，存着的密钥不动", (await txt("#keyMsg")) === "没有填密钥" && (await page.evaluate(async () => (await chrome.storage.local.get("ff_keys")).ff_keys?.jev)) === true,
       await txt("#keyMsg"));
     // 0.28.8：每月估计按 7 天平均（7 天里只用了一天的，以前把那一天乘 30）
     const keepStats = await page.evaluate(async () => (await chrome.storage.local.get("ff_stats")).ff_stats);
@@ -290,7 +290,7 @@ SEED["ff_reply_override:" + SEED.ff_recent_folds[2].id] = { label: "missed", upd
     let pg = await page.evaluate(() => ({ title: document.getElementById("siteTitle")?.textContent, back: document.getElementById("back")?.getAttribute("aria-label"), backIcon: !!document.querySelector("#back svg"), h2: [...document.querySelectorAll("main h2")].map((h) => h.textContent),
       rows: [...document.querySelectorAll("#siteFold .row-name")].map((e) => e.textContent), doc: document.title }));
     ok("点 Reddit 进去：左上角圆形的返回箭头（0.21）、logo 和标题 Reddit；总开关、清理、翻译三个开关；清理什么：三类、看图片、刷同一句话；评测记录收在高级里", pg.title === "Reddit" &&
-      pg.back === "返回设置" && pg.backIcon && JSON.stringify(pg.h2) === JSON.stringify(["清理什么"]) && !!(await page.$('#siteMain [data-switch="on"]')) && JSON.stringify(pg.rows) === JSON.stringify(["垃圾回复和推广", "辱骂、人身攻击", "色情", "「赞」「mark」这类回复", "看回复里的图片", "几个账号刷同一句话"]) &&
+      pg.back === "返回设置" && pg.backIcon && JSON.stringify(pg.h2) === JSON.stringify(["清理什么"]) && !!(await page.$('#siteMain [data-switch="on"]')) && JSON.stringify(pg.rows) === JSON.stringify(["垃圾回复和推广", "辱骂、人身攻击", "色情", "「赞」「mark」这类回复", "检查回复中的图片", "几个账号刷同一句话"]) &&
       !!(await page.$('#siteMain [data-switch="fold"]')) && !!(await page.$('#siteMain [data-switch="translate"]')) && /^Reddit · /.test(pg.doc), JSON.stringify(pg));
     // 单独改：垃圾选"严格" → 存进 sites.reddit，标出来；默认的那一份不动
     await page.click('#row-threshold .seg-item:nth-of-type(3)');
@@ -340,7 +340,7 @@ SEED["ff_reply_override:" + SEED.ff_recent_folds[2].id] = { label: "missed", upd
     // X：翻译开关的说明讲 Grok；补翻在翻译下面，翻译关了就灰掉；M1 在收起什么里
     await go("#site=x");
     tip = await helpText("#row-translate .help");
-    ok("X 的翻译：说明讲改进 X 自带的翻译、翻成哪种语言", /^X 自动翻译过的帖子/.test(tip[0] || "") && /界面语言/.test(tip[1] || ""), JSON.stringify(tip));
+    ok("X 的翻译：说明讲改进 X 自带的翻译、翻成哪种语言", /检查 X 的自动翻译/.test(tip[0] || "") && /界面语言/.test(tip[1] || ""), JSON.stringify(tip));
     tip = await helpText("#row-m1 .help");
     ok("X 页上有 M1，说明里写着现在的长度上限（汉字和大约多少个字母）", /10 个汉字/.test(tip[0] || "") && /40 个字母/.test(tip[0] || ""), JSON.stringify(tip));
     const fillOff = () => page.$eval('[data-switch="translateFill"]', (e) => e.hasAttribute("data-disabled"));

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.29.6 — 2026-10-20
+
+- Clearer, shorter wording across Settings, the popup and the welcome page, in all languages. The English interface now consistently says "hide" and "filtering"; the Chinese interface says 密钥 instead of "key".
+- English: the line above replies like "nice" or "+1" reads "Hid N replies like…", and its help text now says what happens: they're hidden, and that line shows them again.
+- Privacy policy updated (effective October 20, 2026): results are cached for up to 7 days and a comment can be sent again after the cache is cleared or when a new judgment is needed; usage and cost statistics stay on your device; your keys are used only to authenticate requests to TypeSafe and OpenRouter, and spam you marked is sent to TypeSafe as examples (as before). The website now has a Japanese translation of the policy.
+- New store description.
+
 ## 0.29.5 — 2026-10-20
 
 - YouTube captions: when ClearFlow retranslates poor auto-translated captions, each line now appears as soon as it's translated (the first within a second or two) instead of after the whole block of 40 lines, and after you jump to another point in the video it starts from the line on screen rather than from the start of that block.

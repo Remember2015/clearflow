@@ -144,7 +144,7 @@ try {
   await chrome.storage.local.set({ ff_key: "bad" });
   mount("800", [["801","一条需要模型才能识别的测试回复"]]);
   scores.set("801", 0.95);
-  await until(() => document.querySelector(".ff-banner")?.textContent.includes("key 无效"), "bad key");
+  await until(() => document.querySelector(".ff-banner")?.textContent.includes("密钥无效"), "bad key");
   await chrome.storage.local.set({ ff_key: "good" });
   await until(() => bar("801"), "key recovery");
   ok("修正key后无需刷新即可重试", !!bar("801"));
