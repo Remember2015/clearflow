@@ -4,7 +4,7 @@ ClearFlow makes comment sections readable again on X, Reddit, YouTube, Xiaohongs
 • Hides content-free replies like "nice", "+1" or "following", with one line at the top of the comments to bring them back.
 • Merges runs of hidden replies into a single line; when a thread is full of junk, tucks it all away behind one summary line.
 • Learns from what you mark: hide a spam reply yourself and replies of the same kind — reworded, from other accounts, pushing the same scheme — are hidden too. Undo anytime.
-• Translates foreign-language posts and comments into your language, in place, with a switch back to the original. On X it replaces X's automatic translation only when the new one is clearly better.
+• Translates foreign-language posts and comments into your language, in place, with a switch back to the original. On X it replaces X's automatic translation when that one is poor.
 • Turn it on or off per site, and choose cleaning and translation separately.
 
 ClearFlow uses two services you sign up for and pay by usage, with your own API keys: TypeSafe (judging replies) and OpenRouter (translation). A setup page helps you enter them; the settings show what you've spent. Without keys, only the built-in local rules run.

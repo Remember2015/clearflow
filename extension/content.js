@@ -1064,7 +1064,7 @@
 
   let settingsVersion = 0;
   // 只管翻译的设置：改了评论区这边不动
-  const NOT_COMMENTS = new Set(["translate", "translateFill", "translateThreshold", "translateMargin", "translateModel", "translateFallback"]);
+  const NOT_COMMENTS = new Set(["translate", "translateFill", "translateThreshold", "translateModel", "translateFallback"]);
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area && area !== "local") return;
     if (changes.ff_settings || changes.ff_keys || changes.ff_key) { // 换了 key：0.28.12 起看 ff_keys（只有填没填），ff_key 是旧版本留下、刚挪走的

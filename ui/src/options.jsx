@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 
 I18N.apply();
 // 只管翻译的设置：改了评论区不用重判
-const TX_KEYS = new Set(["translate", "translateFill", "translateThreshold", "translateMargin", "translateModel", "translateFallback"]);
+const TX_KEYS = new Set(["translate", "translateFill", "translateThreshold", "translateModel", "translateFallback"]);
 // ff_keys：两个 key 填没填（0.28.12 起 key 本身存在后台的 IndexedDB 里，这边看不到；ff_key、ff_or_key 是旧版本的、后台会挪走）
 const KEYS = ["ff_settings", "ff_keys", "ff_key", "ff_or_key", "ff_health", "ff_stats", "ff_confirmed_slogans"];
 const hasKey = (d, which) => (d.ff_keys ? !!d.ff_keys[which] : !!String((which === "jev" ? d.ff_key : d.ff_or_key) || "").trim());
@@ -473,7 +473,7 @@ function Data({ d }) {
 const NUMS = [["threshold", "opt.threshold", 0.1, 0.99, "any"], ["recThreshold", "opt.recThreshold", 0.1, 0.99, "any"],
   ["abuseThreshold", "opt.abuseThreshold", 0.3, 0.99, "any"], ["sexualThreshold", "opt.sexualThreshold", 0.3, 0.99, "any"],
   ["m1MaxLen", "opt.m1MaxLen", 5, 40, "1"], ["bannerRatio", "opt.bannerRatio", 0.1, 1, "any"], ["cacheMB", "opt.cacheMB", 5, 500, "5"],
-  ["txCacheMB", "opt.txCacheMB", 5, 500, "5"], ["translateThreshold", "opt.txThreshold", 0.3, 0.95, "any"], ["translateMargin", "opt.txMargin", 0, 0.5, "any"]];
+  ["txCacheMB", "opt.txCacheMB", 5, 500, "5"], ["translateThreshold", "opt.txThreshold", 0.3, 0.95, "any"]];
 // 改完（离开输入框或回车）才存；不合规就提示、退回原来的值；别处改了、又没在改这一格，就跟着变
 const FIELD = "field flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-t py-2.5 first:border-t-0";
 const FIELD_NAME = "flex min-w-0 flex-[1_1_16rem] flex-wrap items-center gap-1 text-sm";

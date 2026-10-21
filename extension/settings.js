@@ -2,15 +2,14 @@
 (function () {
   // enabled、translate：0.20 以前是弹窗上的总开关（暂停、翻译增强），0.20 起界面上没有了，开关在各个网站里（下面的 sites）；
   // 这两个照旧留着、默认开，升级时关着的折进每个网站（background.js 的 migrate）
-  const DEFAULTS = Object.freeze({ rev: 5, enabled: true, useJev: true, m1: true, dup: true, abuse: true, sexual: true,
+  const DEFAULTS = Object.freeze({ rev: 6, enabled: true, useJev: true, m1: true, dup: true, abuse: true, sexual: true,
     threshold: 0.6, recThreshold: 0.9, abuseThreshold: 0.7, sexualThreshold: 0.6,
     // m1MaxLen：M1 的长度上限，按汉字当量算（rules.js 的 units：大约 4 个字母算一个字）；0.15.3 以前按字符数、默认 15
     m1MaxLen: 10, bannerRatio: 0.5, cacheMB: 50, txCacheMB: 50, // 本地缓存上限（MB）：过滤结果（Jev）、译文分开算
-    // 翻译增强：X 自带（Grok）的译文 Jev 判下来三问最低分低于 translateThreshold 才重译；
-    // 重译的分要比 Grok 的至少高 translateMargin 才换上（0.28.3 起 0.05，以前 0.1：用户 10-18 报一条韩文帖子 Grok 翻得不好、插件没换——
-    // 重译的只高 0.08。translate_eval 的数据上 0.1 → 0.05：中文 64 条换上 20 → 24、英文 157 条 40 → 55，整批分数不降）。
+    // 翻译增强：X 自带（Grok）的译文 Jev 判下来三问最低分低于 translateThreshold 才重译，重译的过了本地检查就换上。
+    // 0.29.8 以前重译的还要再让 Jev 判、比 Grok 高 translateMargin 才换，这个设置删了（见 translator.js improve）。
     // translateFill：帖子页补翻作者自己没被翻译的回复。模型调用时不开思考（见 translator.js）
-    translate: true, translateFill: true, translateThreshold: 0.7, translateMargin: 0.05,
+    translate: true, translateFill: true, translateThreshold: 0.7,
     translateModel: "openai/gpt-6-luna", translateFallback: "deepseek/deepseek-v4.1-flash",
     // images：回复里的图片也交给 Jev 一起判（0.18 起，默认关；打开时要用户给 IMAGE_ORIGINS 这几个图片网站的读取权限）
     images: false,
@@ -46,7 +45,7 @@
     threshold: [0.1, 0.99, "垃圾回复的折叠阈值"], recThreshold: [0.1, 0.99, "求推荐类帖子的阈值"],
     abuseThreshold: [0.3, 0.99, "辱骂的折叠阈值"], sexualThreshold: [0.3, 0.99, "色情内容的折叠阈值"],
     m1MaxLen: [5, 40, "M1 长度上限", true], bannerRatio: [0.1, 1, "首屏垃圾回复占比"], cacheMB: [5, 500, "过滤结果的缓存上限"], txCacheMB: [5, 500, "翻译的缓存上限"],
-    translateThreshold: [0.3, 0.95, "重译阈值"], translateMargin: [0, 0.5, "替换要求的分差"],
+    translateThreshold: [0.3, 0.95, "重译阈值"],
   };
   // 字符串设置：OpenRouter 的模型名，形如 厂商/型号；后备模型可以留空（不用后备）
   const STRINGS = {

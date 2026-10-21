@@ -2,9 +2,9 @@
 // node test/translator_test.mjs
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { improve, fillIn, fillInBatch, fillCached, translate, translateCaptions, cleanOutput, OR_API, SYSTEM_PROMPT, systemPromptFor, BATCH_ZH } from "../translator.js";
+import { improve, fillIn, fillInBatch, fillCached, translate, translateCaptions, cleanOutput, badOutput, OR_API, SYSTEM_PROMPT, systemPromptFor, BATCH_ZH } from "../translator.js";
 
-const S = { translateThreshold: 0.7, translateMargin: 0.1, translateModel: "openai/gpt-6-luna", translateFallback: "deepseek/deepseek-v4.1-flash" };
+const S = { translateThreshold: 0.7, translateModel: "openai/gpt-6-luna", translateFallback: "deepseek/deepseek-v4.1-flash" };
 const item = { id: "1900000000000000101", source: "Why is it so hard to hire good people? Because the good ones are not for hire!", xText: "为什么雇佣好人这么难？因为好人不是雇佣兵！", srcLang: "en" }; // 合成的
 const json = (d, status = 200) => new Response(JSON.stringify(d), { status, headers: { "content-type": "application/json" } });
 const memCache = () => { const m = new Map(); return { get: async (k) => m.get(k) || null, put: async (k, v) => { m.set(k, v); }, m }; };
@@ -40,12 +40,13 @@ await ok("Grok 译文合格：只判一次，不调模型", async () => {
   assert.equal(net.calls.jev[0].state.source, item.source); assert.equal(net.calls.jev[0].state.translation, item.xText);
 });
 
-await ok("Grok 不合格、重译明显更好：换上，请求里不开思考", async () => {
+await ok("Grok 不合格：重译了就换上，不再让 Jev 判重译的（0.29.8）；请求里不开思考", async () => {
   const ours = "为什么好人这么难招？因为真正厉害的人根本不缺工作！";
-  const net = fakeNet({ judgeScores: (t) => (t === ours ? good : bad), orPlan: () => ours });
+  const net = fakeNet({ judgeScores: (t) => (t === item.xText ? bad : { faithful: 0.1, complete: 0.1, natural: 0.1 }), orPlan: () => ours });
   const r = await improve({ jevKey: "j", orKey: "o", settings: S, item, cache: memCache(), fetchImpl: net.fetchImpl });
-  assert.equal(r.action, "replace"); assert.equal(r.text, ours); assert.equal(r.weak, "faithful");
-  assert.equal(net.calls.or.length, 1); assert.equal(net.calls.jev.length, 2);
+  assert.equal(r.action, "replace"); assert.equal(r.text, ours); assert.equal(r.weak, "faithful"); assert.equal(r.grokMin, 0.3);
+  assert.equal(net.calls.or.length, 1); assert.equal(net.calls.jev.length, 1, "只判 Grok 那一次");
+  assert.equal(r.ours, undefined); assert.equal(r.oursMin, undefined); assert.equal(r.bad, undefined); assert.equal(r.jevTokens, 500);
   const body = net.calls.or[0];
   assert.deepEqual(body.reasoning, { enabled: false }, "必须显式关掉思考");
   assert.equal(body.model, "openai/gpt-6-luna");
@@ -53,53 +54,53 @@ await ok("Grok 不合格、重译明显更好：换上，请求里不开思考",
   assert.ok(body.messages[1].content.includes(item.source) && body.messages[1].content.includes("英语"));
 });
 
-// 0.28.8：重译翻好了、后面判分出错：付过的费跟着错误回去（后台照样记账）；Grok 那次判分单独存着，页面重试时不再判一次 Grok
-await ok("重译以后判分出错：花费跟着错误回去；重试时 Grok 那次判分走缓存", async () => {
+// 0.28.8：判过 Grok、重译出错：付过的判分跟着错误回去（后台照样记账）；Grok 那次判分单独存着，页面重试时不再判一次 Grok
+await ok("重译出错：判 Grok 的花费跟着错误回去；重试时 Grok 那次判分走缓存", async () => {
   const ours = "为什么好人这么难招？因为真正厉害的人根本不缺工作！", cache = memCache();
-  const net1 = fakeNet({ judgeScores: (t, n) => (n === 2 ? json({ error: "bad request" }, 400) : t === ours ? good : bad), orPlan: () => ours });
+  const net1 = fakeNet({ judgeScores: () => bad, orPlan: () => json({ error: "bad key" }, 401) });
   let err = null;
   try { await improve({ jevKey: "j", orKey: "o", settings: S, item, cache, fetchImpl: net1.fetchImpl }); } catch (e) { err = e; }
-  assert.ok(err, "该出错"); assert.ok(err.spent && Math.abs(err.spent.cost - 0.00004) < 1e-12 && err.spent.jevTokens === 500, JSON.stringify(err.spent));
-  const net2 = fakeNet({ judgeScores: (t) => (t === ours ? good : bad), orPlan: () => ours });
+  assert.ok(err, "该出错"); assert.ok(err.spent && err.spent.cost === 0 && err.spent.jevTokens === 500, JSON.stringify(err.spent));
+  const net2 = fakeNet({ judgeScores: () => bad, orPlan: () => ours });
   const r = await improve({ jevKey: "j", orKey: "o", settings: S, item, cache, fetchImpl: net2.fetchImpl });
-  assert.equal(r.action, "replace"); assert.equal(net2.calls.jev.length, 1, "Grok 那次判分该走缓存");
-  assert.equal(net2.calls.jev[0].state.translation, ours);
+  assert.equal(r.action, "replace"); assert.equal(net2.calls.jev.length, 0, "Grok 那次判分该走缓存");
 });
 
-await ok("重译分数没高出 margin：不换", async () => {
-  const net = fakeNet({ judgeScores: (t) => (t === item.xText ? { ...bad, faithful: 0.62 } : { faithful: 0.68, complete: 0.9, natural: 0.9 }), orPlan: () => "差不多的译文" });
-  const r = await improve({ jevKey: "j", orKey: "o", settings: S, item, cache: memCache(), fetchImpl: net.fetchImpl });
-  assert.equal(r.action, "keep"); assert.equal(r.tried, true); assert.equal(r.text, undefined);
+// 0.29.8：不判重译的，本地检查挡明显翻坏的（badOutput），挡下来换另一个模型再翻一次（0.28.3 起"重译的比 Grok 还差就换模型"改成这样）
+await ok("本地检查：和原文一样、文字不对、长度差太多算翻坏；保留英文产品名、人名音译、日文的汉字假名、Grok 太短的都不算", () => {
+  const long = { source: "The new update finally fixes the battery drain, and the camera app opens twice as fast as before.", xText: "新版更新终于修好了耗电问题，相机应用的打开速度也比以前快了一倍。", target: "zh" };
+  assert.equal(badOutput(long.source, long), "same");
+  assert.equal(badOutput("  the new update finally fixes the battery drain, and the camera app opens twice as fast as before. ", long), "same");
+  assert.equal(badOutput("I'm sorry, but I can't help with translating this post.", long), "script");
+  assert.equal(badOutput("新しいアップデートでようやくバッテリーの消耗が直り、カメラも二倍速く開くようになった。", long), "script");
+  assert.equal(badOutput("新版更新终于修好了耗电", long), "length");
+  assert.equal(badOutput(long.xText.repeat(3), long), "length");
+  assert.equal(badOutput("这次更新总算把耗电修好了，相机打开也快了一倍。", long), null);
+  assert.equal(badOutput("Web 上的 Liquid Glass 动画，还得打磨很多，不过进展挺顺利的", { source: "Liquid Glass animations on the Web. Still needs a ton of work but they're coming along nicely", xText: "网页上的液体玻璃动画，仍然需要大量工作，但它们进展得很顺利", target: "zh" }), null);
+  assert.equal(badOutput("亚历山德拉·达德里奥：抱歉啦，把我的胸凑到你脸上了 😂", { source: "Alexandra Daddario: Sorry, I put my boobs in your face 😂", xText: "Alexandra Daddario：抱歉，我把我的胸部贴到你脸上了😂", target: "zh" }), null);
+  assert.equal(badOutput("今日は本当にいい天気だから、みんなで公園を散歩しよう。", { source: "The weather is really nice today, let's all go for a walk in the park.", xText: "今日はとてもいい天気なので、みんなで公園を散歩しましょう。", target: "ja" }), null);
+  assert.equal(badOutput("Ein ganz anderer Text", { source: "ok", xText: "好的", target: "zh" }), null, "Grok 太短不比");
+  assert.equal(badOutput("It is finally fixed!", { source: "やっと直った！本当にうれしい。", xText: "It's finally fixed! I'm really happy.", target: "en" }), null);
+  assert.equal(badOutput("やっと直った！本当にうれしい、ありがとう。", { source: "やっと直った！本当にうれしい、ありがとう。", xText: "It's finally fixed! I'm really happy, thank you.", target: "en" }), "same");
+  return Promise.resolve();
 });
-
-// 0.28.3：重译的反倒比 Grok 还差，换另一个模型再翻一次、两份里取分高的
-await ok("重译的比 Grok 还差：换后备模型再翻一次，后备的够好就换上它", async () => {
-  const luna = "翻差了的译文", ds = "后备模型翻得好的译文";
-  const net = fakeNet({ judgeScores: (t) => (t === item.xText ? { faithful: 0.62, complete: 0.8, natural: 0.7 } : t === luna ? { faithful: 0.5, complete: 0.8, natural: 0.7 } : good),
-    orPlan: (body) => (body.model === S.translateModel ? luna : ds) });
+await ok("重译的原样吐回原文：换后备模型再翻一次，后备的过了就换上它", async () => {
+  const ds = "为什么好人这么难招？因为好的人根本不在找工作！";
+  const net = fakeNet({ judgeScores: () => bad, orPlan: (body) => (body.model === S.translateModel ? item.source : ds) });
   const r = await improve({ jevKey: "j", orKey: "o", settings: S, item, cache: memCache(), fetchImpl: net.fetchImpl });
   assert.equal(r.action, "replace"); assert.equal(r.text, ds); assert.equal(r.model, S.translateFallback); assert.equal(r.retried, true);
   assert.deepEqual(net.calls.or.map((b) => b.model), [S.translateModel, S.translateFallback]);
-  assert.equal(net.calls.jev.length, 3); assert.ok(Math.abs(r.cost - 0.00008) < 1e-12, String(r.cost));
+  assert.equal(net.calls.jev.length, 1); assert.ok(Math.abs(r.cost - 0.00008) < 1e-12, String(r.cost));
 });
-await ok("重译的比 Grok 还差、后备的也不行：不换（两份里取分高的那份记下）", async () => {
-  const luna = "翻差了的译文", ds = "也翻差了的译文";
-  const net = fakeNet({ judgeScores: (t) => (t === item.xText ? { faithful: 0.62, complete: 0.8, natural: 0.7 } : t === luna ? { faithful: 0.4, complete: 0.8, natural: 0.7 } : { faithful: 0.55, complete: 0.8, natural: 0.7 }),
-    orPlan: (body) => (body.model === S.translateModel ? luna : ds) });
+await ok("重译的写成了别的文字（英文的拒答）、后备的也不行：留 Grok 的，记下哪里不行", async () => {
+  const net = fakeNet({ judgeScores: () => bad, orPlan: (body) => (body.model === S.translateModel ? "I'm sorry, I can't help with that." : item.source) });
   const r = await improve({ jevKey: "j", orKey: "o", settings: S, item, cache: memCache(), fetchImpl: net.fetchImpl });
-  assert.equal(r.action, "keep"); assert.equal(r.retried, true); assert.equal(r.oursMin, 0.55); assert.equal(r.model, S.translateFallback);
+  assert.equal(r.action, "keep"); assert.equal(r.text, undefined); assert.equal(r.retried, true); assert.equal(r.bad, "script"); assert.equal(r.tried, true);
 });
-await ok("重译的比 Grok 好、只是没高出 margin：不再翻", async () => {
-  const net = fakeNet({ judgeScores: (t) => (t === item.xText ? { ...bad, faithful: 0.62 } : { faithful: 0.65, complete: 0.9, natural: 0.9 }), orPlan: () => "差不多的译文" });
+await ok("再翻那一次出错：留 Grok 的，不报错", async () => {
+  const net = fakeNet({ judgeScores: () => bad, orPlan: (body) => (body.model === S.translateModel ? "I'm sorry, I can't help with that." : json({ error: { message: "bad request" } }, 400)) });
   const r = await improve({ jevKey: "j", orKey: "o", settings: S, item, cache: memCache(), fetchImpl: net.fetchImpl });
-  assert.equal(r.action, "keep"); assert.equal(r.retried, false); assert.equal(net.calls.or.length, 1);
-});
-await ok("再翻那一次出错：照第一份判，不报错", async () => {
-  const luna = "翻差了的译文";
-  const net = fakeNet({ judgeScores: (t) => (t === item.xText ? { faithful: 0.62, complete: 0.8, natural: 0.7 } : { faithful: 0.5, complete: 0.8, natural: 0.7 }),
-    orPlan: (body) => (body.model === S.translateModel ? luna : json({ error: { message: "bad request" } }, 400)) });
-  const r = await improve({ jevKey: "j", orKey: "o", settings: S, item, cache: memCache(), fetchImpl: net.fetchImpl });
-  assert.equal(r.action, "keep"); assert.equal(r.retried, false); assert.equal(r.oursMin, 0.5);
+  assert.equal(r.action, "keep"); assert.equal(r.retried, false); assert.equal(r.bad, "script");
 });
 
 // 0.28.4：flex 通道（不急的走 OpenAI 的 flex，半价）
@@ -136,7 +137,7 @@ await ok("flex：主模型 400 直接换后备（不再走标准通道试一次�
   assert.deepEqual(net.calls.or.map((b) => [b.model, !!b.provider]), [[S.translateModel, true], [S.translateFallback, false]]); // 400 不是通道的问题：不再走标准试一次
 });
 await ok("flex：改进 Grok 译文的重译走 flex，换后备再翻的不带", async () => {
-  const luna = "翻差了的译文", ds = "后备模型翻得好的译文";
+  const luna = "Sorry, I can't translate this.", ds = "后备模型翻得好的译文";
   const net = fakeNet({ judgeScores: (t) => (t === item.xText ? { faithful: 0.62, complete: 0.8, natural: 0.7 } : t === luna ? { faithful: 0.5, complete: 0.8, natural: 0.7 } : good),
     orPlan: (body) => (body.model === S.translateModel ? luna : ds) });
   await improve({ jevKey: "j", orKey: "o", settings: S, item, cache: memCache(), fetchImpl: net.fetchImpl });
@@ -157,16 +158,16 @@ await ok("flex 输出被截断（or_truncated）：不换通道（换了也一�
   assert.deepEqual(net.calls.or.map((b) => [b.model, !!b.provider]), [[S.translateModel, true], [S.translateModel, true], [S.translateFallback, false]]);
 });
 await ok("换另一个模型：按设置里的模型名认（OpenRouter 回报的 model 带日期也不会再跑同一个）", async () => {
-  const luna = "翻差了的译文", ds = "后备模型翻得好的译文";
+  const luna = "Sorry, I can't translate this.", ds = "后备模型翻得好的译文";
   const net = fakeNet({ judgeScores: (t) => (t === item.xText ? { faithful: 0.62, complete: 0.8, natural: 0.7 } : t === luna ? { faithful: 0.5, complete: 0.8, natural: 0.7 } : good),
     orPlan: (body) => (body.model === S.translateModel ? json({ model: S.translateModel + "-2026-09-01", choices: [{ message: { content: luna } }], usage: { cost: 0.00004 } }) : ds) });
   const r = await improve({ jevKey: "j", orKey: "o", settings: S, item, cache: memCache(), fetchImpl: net.fetchImpl });
   assert.deepEqual(net.calls.or.map((b) => b.model), [S.translateModel, S.translateFallback]);
   assert.equal(r.text, ds); assert.equal(r.retried, true);
 });
-await ok("主模型失败、后备翻出来的比 Grok 还差：两个都试过了，不再回去试主模型", async () => {
-  const net = fakeNet({ judgeScores: (t) => (t === item.xText ? { faithful: 0.62, complete: 0.8, natural: 0.7 } : { faithful: 0.5, complete: 0.8, natural: 0.7 }),
-    orPlan: (body) => (body.model === S.translateModel ? json({ error: { message: "bad" } }, 400) : "后备翻差了的") });
+await ok("主模型失败、后备翻出来的没过本地检查：两个都试过了，不再回去试主模型，留 Grok 的", async () => {
+  const net = fakeNet({ judgeScores: () => bad,
+    orPlan: (body) => (body.model === S.translateModel ? json({ error: { message: "bad" } }, 400) : "Sorry, I can't translate this.") });
   const r = await improve({ jevKey: "j", orKey: "o", settings: S, item, cache: memCache(), fetchImpl: net.fetchImpl });
   assert.deepEqual(net.calls.or.map((b) => b.model), [S.translateModel, S.translateFallback]);
   assert.equal(r.action, "keep"); assert.equal(r.retried, false);
@@ -196,9 +197,11 @@ await ok("同一条第二次走缓存：不再请求", async () => {
   assert.equal(r.cached, true); assert.equal(r.text, "缓存测试译文");
   assert.equal(net.calls.jev.length + net.calls.or.length, n);
   // Grok 译文变了（比如长帖展开）或换了模型：不算同一条
+  const jev0 = net.calls.jev.length, or0 = net.calls.or.length;
   await improve({ jevKey: "j", orKey: "o", settings: S, item: { ...item, xText: item.xText + "（展开后）" }, cache, fetchImpl: net.fetchImpl });
+  assert.equal(net.calls.jev.length, jev0 + 1, "Grok 译文变了：重新判 Grok");
   await improve({ jevKey: "j", orKey: "o", settings: { ...S, translateModel: "qwen/qwen3.8-flash" }, item, cache, fetchImpl: net.fetchImpl });
-  assert.ok(net.calls.jev.length + net.calls.or.length > n + 2);
+  assert.equal(net.calls.or.length, or0 + 1, "换了模型：重新翻（Grok 的判分照旧走缓存）"); assert.equal(net.calls.jev.length, jev0 + 1);
 });
 
 await ok("中途取消：立即停下", async () => {

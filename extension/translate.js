@@ -1,6 +1,6 @@
 // 翻译增强（页面这头），两件事：
 // ① 改进（improve，首页和帖子详情页）：X 用 Grok 自动翻译过的帖子，读出原文和 Grok 的译文交给后台（translator.js）判断，
-//    Grok 翻得不好、重译又明显更好时，把 X 的译文藏起来、换上我们的，下面一行小字说明并能切回 Grok 版。
+//    Grok 翻得不好时重译（0.29.8 起重译的过了本地检查就换，不再判分），把 X 的译文藏起来、换上我们的，下面一行小字说明并能切回 Grok 版。
 // ② 补翻（fill，帖子详情页）：X 翻译了主帖（或上面的原帖），同一个作者的其他帖子（补充回复、串推）却没翻的：
 //    X 自己给了"显示翻译"按钮的（按需翻译，没自动翻），替你点一下，用 X 自己的翻译；X 什么都没给的，插件直接翻，
 //    上面一行小字"插件翻译自英语 · 看原文"（和 X 自己的"翻译自 英语"一样放在正文上面）。
@@ -65,7 +65,7 @@
     onImprove = !!(st.translate && r.hasKey && r.hasOrKey);
     onFill = !!(st.translate && st.translateFill && r.hasOrKey);
     // 开关、模型、阈值、key 变了：已有结果全部作废（换上的译文撤下来，下面 render 会恢复 X 的），打开着就按新设置重做
-    const sig = JSON.stringify([onImprove, onFill, st.translateThreshold, st.translateMargin, st.translateModel, st.translateFallback]);
+    const sig = JSON.stringify([onImprove, onFill, st.translateThreshold, st.translateModel, st.translateFallback]);
     if (sig !== settingsSig) { settingsSig = sig; jobs.clear(); }
     scheduleRender();
   }
@@ -378,7 +378,7 @@
     const note = el("div", "ff-tx-note");
     const model = job.result.model || t("tx.model");
     note.title = fill ? t("tx.titleFill", { model })
-      : t("tx.titleImprove", { model, grok: (job.result.grokMin ?? 0).toFixed(2), ours: (job.result.oursMin ?? 0).toFixed(2) });
+      : t("tx.titleImprove", { model }); // 0.29.8 起不写分数（用户 10-21：用户看不懂，也不会拿它做什么）
     const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     icon.setAttribute("viewBox", "0 0 24 24"); icon.setAttribute("aria-hidden", "true");
     icon.innerHTML = SPARK; // 固定图形

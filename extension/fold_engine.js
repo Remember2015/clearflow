@@ -607,7 +607,7 @@
     setInterval(() => { if (location.href !== href) { href = location.href; scheduleScan(0); } }, 500);
 
     // ---------- 设置、纠错、记住的句子在别处改了 ----------
-    const NOT_FOLDING = new Set(["translate", "translateFill", "translateThreshold", "translateMargin", "translateModel", "translateFallback"]);
+    const NOT_FOLDING = new Set(["translate", "translateFill", "translateThreshold", "translateModel", "translateFallback"]);
     chrome.storage.onChanged.addListener((changes, area) => {
       if (area && area !== "local") return;
       if (changes.ff_settings || changes.ff_keys || changes.ff_key) { // 换了 key：0.28.12 起看 ff_keys

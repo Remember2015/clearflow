@@ -1,6 +1,6 @@
 # ClearFlow (清流) Privacy Policy
 
-Effective date: October 20, 2026 · [中文版本见下方](#中文)
+Effective date: October 21, 2026 · [中文版本见下方](#中文)
 
 ClearFlow is a browser extension that cleans up comment sections and translates posts on X, Reddit, YouTube, Xiaohongshu (RedNote) and Hacker News. It is published by OhMyAI. This policy explains what the extension reads, what it sends and to whom, and what it keeps on your device.
 
@@ -18,7 +18,7 @@ Used for cleaning (spam, abuse, sexual content, and replies like "nice" or "+1")
 
 - For each comment on the page that local rules can't decide: the comment text (up to 600 characters), the commenter's display name and handle, the text of the post it belongs to (up to 400 characters) and the post author's name and handle. Up to 10 comments per request.
 - On profile and search pages on X and on list pages on Reddit, the posts in the list instead of comments, with a fixed one-line description in place of the post text.
-- On X posts that X translated automatically: the original text and X's (Grok's) translation. When ClearFlow retranslates such a post (below), its own translation too, so the two can be compared.
+- On X posts that X translated automatically: the original text and X's (Grok's) translation, to judge whether X's translation is good enough. ClearFlow's own retranslation is not sent.
 - Only if you turn on "Check images in replies" (off by default): images attached to those comments, downscaled, together with the text. To do this the extension asks for permission to read images from `pbs.twimg.com`, `i.redd.it`, `preview.redd.it` and `*.xhscdn.com`; it gives the permission back when you turn the option off.
 - Only if you have marked spam yourself on that site ("Hide this reply", or the funnel on a notice bar): your 10 most recently marked replies on that site (text up to 240 characters and the account), sent with those comments as examples, so TypeSafe can tell whether a comment is the same kind of spam. Right after you mark one, the comments on that page that weren't cleaned are checked once more against the examples (up to 25 per request).
 - On YouTube, only when you choose YouTube's auto-translated captions and "Improve auto-translated captions" is on (and the video has no human Chinese captions to use instead): the first lines (up to 40) of the original captions and YouTube's translation of them, to judge how good YouTube's translation is.
@@ -74,7 +74,7 @@ developer@ohmyai.app
 
 # 清流（ClearFlow）隐私政策
 
-生效日期：2026 年 10 月 20 日
+生效日期：2026 年 10 月 21 日
 
 清流是一个浏览器插件，在 X、Reddit、YouTube、小红书和 Hacker News 上清理评论区、翻译帖子，由 OhMyAI 发布。这份政策说明插件读什么、发什么给谁、在你的设备上存什么。
 
@@ -92,7 +92,7 @@ developer@ohmyai.app
 
 - 页面上本地规则判不了的每条评论：评论正文（最多 600 字）、评论者的昵称和账号、所在帖子的正文（最多 400 字）和帖子作者的昵称和账号。每次最多 10 条。
 - X 的用户主页、搜索结果和 Reddit 的列表页上，发的是列表里的帖子，帖子正文那一栏换成一句固定的说明。
-- X 自动翻译过的帖子：原文和 X（Grok）的译文。清流重译了这条时（见下），它自己的译文也发过去，好和 Grok 的比。
+- X 自动翻译过的帖子：原文和 X（Grok）的译文，用来判断 X 翻得好不好。清流自己重译的译文不发。
 - 只有打开「检查回复中的图片」（默认关）时：评论里的图片（缩小后）连同文字一起发。为此插件会请求读取 `pbs.twimg.com`、`i.redd.it`、`preview.redd.it`、`*.xhscdn.com` 上图片的权限，关掉这一项时把权限还回去。
 - 只有你在这个网站上自己标记过垃圾（「清理掉这条」，或提示条上的漏斗）时：你在这个网站上最近标记的 10 条（正文最多 240 字和账号），跟着这些评论一起发过去当样例，让 TypeSafe 判断一条评论是不是同一类垃圾。你刚标了一条时，这一页上没被清理的评论再按样例问一遍（每次最多 25 条）。
 - 只有在 YouTube 上选了「自动翻译」的字幕、又开着「改善自动翻译的字幕」（而且视频没有可以拿来代替的人工中文字幕）时：原文字幕的前面几行（最多 40 行）和 YouTube 对它们的翻译，用来判断 YouTube 翻得好不好。

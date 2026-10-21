@@ -15,7 +15,7 @@ const OURS = {
 };
 const PLAN = Object.fromEntries(Object.entries(OURS).map(([id, text]) => [id, {
   action: "replace", tried: true, text, model: "openai/gpt-6-luna", weak: id === "1006" ? "natural" : "faithful",
-  grok: {}, grokMin: 0.42, ours: {}, oursMin: 0.86, cost: 0.00004, jevTokens: 900, cached: false,
+  grok: {}, grokMin: 0.42, cost: 0.00004, jevTokens: 900, cached: false,
 }]));
 PLAN["1002"] = { action: "keep", grokMin: 0.91, cached: false };
 
@@ -73,7 +73,7 @@ PLAN["1002"] = { action: "keep", grokMin: 0.91, cached: false };
     ok("读完都切回了译文", all.every((s) => s.lang === "zh" && s.showOrig), JSON.stringify(all.map((s) => [s.lang, s.showOrig])));
     let s1 = all[0];
     ok("Grok 翻得差的换上了改进的译文", s1.hidden && s1.block && s1.afterTt && s1.ours === OURS["1001"], JSON.stringify(s1));
-    ok("说明行和切换按钮", s1.label === "改进的翻译" && s1.toggle === "看 Grok 版" && /gpt-6-luna/.test(s1.title) && /0\.42/.test(s1.title), JSON.stringify(s1));
+    ok("说明行和切换按钮；悬停只说哪个模型重译的，不写分数", s1.label === "改进的翻译" && s1.toggle === "看 Grok 版" && /gpt-6-luna/.test(s1.title) && !/\d\.\d/.test(s1.title), JSON.stringify(s1)); // 0.29.8 起悬停不写分数
     ok("字号跟 X 正文一样", s1.fontSize === "15px", s1.fontSize);
     ok("Grok 翻得好的不动", !all[1].block && !all[1].hidden);
     ok("读不到页面数据的长帖、广告不动", !all[6].block && !all[3].block && !all[6].hidden && !all[3].hidden && !["none", "gone"].includes(all[6].xMore));
@@ -185,7 +185,7 @@ PLAN["1002"] = { action: "keep", grokMin: 0.91, cached: false };
     await wait(2500);
     ok("余额不足后这一页停下", (await sent("1010")) === 1 && (await sent("1011")) === 0, `${await sent("1010")} ${await sent("1011")}`);
     // 改了设置（比如充了值、换了 key 之后）重新开始
-    await page.evaluate(() => chrome.storage.local.set({ ff_settings: { translate: true, translateMargin: 0.2 } }));
+    await page.evaluate(() => chrome.storage.local.set({ ff_settings: { translate: true, translateThreshold: 0.6 } }));
     await wait(3500);
     ok("设置变了重新开始", (await sent("1011")) === 1);
     await page.close();
@@ -268,7 +268,7 @@ PLAN["1002"] = { action: "keep", grokMin: 0.91, cached: false };
     await tp.close();
 
     tp = await open("", {}, { "3001": { action: "replace", tried: true, text: "今天我们发布了三样新东西：新编辑器、更快的同步、更便宜的套餐。",
-      model: "openai/gpt-6-luna", weak: "natural", grokMin: 0.5, oursMin: 0.85, cached: false } });
+      model: "openai/gpt-6-luna", weak: "natural", grokMin: 0.5, cached: false } });
     const tf = await tst(tp, "3001");
     const tfPos = await tp.evaluate(() => { const a = document.querySelector('article[data-fid="3001"]'); const b = a.querySelector(".ff-tx");
       return { after: b?.previousElementSibling === a.querySelector('[data-testid="tweetText"]'), label: b?.querySelector(".ff-tx-label").textContent }; });
@@ -297,7 +297,7 @@ PLAN["1002"] = { action: "keep", grokMin: 0.91, cached: false };
       return pg;
     };
     const en = await openEn("", { "5001": { action: "replace", tried: true, text: "It's such nice weather today. Let's all go for a walk!",
-      model: "openai/gpt-6-luna", weak: "natural", grokMin: 0.4, oursMin: 0.9, cached: false } });
+      model: "openai/gpt-6-luna", weak: "natural", grokMin: 0.4, cached: false } });
     const enMsgs = await en.evaluate(() => window.__ffTxMsgs || []);
     ok("英文界面：X 的英文译文照样判，目标语言是 en，原文语言读对", JSON.stringify(enMsgs.map((m) => [m.id, m.target, m.srcLang]).sort()) === '[["5001","en","ja"],["5002","en","zh"]]',
       JSON.stringify(enMsgs.map((m) => [m.id, m.target, m.srcLang, m.source])));

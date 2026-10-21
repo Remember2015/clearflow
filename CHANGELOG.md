@@ -1,9 +1,14 @@
 # Changelog
 
+## 0.29.8 — 2026-10-21
+
+- X: when TypeSafe judges X's own (Grok) translation of a post to be poor, ClearFlow's retranslation now replaces it directly. It used to be scored by TypeSafe again and swapped in only if it scored clearly higher, but that second score missed correct translations of slang, and on real posts it didn't make the shown translations any better. Quick checks on your computer still catch broken output — the text sent back untranslated, written in the wrong language, or far too short or long; then the fallback model tries once, and if that fails too, Grok's version stays.
+- ClearFlow's retranslations are no longer sent to TypeSafe. The privacy policy is updated (effective October 21, 2026).
+- Settings → Advanced no longer has "Replace only if the new score is higher by at least", and the note under an improved translation no longer shows scores.
+
 ## 0.29.7 — 2026-10-21
 
 - Translation: swearing and sexual expressions that aren't meant literally — crude ways of praising, thanking or exclaiming — are now translated by what they mean, with an equally crude expression, instead of word for word (a French post praising people with a vulgar idiom used to come out as a sexual description). Swearing and sexual content that is meant literally is still translated literally. Translations made before this change are redone the next time they're needed.
-- On X, ClearFlow's translation still replaces Grok's only when TypeSafe scores it clearly better, so some of these posts keep Grok's version.
 
 ## 0.29.6 — 2026-10-20
 

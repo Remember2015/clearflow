@@ -490,11 +490,45 @@ export async function judgeCaptions({ jevKey, settings, item, cache = idbCache, 
   return { ...result, tokens: g.tokens, cached: false };
 }
 
-// item: {id, source, xText, srcLang, target}；返回 {action: "keep" | "replace", text?, model?, weak?（Grok 哪一问最差）, grok, ours?,
-// retried?（换另一个模型又翻了一次）, cost, jevTokens, cached}
+// 重译出来的先在本地查一遍（0.29.8 起重译后不再让 Jev 判，用户 10-21：Jev 认不出粗口俗语，把翻对的拦下；translate_eval 真实集上
+// 不判直接换，平均分一样）。只挡明显翻坏的：和原文一样；目标语言该用的文字（中文看汉字、日文看汉字和假名、英文看拉丁字母……）
+// 在我们的译文里不到 Grok 译文里的一半（一句英文的拒答、没翻），或者译文一半以上是 Grok 里几乎没有的文字；长度和 Grok 的差到
+// 0.4 倍以下或 2.5 倍以上（漏了大半、多出一大段）。Grok 的译文就是目标语言写的，拿它当参照；链接、@账号、#话题不算。
+// 真实集 64 条、7 个模型的输出上只挡下 Mercury 原样吐回日文原文那一条（产品名留英文、人名音译这种都不挡）
+const SCRIPTS = [["han", /\p{Script=Han}/u], ["kana", /[\p{Script=Hiragana}\p{Script=Katakana}]/u], ["hangul", /\p{Script=Hangul}/u],
+  ["latin", /\p{Script=Latin}/u], ["cyrillic", /\p{Script=Cyrillic}/u], ["arabic", /\p{Script=Arabic}/u], ["thai", /\p{Script=Thai}/u],
+  ["devanagari", /\p{Script=Devanagari}/u], ["greek", /\p{Script=Greek}/u], ["hebrew", /\p{Script=Hebrew}/u]];
+const TARGET_SCRIPTS = { zh: ["han"], ja: ["han", "kana"], ko: ["hangul"], ru: ["cyrillic"], uk: ["cyrillic"], ar: ["arabic"], fa: ["arabic"],
+  th: ["thai"], hi: ["devanagari"], el: ["greek"], he: ["hebrew"] }; // 别的（界面的 19 种里其余都是）用拉丁字母
+const bare = (s) => String(s || "").replace(/https?:\/\/\S+|[@#$][\p{L}\p{N}_]+/gu, " ");
+function scripts(s) {
+  const n = {};
+  let letters = 0;
+  for (const ch of bare(s)) {
+    const hit = SCRIPTS.find(([, re]) => re.test(ch));
+    if (hit) { n[hit[0]] = (n[hit[0]] || 0) + 1; letters++; }
+  }
+  for (const k in n) n[k] /= letters;
+  return { share: n, letters };
+}
+export function badOutput(text, { source, xText, target = "zh" }) {
+  const norm = (s) => bare(s).replace(/\s+/g, " ").trim().toLowerCase();
+  if (norm(text) === norm(source)) return "same";
+  const o = scripts(text), g = scripts(xText);
+  if (g.letters < 8) return null; // Grok 的太短，比不出什么
+  const want = TARGET_SCRIPTS[String(target).toLowerCase().split(/[-_]/)[0]] || ["latin"];
+  const mine = (x) => want.reduce((a, k) => a + (x.share[k] || 0), 0);
+  if (mine(o) < mine(g) / 2 || Object.entries(o.share).some(([k, v]) => v >= 0.5 && (g.share[k] || 0) < 0.05)) return "script";
+  const r = o.letters / g.letters;
+  if (g.letters >= 20 && (r < 0.4 || r > 2.5)) return "length";
+  return null;
+}
+
+// item: {id, source, xText, srcLang, target}；返回 {action: "keep" | "replace", text?, model?, weak?（Grok 哪一问最差）, grok, grokMin,
+// retried?（换另一个模型又翻了一次）, bad?（重译的没过本地检查、留 Grok 的：same / script / length）, cost, jevTokens, cached}
 export async function improve({ jevKey, orKey, settings, item, cache = idbCache, signal, fetchImpl }) {
   const key = await sha256(JSON.stringify([TRANSLATOR_VERSION, item.id, item.source, item.xText, item.target || "zh", settings.translateModel,
-    settings.translateThreshold, settings.translateMargin]));
+    settings.translateThreshold]));
   try {
     const hit = await cache.get(key);
     if (hit) return { ...hit, cached: true };
@@ -517,27 +551,24 @@ export async function improve({ jevKey, orKey, settings, item, cache = idbCache,
       // 改进 Grok 的译文不急（页面上已经是 Grok 的译文了）：走 flex
       let pick = await translate(orKey, settings, item, { signal, fetchImpl, flex: true });
       spent.cost = pick.cost || 0;
-      let judged = await judge(jevKey, { source: item.source, translation: pick.text, srcLang: item.srcLang, target: item.target }, jevOpts);
-      let cost = pick.cost || 0, jevTokens = grok.tokens + judged.tokens, retried = false;
-      // 重译的反倒比 Grok 还差：换另一个模型（主模型 / 后备模型里没用过的那个）再翻一次，两份里取分高的（0.28.3，用户 10-18：
-      // 同一条韩文帖子 Luna 两次翻出来一次 0.40、一次 0.61，Grok 0.53。translate_eval 的数据上重译的 31 条里有 2 条比 Grok 还差，
-      // DeepSeek 再翻救回 1 条）。只有这种时候多花一次翻译和一次判分；再翻出错就用第一份
-      // 另一个：设置里的两个模型里没试过的那个（按 translate() 返回的 tried 认，不按 OpenRouter 回报的 model 名）
+      let cost = pick.cost || 0, retried = false;
+      // Grok 判下来不好、重译出来的就换上（0.29.8 起不再让 Jev 判重译的、比 Grok 高多少才换：用户 10-21，Jev 认不出粗口俗语，翻对的
+      // 反而分低被拦；translate_eval 真实集 64 条里 31 条要重译，不判全换和判了再换平均分一样 0.70，判下来"更差"的 3 条看过是同样的译文）。
+      // 只用本地检查挡明显翻坏的（badOutput），挡下来换另一个模型（主模型 / 后备模型里没用过的那个）再翻一次，还不行就留 Grok 的
+      let bad = badOutput(pick.text, item);
       const other = [settings.translateModel, settings.translateFallback].find((m) => m && !(pick.tried || [pick.model]).includes(m));
-      if (judged.min < grok.min && other) {
+      if (bad && other) {
         try {
           const again = await translate(orKey, { ...settings, translateModel: other, translateFallback: null }, item, { signal, fetchImpl, flex: true });
-          cost += again.cost || 0; spent.cost += again.cost || 0; retried = true; // 翻好就记（后面判分出错也付过了）
-          const j2 = await judge(jevKey, { source: item.source, translation: again.text, srcLang: item.srcLang, target: item.target }, jevOpts);
-          jevTokens += j2.tokens;
-          if (j2.min > judged.min) { pick = again; judged = j2; }
+          cost += again.cost || 0; spent.cost += again.cost || 0; retried = true;
+          const bad2 = badOutput(again.text, item);
+          if (!bad2) { pick = again; bad = null; }
         } catch (e) { if (signal?.aborted) throw e; }
       }
       const weakest = Object.entries(grok.scores).sort((a, b) => a[1] - b[1])[0][0];
-      const better = judged.min - grok.min >= settings.translateMargin - 1e-9; // 0.75 − 0.65 在浮点里比 0.1 小一点
       result = {
-        action: better ? "replace" : "keep", tried: true, retried, text: better ? pick.text : undefined, model: pick.model,
-        weak: weakest, grok: grok.scores, grokMin: grok.min, ours: judged.scores, oursMin: judged.min, cost, jevTokens,
+        action: bad ? "keep" : "replace", tried: true, retried, text: bad ? undefined : pick.text, model: pick.model,
+        weak: weakest, grok: grok.scores, grokMin: grok.min, ...(bad ? { bad } : {}), cost, jevTokens: grok.tokens,
       };
     } catch (e) { if (e && typeof e === "object" && (spent.cost || spent.jevTokens)) e.spent = spent; throw e; } // 付过的费跟着错误回去记账
   }

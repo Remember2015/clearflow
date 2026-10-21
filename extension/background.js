@@ -12,7 +12,7 @@ import * as keyStore from "./keys.js";
 
 const { DEFAULTS, forSite, siteOf, SITES, IMAGE_ORIGINS } = globalThis.FFSettings;
 // 只管翻译的设置：改了不打断评论区（不取消评论区的 Jev 请求）
-const TRANSLATE_KEYS = ["translate", "translateFill", "translateThreshold", "translateMargin", "translateModel", "translateFallback"];
+const TRANSLATE_KEYS = ["translate", "translateFill", "translateThreshold", "translateModel", "translateFallback"];
 // 评论区进行中的 Jev 请求：只有改了会让请求本身不该发、或者发的内容不一样的设置才打断（关掉清理、不用 Jev、看不看图）。
 // 0.28.7 以前阈值、M1 长度、缓存上限这些改了也打断——Jev 那边已经判完、收过费了，页面再重发一次（review）
 const COMMENT_KEYS = ["enabled", "useJev", "images"];
@@ -77,8 +77,8 @@ export async function migrateSettings() {
     }
     Object.assign(ff_settings, { sites, enabled: true, translate: true });
   }
-  // 0.28.3（rev 5）替换要求的分差默认 0.1 → 0.05：存着的 0.1 就是旧默认值（设置页保存时整份写进去的），换掉；自己调过的不动
-  if ((ff_settings.rev || 1) < 5 && ff_settings.translateMargin === 0.1) ff_settings.translateMargin = DEFAULTS.translateMargin;
+  // 0.28.3（rev 5）替换要求的分差默认 0.1 → 0.05；0.29.8（rev 6）重译的不再判分，这个设置没了：存着的删掉
+  if ((ff_settings.rev || 1) < 6) delete ff_settings.translateMargin;
   ff_settings.rev = DEFAULTS.rev;
   await chrome.storage.local.set({ ff_settings });
 }

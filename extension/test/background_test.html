@@ -31,26 +31,26 @@ const callFrom = (url, msg) => new Promise((res) => listener(msg, { url }, res))
 const out = [];
 const ok = (name, cond, extra = "") => out.push(`${cond ? "PASS" : "FAIL"} ${name} ${extra}`);
 const s0 = await call({ type: "settings" });
-ok("旧默认阈值 0.5 迁移到 0.6", s0.settings.threshold === 0.6 && store.ff_settings.rev === 5, JSON.stringify(store.ff_settings));
+ok("旧默认阈值 0.5 迁移到 0.6", s0.settings.threshold === 0.6 && store.ff_settings.rev === 6, JSON.stringify(store.ff_settings));
 store.ff_settings = { threshold: 0.5, rev: 2 };
 await bg.migrateSettings();
 ok("rev 2 以后自己设的 0.5 不动", store.ff_settings.threshold === 0.5);
 store.ff_settings = { threshold: 0.55 };
 await bg.migrateSettings();
-ok("旧版里自己调过的阈值不动", store.ff_settings.threshold === 0.55 && store.ff_settings.rev === 5);
+ok("旧版里自己调过的阈值不动", store.ff_settings.threshold === 0.55 && store.ff_settings.rev === 6);
 // 0.15.3（rev 3）：M1 的长度改按汉字当量算、默认 15 → 10：存着的 15 是旧默认值，换掉；自己调过的不动
 store.ff_settings = { m1MaxLen: 15, threshold: 0.5, rev: 2 };
 await bg.migrateSettings();
-ok("rev 2 存着的 M1 15 换成 10，阈值 0.5 不动", store.ff_settings.m1MaxLen === 10 && store.ff_settings.threshold === 0.5 && store.ff_settings.rev === 5, JSON.stringify(store.ff_settings));
+ok("rev 2 存着的 M1 15 换成 10，阈值 0.5 不动", store.ff_settings.m1MaxLen === 10 && store.ff_settings.threshold === 0.5 && store.ff_settings.rev === 6, JSON.stringify(store.ff_settings));
 store.ff_settings = { m1MaxLen: 20, rev: 2 };
 await bg.migrateSettings();
-ok("自己调过的 M1 长度不动", store.ff_settings.m1MaxLen === 20 && store.ff_settings.rev === 5);
+ok("自己调过的 M1 长度不动", store.ff_settings.m1MaxLen === 20 && store.ff_settings.rev === 6);
 // 0.20（rev 4）：总开关（暂停、翻译增强）换成每个网站的开关：关着的折进每个网站，总开关打开（界面上没有了）。
 // 以前暂停时 X 照样改进翻译、别的网站不翻；翻译增强关着时哪儿都不翻
 store.ff_settings = { enabled: false, threshold: 0.7, rev: 3 };
 await bg.migrateSettings();
 let m = store.ff_settings;
-ok("rev 3 暂停着：每个网站都关收起，X 以外的也关翻译，总开关打开", m.rev === 5 && m.enabled === true && m.threshold === 0.7 &&
+ok("rev 3 暂停着：每个网站都关收起，X 以外的也关翻译，总开关打开", m.rev === 6 && m.enabled === true && m.threshold === 0.7 &&
   ["x", "reddit", "yt", "xhs", "hn"].every((k) => m.sites[k]?.fold === false) && m.sites.x.translate === undefined &&
   ["reddit", "yt", "xhs", "hn"].every((k) => m.sites[k].translate === false), JSON.stringify(m));
 store.ff_settings = { translate: false, rev: 3 };
@@ -59,14 +59,14 @@ m = store.ff_settings;
 ok("rev 3 翻译增强关着：每个网站都关翻译，收起照常", m.translate === true && ["x", "reddit", "yt", "xhs", "hn"].every((k) => m.sites[k]?.translate === false && m.sites[k].fold === undefined), JSON.stringify(m));
 store.ff_settings = { threshold: 0.5, rev: 3 };
 await bg.migrateSettings();
-ok("rev 3 两个都开着：不多存网站的设置", JSON.stringify(store.ff_settings.sites) === "{}" && store.ff_settings.rev === 5, JSON.stringify(store.ff_settings));
-// 0.28.3（rev 5）：替换要求的分差默认 0.1 → 0.05：存着的 0.1 是旧默认值，换掉；自己调过的不动
+ok("rev 3 两个都开着：不多存网站的设置", JSON.stringify(store.ff_settings.sites) === "{}" && store.ff_settings.rev === 6, JSON.stringify(store.ff_settings));
+// 0.29.8（rev 6）：重译的不再判分，替换要求的分差这个设置没了：存着的（默认的、自己调过的）都删掉，别的不动
 store.ff_settings = { translateMargin: 0.1, rev: 4 };
 await bg.migrateSettings();
-ok("rev 4 存着的分差 0.1 换成 0.05", store.ff_settings.translateMargin === 0.05 && store.ff_settings.rev === 5, JSON.stringify(store.ff_settings));
-store.ff_settings = { translateMargin: 0.2, rev: 4 };
+ok("rev 4 存着的分差删掉", !("translateMargin" in store.ff_settings) && store.ff_settings.rev === 6, JSON.stringify(store.ff_settings));
+store.ff_settings = { translateMargin: 0.2, translateThreshold: 0.6, rev: 5 };
 await bg.migrateSettings();
-ok("自己调过的分差不动", store.ff_settings.translateMargin === 0.2 && store.ff_settings.rev === 5, JSON.stringify(store.ff_settings));
+ok("rev 5 自己调过的分差也删掉，重译阈值不动", !("translateMargin" in store.ff_settings) && store.ff_settings.translateThreshold === 0.6 && store.ff_settings.rev === 6, JSON.stringify(store.ff_settings));
 store.ff_settings = { cacheMB: 50, rev: 2 };
 await call({ type: "cacheClear" });
 const replies = [{ id: "1900000000000000001", text: "a" }, { id: "1900000000000000002", text: "b" }];

@@ -4,7 +4,7 @@ ClearFlow maakt reacties op X, Reddit, YouTube, Xiaohongshu (RedNote) en Hacker 
 • Verbergt reacties zonder inhoud, zoals ‘nice’, ‘+1’ of ‘following’, met bovenaan de reacties één regel om ze weer zichtbaar te maken.
 • Voegt opeenvolgende verborgen reacties samen tot één regel. Als een thread vol rommel staat, wordt alles achter één samenvattende regel verborgen.
 • Leert van wat je markeert: verberg zelf een spamreactie en ook reacties van hetzelfde soort — anders verwoord, van andere accounts, maar met dezelfde truc — worden verborgen. Je kunt dit op elk moment ongedaan maken.
-• Vertaalt berichten en reacties in vreemde talen ter plekke naar jouw taal, met een schakelaar om terug te gaan naar het origineel. Op X vervangt ClearFlow de automatische vertaling van X alleen als de nieuwe vertaling duidelijk beter is.
+• Vertaalt berichten en reacties in vreemde talen ter plekke naar jouw taal, met een schakelaar om terug te gaan naar het origineel. Op X vervangt ClearFlow de automatische vertaling van X wanneer die slecht is.
 • Schakel ClearFlow per site in of uit en kies afzonderlijk of je reacties wilt opschonen en vertalen.
 
 ClearFlow gebruikt twee diensten waarvoor je je aanmeldt en per gebruik betaalt, met je eigen API-sleutels: TypeSafe (voor het beoordelen van reacties) en OpenRouter (voor vertalingen). Een instelpagina helpt je de sleutels in te voeren; in de instellingen zie je wat je hebt uitgegeven. Zonder sleutels worden alleen de ingebouwde lokale regels toegepast.

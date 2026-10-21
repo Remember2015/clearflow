@@ -37,7 +37,7 @@ stub = r'''
       (window.__ffTxMsgs ||= []).push(JSON.parse(JSON.stringify(msg)));
       const plan = window.__ffTxPlan?.[msg.id];
       r = plan || (window.__ffTxDemo
-        ? { action: "replace", tried: true, text: "【替身译文】" + msg.xText, model: "stub/model", weak: "natural", grokMin: 0.4, oursMin: 0.8, cached: false }
+        ? { action: "replace", tried: true, text: "【替身译文】" + msg.xText, model: "stub/model", weak: "natural", grokMin: 0.4, cached: false }
         : { action: "keep", grokMin: 0.9, cached: false });
     }
     let delay = 30;
