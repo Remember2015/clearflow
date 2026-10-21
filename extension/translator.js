@@ -11,7 +11,9 @@
 import { askJev } from "./jev.js";
 
 export const OR_API = "https://openrouter.ai/api/v1/chat/completions";
-export const TRANSLATOR_VERSION = "tx2", FILL_VERSION = "fill2"; // 2：缓存键里加了目标语言
+export const TRANSLATOR_VERSION = "tx3", FILL_VERSION = "fill3"; // 2：缓存键里加了目标语言；3（0.29.7）：提示词加了粗口按真实意思翻，旧译文作废
+// Grok 译文的判分和我们的提示词无关：键另外记，换提示词时不用重判（0.29.7 起不跟 TRANSLATOR_VERSION 走，留在 tx2）
+const GROK_JUDGE_VERSION = "tx2";
 // 语言名用 Intl.DisplayNames（service worker 和 Node 都有）；X 有几个老代码（in = 印尼语、iw = 希伯来语）
 const LEGACY = { in: "id", iw: "he", ji: "yi" };
 function langName(code, inLang) {
@@ -42,19 +44,20 @@ export const JUDGE_QUESTIONS_ANY = {
   natural: "Does `translation` read as natural, idiomatic `target_language` that a native speaker would write on " +
     "social media, rather than stiff word-for-word translationese?",
 };
-// 和 translate_eval/or_bench.py 一字不差
+// 和 translate_eval/or_bench.py 一字不差。第 3 条后半句（0.29.7，用户 10-21：一条法语帖用粗口俗语夸人，Luna 每次都直译成性描写）：
+// 粗口、跟性有关的说法按真实意思翻；真实集中文 64 条、英文 78 条不掉分（README 见 translate_eval）
 export const SYSTEM_PROMPT = `你是资深的社交媒体译者，把 X（推特）上的帖子翻成简体中文，给中文用户在信息流里读。
 要求：
 1. 全部翻完：每一句、每个数字、每条列表都要在，不漏、不加、不解释。只输出译文本身。
 2. @账号、#话题、$股票代码、链接、emoji、代码、版本号原样保留；产品名、人名没有通行译名时保留原文。
-3. 用自然的中文网络口语，像中文用户自己写的；俚语、玩笑、反讽、双关按意思翻，不要逐字直译，语气要保留（粗口就用中文粗口）。
+3. 用自然的中文网络口语，像中文用户自己写的；俚语、玩笑、反讽、双关按意思翻，不要逐字直译，语气要保留（粗口就用中文粗口）。粗口和跟性有关的说法常常不是字面意思（用来夸人、感谢、惊叹、加强语气），这时按它在这句里的真实意思，换成中文里意思一样、一样粗的说法；真在说性、真在骂人时才照字面翻。
 4. 保留原文的换行和列表结构。`;
 // 别的目标语言：同样四条规则的英文模板
 export const systemPromptFor = (name) => `You are an experienced social media translator. Translate posts from X (Twitter) into ${name} for people reading them in their feed.
 Rules:
 1. Translate everything: every sentence, number and list item must be there - nothing dropped, added or explained. Output only the translation.
 2. Keep @handles, #hashtags, $cashtags, links, emoji, code and version numbers exactly as they are; keep product and personal names in the original when there is no established ${name} name.
-3. Write natural, casual ${name} the way native speakers post online. Translate slang, jokes, sarcasm and puns by meaning, not word for word, and keep the tone (swearing stays swearing).
+3. Write natural, casual ${name} the way native speakers post online. Translate slang, jokes, sarcasm and puns by meaning, not word for word, and keep the tone (swearing stays swearing). Swearing and sexual expressions are often not meant literally (they can express praise, thanks, surprise or emphasis); then translate what they actually mean here with an equally crude ${name} expression, and translate them literally only when they really are about sex or really are insults.
 4. Keep the original line breaks and list structure.`;
 
 // YouTube 字幕（0.29.0）：YouTube 自己的"自动翻译"一行一行地翻，一句话跨两三行的就翻碎了（一行几乎是空的、下一行塞进整句）。
@@ -498,7 +501,7 @@ export async function improve({ jevKey, orKey, settings, item, cache = idbCache,
   } catch { /* 缓存坏了就当没命中 */ }
   const jevOpts = { signal, fetchImpl };
   // Grok 那次判分单独缓存（0.28.8，review）：后面重译、再判出错时整个结果写不进缓存，页面过 30 秒重试又要付一次判分
-  const gkey = await sha256(JSON.stringify([TRANSLATOR_VERSION, "grok", item.source, item.xText, item.srcLang || "", item.target || "zh"]));
+  const gkey = await sha256(JSON.stringify([GROK_JUDGE_VERSION, "grok", item.source, item.xText, item.srcLang || "", item.target || "zh"]));
   let grok = null;
   try { const g = await cache.get(gkey); if (g && g.scores && Number.isFinite(g.min)) grok = { ...g, tokens: 0 }; } catch { /* 当没命中 */ }
   if (!grok) {

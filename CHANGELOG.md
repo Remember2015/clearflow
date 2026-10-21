@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.29.7 — 2026-10-21
+
+- Translation: swearing and sexual expressions that aren't meant literally — crude ways of praising, thanking or exclaiming — are now translated by what they mean, with an equally crude expression, instead of word for word (a French post praising people with a vulgar idiom used to come out as a sexual description). Swearing and sexual content that is meant literally is still translated literally. Translations made before this change are redone the next time they're needed.
+- On X, ClearFlow's translation still replaces Grok's only when TypeSafe scores it clearly better, so some of these posts keep Grok's version.
+
 ## 0.29.6 — 2026-10-20
 
 - Clearer, shorter wording across Settings, the popup and the welcome page, in all languages. The English interface now consistently says "hide" and "filtering"; the Chinese interface says 密钥 instead of "key".

@@ -1,7 +1,8 @@
 // 翻译增强后台逻辑（translator.js）的离线测试：Jev 和 OpenRouter 都用假的 fetch，缓存用内存，不需要任何 key。
 // node test/translator_test.mjs
 import assert from "node:assert/strict";
-import { improve, fillIn, fillInBatch, fillCached, translate, translateCaptions, cleanOutput, OR_API, SYSTEM_PROMPT, BATCH_ZH } from "../translator.js";
+import fs from "node:fs";
+import { improve, fillIn, fillInBatch, fillCached, translate, translateCaptions, cleanOutput, OR_API, SYSTEM_PROMPT, systemPromptFor, BATCH_ZH } from "../translator.js";
 
 const S = { translateThreshold: 0.7, translateMargin: 0.1, translateModel: "openai/gpt-6-luna", translateFallback: "deepseek/deepseek-v4.1-flash" };
 const item = { id: "1900000000000000101", source: "Why is it so hard to hire good people? Because the good ones are not for hire!", xText: "为什么雇佣好人这么难？因为好人不是雇佣兵！", srcLang: "en" }; // 合成的
@@ -424,6 +425,15 @@ await ok("字幕流式（0.29.5）：带 onLine 时请求带 stream，每一行�
   assert.equal(plain[0].stream, undefined);
 });
 
+await ok("提示词（0.29.7）：粗口、跟性有关的说法按真实意思翻（法语帖子里用粗口俗语夸人的那种）；和 translate_eval/or_bench.py 一字不差（那个文件在时）", async () => {
+  assert.match(SYSTEM_PROMPT, /粗口和跟性有关的说法常常不是字面意思（用来夸人、感谢、惊叹、加强语气）.*真在说性、真在骂人时才照字面翻。/);
+  assert.match(systemPromptFor("English"), /Swearing and sexual expressions are often not meant literally .* equally crude English expression, .* really are insults\./);
+  const bench = new URL("../../translate_eval/or_bench.py", import.meta.url);
+  if (!fs.existsSync(bench)) return; // 公开仓库里没有 translate_eval
+  const py = fs.readFileSync(bench, "utf8");
+  assert.ok(py.includes(`SYSTEM = """${SYSTEM_PROMPT}"""`), "中文提示词和 or_bench.py 的 SYSTEM 不一样");
+  assert.ok(py.includes(`f"""${systemPromptFor("{name}")}"""`), "英文模板和 or_bench.py 的 SYSTEM_ANY 不一样");
+});
 await ok("模型输出去掉多余的引号和前缀", async () => {
   assert.equal(cleanOutput("译文：“你好”"), "你好");
   assert.equal(cleanOutput("“他说“好”，我说“不”。”"), "“他说“好”，我说“不”。”", "里面还有引号时不剥");
