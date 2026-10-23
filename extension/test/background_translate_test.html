@@ -22,7 +22,10 @@ globalThis.fetch = async (url, init) => {
   net.live++; net.maxLive = Math.max(net.maxLive, net.live);
   try {
     const body = JSON.parse(init.body);
-    if (String(url).includes("openrouter.ai")) {
+    // 判断请求：直连 TypeSafe，或者（0.29.11 起没填 TypeSafe 密钥时）走 OpenRouter 的 /systemone——记下走的哪条、用的哪个密钥和型号
+    const judgeVia = String(url).includes("openrouter.ai/api/v1/systemone") ? "or" : String(url).includes("openrouter.ai") ? null : "ts";
+    if (judgeVia) { net.jevVia = judgeVia; net.jevAuth = init.headers?.Authorization; net.jevModel = body.model; }
+    if (!judgeVia) {
       net.or.push(body); net.auth = init.headers?.Authorization;
       if (net.orDelay) await new Promise((res, rej) => { const t = setTimeout(res, net.orDelay); init.signal?.addEventListener("abort", () => { clearTimeout(t); rej(init.signal.reason); }, { once: true }); });
       if (net.orStatus !== 200) return new Response(JSON.stringify({ error: { message: "fake" } }), { status: net.orStatus });
@@ -88,9 +91,9 @@ try {
   r = await call(item("1"));
   ok("开关关着：disabled", r.code === "disabled" && net.jev === 0);
   store.ff_settings = { rev: 2 };
-  store.ff_key = ""; // 0.28.12 起 key 挪进了 IndexedDB：往 storage.local 写一个空的（旧版本那样）就是删掉
-  ok("没有 Jev key：nokey", (await call(item("1"))).code === "nokey");
-  store.ff_key = "test-key";
+  store.ff_key = ""; store.ff_or_key = ""; // 0.28.12 起 key 挪进了 IndexedDB：往 storage.local 写一个空的（旧版本那样）就是删掉
+  ok("TypeSafe、OpenRouter 的密钥都没有：nokey（0.29.11 起有 OpenRouter 的就能判）", (await call(item("1"))).code === "nokey");
+  store.ff_key = "test-key"; store.ff_or_key = " sk-or-test ";
 
   r = await call(item("1"));
   ok("Grok 差：重译了就换上（0.29.8 起不再判重译的）", r.action === "replace" && r.text.startsWith("改进的译文") && r.weak === "natural" && r.cached === false, JSON.stringify(r));
@@ -158,6 +161,11 @@ try {
   r = await call(fillMsg("401", { truncated: true }));
   ok("补翻：截断的告诉模型", r.action === "fill" && /截断/.test(net.or.at(-1).messages[1].content));
   ok("补翻：参数不对拒收", (await call(fillMsg("402", { truncated: "yes" }))).code === "invalid_request" && (await call(fillMsg("x"))).code === "invalid_request");
+  // 0.29.11：没填 TypeSafe 密钥（上面删了）、有 OpenRouter 的：判 Grok 译文走 OpenRouter 的 /systemone，型号 typesafe/jev-1.13，用 OpenRouter 的密钥
+  net.jevVia = null;
+  r = await call(item("60"));
+  ok("没填 TypeSafe 密钥：判断走 OpenRouter（/systemone、typesafe/jev-1.13、OpenRouter 的密钥）", r.action === "replace" && net.jevVia === "or" &&
+    net.jevModel === "typesafe/jev-1.13" && /^Bearer sk-or-/.test(net.jevAuth || ""), JSON.stringify([r.action, r.code, net.jevVia, net.jevModel, net.jevAuth]));
   const savedSt = store.ff_settings;
   store.ff_settings = { ...savedSt, translate: false };
   ok("补翻：开关关着 disabled", (await call(fillMsg("403"))).code === "disabled");

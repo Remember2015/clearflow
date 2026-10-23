@@ -7,7 +7,7 @@ ClearFlow maakt reacties op X, Reddit, YouTube, Xiaohongshu (RedNote) en Hacker 
 • Vertaalt berichten en reacties in vreemde talen ter plekke naar jouw taal, met een schakelaar om terug te gaan naar het origineel. Op X vervangt ClearFlow de automatische vertaling van X wanneer die slecht is.
 • Schakel ClearFlow per site in of uit en kies afzonderlijk of je reacties wilt opschonen en vertalen.
 
-ClearFlow gebruikt twee diensten waarvoor je je aanmeldt en per gebruik betaalt, met je eigen API-sleutels: TypeSafe (voor het beoordelen van reacties) en OpenRouter (voor vertalingen). Een instelpagina helpt je de sleutels in te voeren; in de instellingen zie je wat je hebt uitgegeven. Zonder sleutels worden alleen de ingebouwde lokale regels toegepast.
+ClearFlow gebruikt OpenRouter, een dienst waarvoor je je aanmeldt en per gebruik betaalt, met je eigen API-sleutel: deze stuurt reacties naar TypeSafe's Jev-model om ze te beoordelen en tekst naar een vertaalmodel. Een instelpagina helpt je de sleutel in te voeren; in de instellingen zie je wat je hebt uitgegeven. Zonder sleutel worden alleen de ingebouwde lokale regels toegepast.
 
 Privacy: de reacties en berichten die je bekijkt op de ondersteunde sites worden naar deze twee diensten gestuurd om te worden beoordeeld of vertaald (met je meest recent gemarkeerde spamreacties als voorbeelden, als je die hebt gemarkeerd). Er wordt niets naar ons gestuurd en er zijn geen analyses of tracking. Je sleutels en geschiedenis blijven in je browser. Open source (MIT): https://github.com/remember2015/clearflow
 

@@ -115,15 +115,22 @@ SEED["ff_reply_override:" + SEED.ff_recent_folds[2].id] = { label: "missed", upd
     await wait(600);
     ok("TypeSafe 余额不足：提示", /TypeSafe 余额不足/.test(await txt("#alerts")), await txt("#alerts"));
     const keepSt = await page.evaluate(async () => (await chrome.storage.local.get("ff_settings")).ff_settings || {});
-    await page.evaluate((st) => chrome.storage.local.set({ ff_key: "", ff_health: {}, ff_settings: { ...st, useJev: false } }), keepSt);
+    // 0.29.11：判断默认走 OpenRouter——没填 TypeSafe、有 OpenRouter 的密钥也能判，不提醒；两个都没有才提醒"还没填 OpenRouter 密钥"
+    await page.evaluate((st) => chrome.storage.local.set({ ff_key: "", ff_or_key: "", ff_health: {}, ff_settings: { ...st, useJev: false } }), keepSt);
     await page.reload({ waitUntil: "load" });
     await wait(600);
     const noJev = await txt("#alerts");
     await page.evaluate((st) => chrome.storage.local.set({ ff_settings: { ...st, useJev: true } }), keepSt);
     await page.reload({ waitUntil: "load" });
     await wait(600);
-    ok("关了 Jev：不提没填 Jev 密钥；开着才提", !/Jev 密钥/.test(noJev) && /Jev 密钥/.test(await txt("#alerts")), JSON.stringify([noJev, await txt("#alerts")]));
-    await page.evaluate((st) => chrome.storage.local.set({ ff_key: "fake-jev-key", ff_settings: st, ff_health: { or: { code: "or_credit", at: Date.now() } } }), keepSt);
+    const none = await txt("#alerts");
+    await page.evaluate(() => chrome.storage.local.set({ ff_or_key: "fake-or-key" }));
+    await page.reload({ waitUntil: "load" });
+    await wait(600);
+    const orOnly = await txt("#alerts");
+    ok("关了判断：不提密钥；两个都没填：提还没填 OpenRouter 密钥；只有 OpenRouter 的（0.29.11）：不提", !/密钥/.test(noJev) && /还没填 OpenRouter 密钥/.test(none) && !/还没填/.test(orOnly),
+      JSON.stringify([noJev, none, orOnly]));
+    await page.evaluate((st) => chrome.storage.local.set({ ff_key: "fake-jev-key", ff_or_key: "fake-or-key", ff_settings: st, ff_health: { or: { code: "or_credit", at: Date.now() } } }), keepSt);
     await page.reload({ waitUntil: "load" });
     await wait(600);
     const stored = () => page.evaluate(async () => (await chrome.storage.local.get("ff_settings")).ff_settings);
@@ -187,7 +194,8 @@ SEED["ff_reply_override:" + SEED.ff_recent_folds[2].id] = { label: "missed", upd
     await wait(700);
     const o = await page.evaluate(() => ({
       segs: [...document.querySelectorAll(".seg")].map((s) => [...s.querySelectorAll(".seg-item")].map((b) => (b.getAttribute("aria-checked") === "true" ? `[${b.textContent}]` : b.textContent)).join(" ")),
-      jev: document.getElementById("jevState").textContent, or: document.getElementById("orState").textContent, cost: document.getElementById("costLine").textContent,
+      jev: document.getElementById("jevState")?.textContent ?? null, or: document.getElementById("orState").textContent, cost: document.getElementById("costLine").textContent,
+      conn: [...document.querySelectorAll("#conn .row-name")].map((e) => e.textContent),
       adv: document.getElementById("advTrigger").getAttribute("aria-expanded") === "true" || !!document.getElementById("threshold"), h2: [...document.querySelectorAll("h2")].map((h) => h.textContent),
       bodyText: document.getElementById("fold").innerText,
     }));
@@ -214,8 +222,10 @@ SEED["ff_reply_override:" + SEED.ff_recent_folds[2].id] = { label: "missed", upd
       const visible = [...document.querySelectorAll("body *")].filter((e) => { const c = getComputedStyle(e);
         return ["Top", "Right", "Bottom", "Left"].some((k) => parseFloat(c["border" + k + "Width"]) >= 1 && c["border" + k + "Color"] !== "rgba(0, 0, 0, 0)" && c["border" + k + "Style"] !== "none"); })
         .map((e) => e.id || e.className.slice(0, 40));
-      return { first: cs("row-jev").boxShadow, second: cs("row-or").boxShadow, secondColor: cs("row-or").borderTopColor, ring: cs("fold").boxShadow,
-        changeBtn: cs("jevChange").boxShadow, visible };
+      // 0.29.11 起"连接和费用"里是 OpenRouter 一行加花费一行（TypeSafe 挪进高级）
+      const costRow = getComputedStyle(document.getElementById("costLine").parentElement);
+      return { first: cs("row-or").boxShadow, second: costRow.boxShadow, secondColor: costRow.borderTopColor, ring: cs("fold").boxShadow,
+        changeBtn: cs("orChange").boxShadow, visible };
     });
     ok("分隔线 0.5px、每张卡片第一行上面没有线、卡片和描边按钮都是 0.5px、没有看得见的 1px 边框",
       lines.first === "none" && /inset 0px 0\.5px 0px 0px|0px 0\.5px 0px 0px .*inset/.test(lines.second) && lines.secondColor === "rgba(0, 0, 0, 0)" &&
@@ -251,12 +261,16 @@ SEED["ff_reply_override:" + SEED.ff_recent_folds[2].id] = { label: "missed", upd
     ok("关掉：存下、权限还回去", !(await imgOn()) && (await page.evaluate(() => window.__permDrop.length)) === 1);
     tip = await helpText("#row-images .help");
     ok("看图片的问号里说清：发给 Jev、多花多少、准头、要权限", /二维码/.test(tip[0] || "") && /768/.test(tip[0] || "") && /试验/.test(tip[0] || "") && /授权/.test(tip[0] || ""), JSON.stringify(tip));
-    ok("key 的状态：Jev 已填、OpenRouter 余额不足", o.jev === "已填" && o.or === "余额不足", `${o.jev}/${o.or}`);
+    ok("连接和费用里只有 OpenRouter（0.29.11 起一个密钥就够）、余额不足；TypeSafe 收在高级里", JSON.stringify(o.conn) === '["OpenRouter"]' && o.jev === null && o.or === "余额不足", JSON.stringify([o.conn, o.jev, o.or]));
+    // TypeSafe（可选）那一行在高级里：点开再查
+    await page.click("#advTrigger");
+    await wait(400);
+    ok("高级里第一行是 TypeSafe（可选），填过了打勾", (await txt("#row-jev .row-name")) === "TypeSafe（可选）" && !!(await page.$("#jevState svg")), await txt("#row-jev .row-name"));
     // 0.19.2：能用的 key 只打一个勾（读屏念"已填"）、不放测试连接；用不了的照旧写字、有测试连接
     const keyUi = await page.evaluate(() => ({ jevIcon: !!document.querySelector("#jevState svg"), jevBadge: !!document.querySelector('#jevState[data-slot="badge"]'),
       jevTest: !!document.getElementById("jevTest"), orTest: !!document.getElementById("orTest"), orBadge: !!document.querySelector('#orState[data-slot="badge"]') }));
     ok("能用的 key：一个勾、没有测试连接；余额不足的：写字、有测试连接", keyUi.jevIcon && !keyUi.jevBadge && !keyUi.jevTest && keyUi.orTest && keyUi.orBadge, JSON.stringify(keyUi));
-    ok("本月花费和每月估计", /^本月：Jev \$[\d.]+，翻译 \$[\d.]+。按近 7 天用量估算，每月约 \$[\d.]+。$/.test(o.cost), o.cost);
+    ok("本月花费和每月估计（0.29.11 起按用途分：清理、翻译）", /^本月：清理 \$[\d.]+，翻译 \$[\d.]+。按近 7 天用量估算，每月约 \$[\d.]+。$/.test(o.cost), o.cost);
     // key 填过了：平时只显示状态和"更换""测试连接"，点"更换"才出输入框
     ok("填过的 key 不显示输入框", !(await page.$("#key")) && !!(await page.$("#jevChange")));
     await page.click("#jevChange");
@@ -275,12 +289,19 @@ SEED["ff_reply_override:" + SEED.ff_recent_folds[2].id] = { label: "missed", upd
     await page.evaluate((s) => chrome.storage.local.set({ ff_stats: s }), keepStats);
     await wait(300);
     ok("每月估计：最近 7 天只用了一天（$0.70），按 7 天平均乘 30 = $3.00", /每月约 \$3\.00/.test(cost1), cost1);
-    // 高级：点开才有精确数字；评测记录的开关默认关，打开存下
-    await page.click("#advTrigger");
-    await wait(400);
+    // 高级：点开才有精确数字（上面查 TypeSafe 那一行时已经点开了）；评测记录的开关默认关，打开存下
+    if ((await page.$eval("#advTrigger", (b) => b.getAttribute("aria-expanded"))) !== "true") { await page.click("#advTrigger"); await wait(400); }
     ok("点开\"高级\"：阈值等数字出来，跟三档一致；没有评测记录（0.24 去掉了）", (await page.$eval("#threshold", (i) => i.value)) === "0.6" &&
       (await page.$eval("#advTrigger", (b) => b.getAttribute("aria-expanded"))) === "true" && !(await page.$('[data-switch="evalRecord"]')));
     if (SHOT) await page.screenshot({ path: path.join(SHOT, "options.png"), fullPage: true });
+
+    // 0.29.11：看图片要直连 TypeSafe（OpenRouter 收下图片却不转给 Jev）——没填 TypeSafe 密钥时这一行灰掉、说去高级里填
+    await page.evaluate(() => chrome.storage.local.set({ ff_key: "" }));
+    await wait(600);
+    const imgRow = await page.evaluate(() => ({ off: document.querySelector("#row-images [data-switch]")?.hasAttribute("data-disabled"), note: document.querySelector("#row-images .row-note")?.textContent || "" }));
+    ok("没填 TypeSafe 密钥：检查图片那一行灰掉，说要先在高级里填 TypeSafe 密钥", imgRow.off === true && /高级/.test(imgRow.note) && /TypeSafe/.test(imgRow.note), JSON.stringify(imgRow));
+    await page.evaluate(() => chrome.storage.local.set({ ff_key: "fake-jev-key" }));
+    await wait(600);
 
     // ---------- 网站页（0.20） ----------
     const go = async (hash) => { await page.evaluate((h) => { location.hash = h; }, hash); await wait(500); };

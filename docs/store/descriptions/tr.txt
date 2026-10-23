@@ -7,7 +7,7 @@ ClearFlow, X, Reddit, YouTube, Xiaohongshu (RedNote) ve Hacker News’teki yorum
 • Yabancı dildeki gönderi ve yorumları, sayfada ve kendi dilinize çevirir; ayrıca özgün metne dönme seçeneği sunar. X’te, X’in otomatik çevirisi kötü olduğunda onun yerine geçer.
 • Her site için ayrı ayrı açıp kapatabilir; temizlik ve çeviri özelliklerini birbirinden bağımsız seçebilirsiniz.
 
-ClearFlow, kaydolup kullanıma göre ödeme yaptığınız ve kendi API anahtarlarınızı kullandığınız iki hizmetten yararlanır: TypeSafe (yanıtları değerlendirmek için) ve OpenRouter (çeviri için). Kurulum sayfası anahtarları girmenize yardımcı olur; ayarlardan ne kadar harcadığınızı görebilirsiniz. Anahtarlar olmadan yalnızca yerleşik yerel kurallar çalışır.
+ClearFlow, kaydolup kullanıma göre ödeme yaptığınız ve kendi API anahtarınızı kullandığınız OpenRouter hizmetinden yararlanır: yanıtları değerlendirmesi için TypeSafe’in Jev modeline, metinleri ise bir çeviri modeline iletir. Kurulum sayfası anahtarı girmenize yardımcı olur; ayarlardan ne kadar harcadığınızı görebilirsiniz. Anahtar olmadan yalnızca yerleşik yerel kurallar çalışır.
 
 Gizlilik: Desteklenen sitelerde görüntülediğiniz yorumlar ve gönderiler, değerlendirme veya çeviri için bu iki hizmete gönderilir. Spam olarak işaretlediğiniz yanıtlar varsa, en son işaretledikleriniz örnek olarak gönderilir. Bize hiçbir şey gönderilmez; analiz veya izleme yapılmaz. Anahtarlarınız ve geçmişiniz tarayıcınızda kalır. Açık kaynaklıdır (MIT): https://github.com/remember2015/clearflow
 

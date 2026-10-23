@@ -7,7 +7,7 @@ ClearFlow makes comment sections readable again on X, Reddit, YouTube, Xiaohongs
 • Translates foreign-language posts and comments into your language, in place, with a switch back to the original. On X it replaces X's automatic translation when that one is poor.
 • Turn it on or off per site, and choose cleaning and translation separately.
 
-ClearFlow uses two services you sign up for and pay by usage, with your own API keys: TypeSafe (judging replies) and OpenRouter (translation). A setup page helps you enter them; the settings show what you've spent. Without keys, only the built-in local rules run.
+ClearFlow uses OpenRouter, a service you sign up for and pay by usage, with your own API key: it passes replies to TypeSafe's Jev model for judging and text to a translation model. A setup page helps you enter the key; the settings show what you've spent. Without a key, only the built-in local rules run.
 
 Privacy: the comments and posts you're viewing on the supported sites are sent to those two services to be judged or translated (with your most recently marked spam replies as examples, if you've marked any). Nothing is sent to us, and there is no analytics or tracking. Keys and history stay in your browser. Open source (MIT): https://github.com/remember2015/clearflow
 

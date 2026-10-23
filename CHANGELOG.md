@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.29.11 — 2026-10-23
+
+- One API key is enough: filtering and translation both go through OpenRouter now. ClearFlow sends the replies it can't decide on its own to TypeSafe's Jev model through OpenRouter, using your OpenRouter key; it's the same model at the same price, about 0.4 seconds slower. Getting a key from TypeSafe directly can involve a waitlist, so it's no longer needed.
+- A TypeSafe key is optional (Settings → Advanced). With one, replies are checked by TypeSafe directly, a little faster, and "Check images in replies" works — OpenRouter doesn't pass images on, so that setting needs a TypeSafe key. If you already entered a TypeSafe key, nothing changes for you.
+- First-time setup asks for the OpenRouter key only, and Settings → Connections and cost shows just OpenRouter.
+- Privacy policy updated (effective October 23, 2026) to say that judging requests go through OpenRouter unless you add a TypeSafe key.
+
 ## 0.29.10 — 2026-10-23
 
 - First-time setup, API keys step: shorter text and fewer buttons. Each key has one line saying what it's for and where to get it, a field and Save. Saving checks the key right away and says whether it works, so there's no separate "Test connection"; a key that doesn't work leaves the field open to fix it. "Later" and "Next" are now one button.

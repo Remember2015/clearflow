@@ -147,10 +147,12 @@ function ImagesRow({ s, raw, put = save, site, siteId }) {
     put({ images: on });
   };
   const changed = site && "images" in site.over;
+  // 看图片要直连 TypeSafe（0.29.11：OpenRouter 收下图片却不转给 Jev）：没填 TypeSafe 密钥时灰掉、说一句去哪填
+  const [keys] = useStorage(["ff_keys", "ff_key"]), noTs = !!keys && !hasKey(keys, "jev");
   return (
     <Row name={t("opt.images")} help={<P k="opt.imagesHint" />} id="row-images"
-      note={changed ? <Override base={site.base} keys={["images"]} onReset={() => { releaseImagesAfter(raw, siteId, null); put({ images: null }); }} /> : null}>
-      <Toggle id="images" checked={!!s.images} label={t("opt.images")} disabled={site?.off} onChange={onChange} />
+      note={noTs ? t("opt.imagesNeedTs") : changed ? <Override base={site.base} keys={["images"]} onReset={() => { releaseImagesAfter(raw, siteId, null); put({ images: null }); }} /> : null}>
+      <Toggle id="images" checked={!!s.images} label={t("opt.images")} disabled={site?.off || noTs} onChange={onChange} />
     </Row>
   );
 }
@@ -446,7 +448,6 @@ function Connections({ d }) {
   const h = d.ff_health || {};
   return (
     <Section id="conn" title={t("opt.connTitle")}>
-      <KeyRow id="jev" name="Jev (TypeSafe)" hint="opt.jevHint" has={hasKey(d, "jev")} code={h.jev?.code} placeholder="apikey_…" test={testJev} link={KEY_URL.jev} />
       <KeyRow id="or" name="OpenRouter" hint="opt.orHint" has={hasKey(d, "or")} code={h.or?.code} placeholder="sk-or-…" test={testOr} link={KEY_URL.or} />
       <div className={ROW}><p className="text-sm text-muted-foreground" id="costLine">{costLine(d.ff_stats || {})}</p></div>
     </Section>
@@ -551,6 +552,8 @@ function Advanced({ s, d }) {
         <p className="px-1 pb-2 text-xs text-muted-foreground">{t("opt.advHint")}</p>
         <Card className="gap-0 py-1.5">
           <CardContent className="flex flex-col px-5">
+            {/* TypeSafe 密钥可选（0.29.11）：填了判断就直连 TypeSafe——快约 0.4 秒，也能看图片（OpenRouter 收下图片却不转给 Jev，只按文字判） */}
+            <KeyRow id="jev" name={t("opt.tsName")} hint="opt.tsHint" has={hasKey(d, "jev")} code={(d.ff_health || {}).jev?.code} placeholder="apikey_…" test={testJev} link={KEY_URL.jev} />
             {NUMS.map(([k, label, min, max, step]) => <Field key={k} id={k} label={label} value={s[k]} min={min} max={max} step={step} />)}
             <Field id="translateModel" label="opt.model" value={s.translateModel} type="text" list="txModels" help={<P k="opt.modelHint" />} />
             <Field id="translateFallback" label="opt.fallback" value={s.translateFallback} type="text" list="txModels" />
@@ -618,7 +621,6 @@ function Welcome({ d }) {
   const raw = d.ff_settings, base = SETTINGS.normalize(raw), h = d.ff_health || {};
   const put = (id, patch) => writeSite(id, patch).catch((e) => toast(failText(e), "err"));
   const on = SETTINGS.SITES.filter((x) => (base.sites[x.id] || {}).on !== false);
-  const anyTx = SETTINGS.SITES.some((x) => SETTINGS.forSite(raw, x.id).translate);
   const finish = async () => {
     try { await chrome.storage.local.set({ ff_onboarded: Date.now() }); } catch (e) { /* 下次不弹也无所谓 */ }
     chrome.tabs.getCurrent((tab) => { if (tab && tab.id != null) chrome.tabs.remove(tab.id); else location.hash = ""; });
@@ -629,7 +631,7 @@ function Welcome({ d }) {
       <div className="flex items-center gap-2">
         {step > 1 && <Button variant="ghost" size="sm" className="btn" id="welcomeBack" onClick={() => setStep(step - 1)}>{t("welcome.back")}</Button>}
         {/* 第 2 步一个都没填：同一个按钮写"稍后再填"（0.29.10 以前"稍后再填""下一步"两个按钮做同一件事） */}
-        {step < 3 ? <Button size="sm" className="btn" id="welcomeNext" onClick={() => setStep(step + 1)}>{t(step === 2 && !hasKey(d, "jev") && !hasKey(d, "or") ? "welcome.later" : "welcome.next")}</Button>
+        {step < 3 ? <Button size="sm" className="btn" id="welcomeNext" onClick={() => setStep(step + 1)}>{t(step === 2 && !hasKey(d, "or") ? "welcome.later" : "welcome.next")}</Button>
           : <Button size="sm" className="btn" id="welcomeDone" onClick={finish}>{t("welcome.finish")}</Button>}
       </div>
     </div>
@@ -671,8 +673,8 @@ function Welcome({ d }) {
             <p className="flex items-start gap-2" id="welcomeKeysLocal"><IconLock className="mt-0.5 size-4 shrink-0" />{t("welcome.keysLocal")}</p>
           </div>
           <Section id="welcomeKeys" label={t("welcome.keysTitle")}>
-            <WelcomeKey id="jev" name={t("welcome.jevName")} has={hasKey(d, "jev")} code={h.jev?.code} placeholder="apikey_…" test={testJev} link={KEY_URL.jev} note={t("welcome.jevNote")} />
-            {anyTx && <WelcomeKey id="or" name={t("welcome.orName")} has={hasKey(d, "or")} code={h.or?.code} placeholder="sk-or-…" test={testOr} link={KEY_URL.or} note={t("welcome.orNote")} />}
+            {/* 0.29.11 起只要一个 OpenRouter 密钥（Jev 也通过 OpenRouter 调，TypeSafe 直接申请要排队）；TypeSafe 密钥挪到设置的"高级"里、可选 */}
+            <WelcomeKey id="or" name={t("welcome.keyName")} has={hasKey(d, "or")} code={h.or?.code} placeholder="sk-or-…" test={testOr} link={KEY_URL.or} note={t("welcome.orNote")} />
           </Section>
         </>
       )}
@@ -692,7 +694,7 @@ function Welcome({ d }) {
                 ))}
               </div>
             )}
-            {!hasKey(d, "jev") && <p className="text-sm text-amber-800 dark:text-[#ffc46b]" id="welcomeNoKey">{t("welcome.doneNoKey")}</p>}
+            {!hasKey(d, "or") && <p className="text-sm text-amber-800 dark:text-[#ffc46b]" id="welcomeNoKey">{t("welcome.doneNoKey")}</p>}
             <p className="text-xs text-muted-foreground">{t("welcome.donePopup")}</p>
             <div><Button variant="outline" size="sm" className="btn" id="welcomeOpts" onClick={() => { chrome.storage.local.set({ ff_onboarded: Date.now() }).catch(() => {}); location.hash = ""; }}>{t("welcome.openSettings")}</Button></div>
           </div>

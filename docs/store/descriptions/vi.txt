@@ -7,7 +7,7 @@ ClearFlow giúp các phần bình luận dễ đọc hơn trên X, Reddit, YouTu
 • Dịch bài đăng và bình luận bằng ngôn ngữ khác sang ngôn ngữ của bạn ngay tại chỗ, với nút chuyển về bản gốc. Trên X, ClearFlow chỉ thay bản dịch tự động của X khi bản dịch đó kém chất lượng.
 • Bật hoặc tắt riêng cho từng trang web và chọn riêng tính năng dọn nội dung, dịch thuật.
 
-ClearFlow dùng hai dịch vụ mà bạn cần đăng ký và trả phí theo mức sử dụng bằng khóa API của riêng mình: TypeSafe (đánh giá phản hồi) và OpenRouter (dịch thuật). Trang thiết lập hướng dẫn bạn nhập khóa; phần cài đặt hiển thị số tiền bạn đã dùng. Khi không có khóa, chỉ các quy tắc cục bộ tích hợp sẵn hoạt động.
+ClearFlow dùng OpenRouter, một dịch vụ mà bạn cần đăng ký và trả phí theo mức sử dụng bằng khóa API của riêng mình: dịch vụ này chuyển phản hồi cho mô hình Jev của TypeSafe để đánh giá và chuyển văn bản cho một mô hình dịch thuật. Trang thiết lập hướng dẫn bạn nhập khóa; phần cài đặt hiển thị số tiền bạn đã dùng. Khi không có khóa, chỉ các quy tắc cục bộ tích hợp sẵn hoạt động.
 
 Quyền riêng tư: bình luận và bài đăng bạn đang xem trên các trang web được hỗ trợ sẽ được gửi đến hai dịch vụ đó để đánh giá hoặc dịch (kèm các phản hồi spam bạn đánh dấu gần đây nhất làm ví dụ, nếu có). Không có dữ liệu nào được gửi cho chúng tôi và không có phân tích hay theo dõi. Khóa và lịch sử được lưu trong trình duyệt của bạn. Mã nguồn mở (MIT): https://github.com/remember2015/clearflow
 

@@ -7,7 +7,7 @@ ClearFlow rend à nouveau lisibles les sections de commentaires sur X, Reddit, Y
 • Traduit les publications et commentaires en langue étrangère dans votre langue, directement sur la page, avec la possibilité de revenir à l’original. Sur X, la traduction automatique de X n’est remplacée que lorsqu’elle est mauvaise.
 • Activez ou désactivez ClearFlow pour chaque site et choisissez séparément le nettoyage et la traduction.
 
-ClearFlow utilise deux services auxquels vous vous inscrivez et dont vous payez l’utilisation avec vos propres clés API : TypeSafe (évaluation des réponses) et OpenRouter (traduction). Une page de configuration vous aide à les saisir ; les paramètres indiquent vos dépenses. Sans clés, seules les règles locales intégrées s’exécutent.
+ClearFlow utilise OpenRouter, un service auquel vous vous inscrivez et dont vous payez l’utilisation avec votre propre clé API : il transmet les réponses au modèle Jev de TypeSafe pour les évaluer et les textes à un modèle de traduction. Une page de configuration vous aide à saisir la clé ; les paramètres indiquent vos dépenses. Sans clé, seules les règles locales intégrées s’exécutent.
 
 Confidentialité : les commentaires et publications que vous consultez sur les sites pris en charge sont envoyés à ces deux services pour être évalués ou traduits (avec les réponses indésirables que vous avez signalées le plus récemment comme exemples, le cas échéant). Rien ne nous est envoyé ; il n’y a ni analyse d’audience ni suivi. Les clés et l’historique restent dans votre navigateur. Code source ouvert (MIT) : https://github.com/remember2015/clearflow
 

@@ -35,11 +35,13 @@ const hasKey = (d, which) => (d.ff_keys ? !!d.ff_keys[which] : !!String((which =
 function Alerts({ d, st }) {
   const list = [];
   const h = d.ff_health || {};
-  // 高级设置里关了 Jev 的不提 Jev key 的事（0.28.8，review）
-  if (st.enabled && st.useJev && !hasKey(d, "jev")) list.push(["warn", t("pop.alert.noKey"), true]);
-  else if (st.enabled && st.useJev && h.jev?.code === "badkey") list.push(["danger", t("pop.alert.badKey"), true]);
-  else if (st.enabled && st.useJev && h.jev?.code === "credit") list.push(["danger", t("pop.alert.jevCredit"), true]);
-  if (st.translate && hasKey(d, "or")) {
+  // 高级设置里关了 Jev 的不提 Jev key 的事（0.28.8，review）。0.29.11 起判断默认走 OpenRouter：TypeSafe 和 OpenRouter 的密钥有一个就能判；
+  // TypeSafe 的问题只在填了它（直连）时说，OpenRouter 的问题在它管着判断（没填 TypeSafe）或翻译时说
+  const judging = st.enabled && st.useJev, ts = hasKey(d, "jev");
+  if (judging && !ts && !hasKey(d, "or")) list.push(["warn", t("pop.alert.noKey"), true]);
+  else if (judging && ts && h.jev?.code === "badkey") list.push(["danger", t("pop.alert.badKey"), true]);
+  else if (judging && ts && h.jev?.code === "credit") list.push(["danger", t("pop.alert.jevCredit"), true]);
+  if ((st.translate || (judging && !ts)) && hasKey(d, "or")) {
     if (h.or?.code === "or_credit") list.push(["danger", t("pop.alert.orCredit"), true]);
     else if (h.or?.code === "or_badkey") list.push(["danger", t("pop.alert.orBadKey"), true]);
   }
@@ -145,9 +147,9 @@ function SiteRow({ id, name, checked, note, onChange, disabled }) {
     </div>
   );
 }
-function txNote(d, st, site) {
-  const hasOr = hasKey(d, "or"), hasJev = hasKey(d, "jev");
-  return !st.translate ? "" : !hasOr ? t("pop.txNeedKey") : site === "x" && !hasJev ? t("pop.txFillOnly") : "";
+// 0.29.11 起判断也走 OpenRouter：有它就什么都能做（以前没填 Jev 时 X 上只能补翻）
+function txNote(d, st) {
+  return st.translate && !hasKey(d, "or") ? t("pop.txNeedKey") : "";
 }
 function cost(stats) {
   const month = day(new Date()).slice(0, 7);

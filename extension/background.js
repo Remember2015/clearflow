@@ -114,6 +114,15 @@ async function readKey(name) {
 }
 const apiKey = () => readKey("jev");
 const orKey = () => readKey("or");
+// 判断（Jev）走哪条路（0.29.11）：填了 TypeSafe 密钥就直连（快约 0.4 秒，也能看图片）；没填就拿 OpenRouter 的密钥走 OpenRouter
+// （同一个模型，见 jev.js OR_API）；两个都没有就是没填。直连给字符串（和以前一样），走 OpenRouter 给 {via: "or", key}
+async function jevRoute() {
+  const ts = await apiKey();
+  if (ts) return ts;
+  const or = await orKey();
+  return or ? { via: "or", key: or } : null;
+}
+const routeId = (r) => (r && typeof r === "object" ? `or:${r.key}` : r ? `ts:${r}` : "");
 // 存一个 key（空的就是删掉）：写进库；变了的话更新 ff_keys（{jev, or} 填没填、at 换 key 的时间——内容脚本靠它知道换了 key），
 // 按换 key 处理（作废进行中的请求、清掉旧的"key 无效"）
 async function storeKey(name, value) {
@@ -169,6 +178,7 @@ function health(service, code) {
 const OR_CODES = new Set(["or_badkey", "or_credit"]);
 function noteFailure(f) {
   if (f.code === "badkey" || f.code === "credit") health("jev", f.code).catch(() => {}); // TypeSafe 余额不足（402）也记下，弹窗提醒（0.28.8）
+  // 走 OpenRouter 的判断出的 401 / 402（failure 里记成 or_badkey / or_credit）记在 OpenRouter 名下
   if (OR_CODES.has(f.code)) health("or", f.code).catch(() => {});
   return f;
 }
@@ -189,11 +199,11 @@ let inflight = 0, configRevision = 0;
 const waiters = [];
 const controllers = new Set();
 const cancelled = () => new DOMException("设置已改变，请重试", "AbortError");
-// 换了 key（storeKey 调）：旧的"key 无效"不算了；进行中的翻译作废；换的是 Jev 的，评论区进行中的请求也作废（旧 key 的结果不能用）
+// 换了 key（storeKey 调）：旧的"key 无效"不算了；进行中的翻译作废；评论区进行中的请求也作废（旧 key 的结果不能用）——
+// 0.29.11 起 OpenRouter 的密钥也可能是判断用的那个（没填 TypeSafe 时），换哪个都作废
 function keysChanged(name) {
   health(name === "jev" ? "jev" : "or", null).catch(() => {});
   for (const controller of txControllers) controller.abort(cancelled());
-  if (name !== "jev") return;
   configRevision++;
   for (const controller of controllers) controller.abort(cancelled());
 }
@@ -230,15 +240,16 @@ function release() {
 }
 function failure(e, scores = {}) {
   if (e?.name === "AbortError") return { error: "cancelled", code: "cancelled", retryable: true, scores };
-  if (e instanceof JevError && e.status === 401) return { error: "badkey", code: "badkey", retryable: false, scores };
-  if (e instanceof JevError && e.status === 402) return { error: "credit", code: "credit", retryable: false, scores };
+  // 走 OpenRouter 的（0.29.11）：401 / 402 说的是 OpenRouter 的密钥和余额
+  if (e instanceof JevError && e.status === 401) return e.via === "or" ? { error: "or_badkey", code: "or_badkey", retryable: false, scores } : { error: "badkey", code: "badkey", retryable: false, scores };
+  if (e instanceof JevError && e.status === 402) return e.via === "or" ? { error: "or_credit", code: "or_credit", retryable: false, scores } : { error: "credit", code: "credit", retryable: false, scores };
   return { error: String(e?.message || e), code: e?.code || "network", retryable: e?.retryable !== false, scores };
 }
 async function permission(key, site = null) {
-  const [st, currentKey] = await Promise.all([settings(site), apiKey()]);
+  const [st, currentKey] = await Promise.all([settings(site), jevRoute()]);
   if (!st.enabled || !st.useJev) return { error: "disabled", code: "disabled", retryable: false };
   if (!currentKey) return { error: "nokey", code: "nokey", retryable: false };
-  if (key !== undefined && key !== currentKey) return failure(cancelled());
+  if (key !== undefined && routeId(key) !== routeId(currentKey)) return failure(cancelled());
   return { key: currentKey, settings: st };
 }
 const validBatch = (replies) => Array.isArray(replies) && replies.length > 0 && replies.length <= 10 &&
@@ -250,8 +261,9 @@ const validBatch = (replies) => Array.isArray(replies) && replies.length > 0 && 
 // 0.28.7（review）：一批 6 张的上限以前在下载时才算，超出的那几条"有图没发"，结果永远不进缓存、每次打开都重新付费判；
 // 现在在这里就去掉，指纹里只有真发了的图。权限被收回时以前还当开着，图张张下载失败、结果也都不进缓存
 const IMG_PER_REPLY = 2, IMG_PER_BATCH = 6;
-async function imagesOn(st) {
-  if (!st.images) return false;
+// route：判断走哪条路——只有直连 TypeSafe 才看图（OpenRouter 收下图片却不转给 Jev，0.29.11）
+async function imagesOn(st, route) {
+  if (!st.images || typeof route !== "string") return false;
   try { return await chrome.permissions.contains({ origins: [...IMAGE_ORIGINS] }); } catch { return false; }
 }
 function withImages(replies, on) {
@@ -286,7 +298,7 @@ async function handleJev({ postId, post, author, replies: raw, extra: wanted }, 
   const revision = configRevision;
   const access = await permission(undefined, site);
   if (access.error) return access;
-  const replies = withImages(raw, await imagesOn(access.settings));
+  const replies = withImages(raw, await imagesOn(access.settings, access.key));
   // 每条要齐的问题：整批的 extra，加上这一条自己多问的（0.22 的 filler 只问短回复）
   const need = new Map(replies.map((r) => [r.id, [...extra, ...askOf(r, extra)]]));
   // 你在这个网站上标记过垃圾（0.26）：要问五问的那些顺带问"是不是同一类"（并进同一个请求、不多发）；缓存里已经有这一问的分就带上，
@@ -476,7 +488,7 @@ function txRelease() {
 // 排到翻译位置以后再看一眼 key 换没换（0.28.8，review）：读 key 和登记可取消之间换了 key 的，换 key 时取消不到它，
 // 用旧 key 发出去回 401，又把弹窗的"key 无效"记了回去（刚换上的好 key 被说成无效）
 async function sameKeys(or, jev) {
-  if ((await orKey()) !== or || (jev !== undefined && (await apiKey()) !== jev)) throw cancelled();
+  if ((await orKey()) !== or || (jev !== undefined && routeId(await jevRoute()) !== routeId(jev))) throw cancelled();
 }
 // target：X 把帖子翻成的语言（X 的界面语言），比如 zh、en、ja、zh-TW、pt-BR；没给就当简体中文（0.7 的页面脚本）
 const validLang = (l) => l == null || (typeof l === "string" && /^[a-z]{2,3}(-[a-z0-9]{2,8}){0,2}$/i.test(l));
@@ -485,7 +497,7 @@ const validTx = (m) => typeof m.id === "string" && /^\d{1,25}$/.test(m.id) && ty
   (m.srcLang == null || (typeof m.srcLang === "string" && /^[a-z-]{2,8}$/i.test(m.srcLang))) && validLang(m.target);
 async function handleTranslate(msg, site = null) {
   if (!validTx(msg)) return { error: "无效的翻译请求", code: "invalid_request", retryable: false };
-  const [st, jevKey, key] = await Promise.all([settings(site), apiKey(), orKey()]);
+  const [st, jevKey, key] = await Promise.all([settings(site), jevRoute(), orKey()]);
   if (!st.translate) return { error: "disabled", code: "disabled", retryable: false };
   if (!jevKey) return { error: "nokey", code: "nokey", retryable: false };
   if (!key) return { error: "noorkey", code: "noorkey", retryable: false };
@@ -567,7 +579,7 @@ async function capAccess(site, need) {
   if (site !== "yt") return { error: "disabled", code: "disabled", retryable: false };
   const st = await settings(site);
   if (!st.translate || st.captionFix === false) return { error: "disabled", code: "disabled", retryable: false };
-  const key = need === "jev" ? await apiKey() : await orKey();
+  const key = need === "jev" ? await jevRoute() : await orKey();
   if (!key) return need === "jev" ? { error: "nokey", code: "nokey", retryable: false } : { error: "noorkey", code: "noorkey", retryable: false };
   return { st, key };
 }
@@ -689,7 +701,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   (async () => {
     switch (msg.type) {
       case "settings":
-        return { settings: await settings(), hasKey: !!(await apiKey()), hasOrKey: !!(await orKey()) };
+        return { settings: await settings(), hasKey: !!(await jevRoute()), hasOrKey: !!(await orKey()) }; // hasKey：判断用得上的密钥（TypeSafe 或 OpenRouter）
       case "jev":
         return await handleJev(msg, site);
       case "jevPost":
@@ -699,7 +711,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       case "cachedForPost": {
         // 旧内容脚本只有 postId，无法验证回复正文，不能返回旧分数。
         if (!validBatch(msg.replies)) return { scores: {} };
-        const queries = await cacheRequests(msg.postId, msg.post, withImages(msg.replies, await imagesOn(await settings(site))), msg.author, msg.extra);
+        const queries = await cacheRequests(msg.postId, msg.post, withImages(msg.replies, await imagesOn(await settings(site), await jevRoute())), msg.author, msg.extra);
         const scores = await cache.getMany(queries);
         const ex = cleanExtra(msg.extra), need = new Map(msg.replies.map((r) => [r.id, [...ex, ...askOf(r, ex)]]));
         for (const id of Object.keys(scores)) if (!validScores(scores[id], need.get(id))) delete scores[id];

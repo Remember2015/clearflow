@@ -1,10 +1,10 @@
 # Política de privacidade do ClearFlow (清流)
 
-Data de vigência: 21 de outubro de 2026
+Data de vigência: 23 de outubro de 2026
 
 O ClearFlow é uma extensão de navegador que limpa seções de comentários e traduz publicações no X, Reddit, YouTube, Xiaohongshu (RedNote) e Hacker News. É publicado pela OhMyAI. Esta política explica quais dados a extensão lê, o que envia e para quem, e o que armazena no seu dispositivo.
 
-**Em resumo:** o ClearFlow envia os comentários e as publicações que você está vendo a dois serviços que você escolhe e paga: TypeSafe, para avaliá-los, e OpenRouter, para traduzi-los. Ele usa as chaves de API que você informa. Não envia nada a nós, os desenvolvedores. Não transmite estatísticas de uso, não rastreia sua navegação e não executa código remoto. Os demais dados armazenados ficam no seu navegador.
+**Em resumo:** o ClearFlow envia os comentários e as publicações que você está vendo ao OpenRouter, um serviço que você escolhe e paga, usando uma chave de API que você informa; o OpenRouter os encaminha ao modelo Jev da TypeSafe, para avaliá-los, e a um modelo de tradução, para traduzi-los. Se você também adicionar uma chave opcional da TypeSafe, as solicitações de avaliação vão diretamente para a TypeSafe. Não envia nada a nós, os desenvolvedores. Não transmite estatísticas de uso, não rastreia sua navegação e não executa código remoto. Os demais dados armazenados ficam no seu navegador.
 
 ## Onde funciona
 
@@ -12,21 +12,21 @@ Os scripts da extensão funcionam apenas nestes sites: `x.com`, `twitter.com`, `
 
 ## O que é enviado e para quem
 
-### TypeSafe (`api.typesafe.ai`) — avaliação de comentários
+### Modelo Jev da TypeSafe — avaliação de comentários
 
-Usado para limpar comentários (spam, ofensas, conteúdo sexual e respostas como “legal” ou “+1”) e, no X, avaliar a qualidade das traduções do próprio X. Os dados só são enviados se você informar uma chave da TypeSafe (Jev).
+Usado para limpar comentários (spam, ofensas, conteúdo sexual e respostas como “legal” ou “+1”) e avaliar a qualidade das traduções do próprio X e das legendas traduzidas automaticamente pelo YouTube. Por padrão, essas solicitações passam pelo OpenRouter (`openrouter.ai`) usando sua chave do OpenRouter, e o OpenRouter as encaminha à TypeSafe. Se você informar uma chave da TypeSafe (opcional, em Configurações → Avançado), elas vão diretamente para a TypeSafe (`api.typesafe.ai`). Nada é enviado se você não informar nenhuma das duas chaves.
 
 - Para cada comentário da página que as regras locais não conseguem classificar: o texto do comentário (até 600 caracteres), o nome de exibição e o identificador do autor do comentário, o texto da publicação à qual ele responde (até 400 caracteres) e o nome de exibição e o identificador do autor da publicação. São enviados até dez comentários por solicitação.
 - Nas páginas de perfil e busca do X e nas páginas de listas do Reddit, são enviadas as publicações da lista no lugar dos comentários, com uma descrição fixa de uma linha no lugar do texto da publicação.
 - Nas publicações que o X traduziu automaticamente: o texto original e a tradução do X (Grok), para avaliar se a tradução do X é boa o suficiente. A retradução feita pelo ClearFlow não é enviada.
-- Somente se você ativar “Verificar imagens nas respostas” (desativado por padrão): imagens anexadas a esses comentários, reduzidas de tamanho, são enviadas com o texto. Para isso, a extensão pede permissão para ler imagens de `pbs.twimg.com`, `i.redd.it`, `preview.redd.it` e `*.xhscdn.com`; ela revoga a permissão quando você desativa a opção.
+- Somente se você informar uma chave da TypeSafe e ativar “Verificar imagens nas respostas” (desativado por padrão): imagens anexadas a esses comentários, reduzidas de tamanho, são enviadas com o texto diretamente à TypeSafe (o OpenRouter não encaminha imagens, então nenhuma imagem é enviada sem uma chave da TypeSafe). Para isso, a extensão pede permissão para ler imagens de `pbs.twimg.com`, `i.redd.it`, `preview.redd.it` e `*.xhscdn.com`; ela revoga a permissão quando você desativa a opção.
 - Somente se você tiver marcado spam nesse site (“Ocultar esta resposta” ou o funil na barra de aviso): as dez respostas que você marcou mais recentemente nesse site (texto de até 240 caracteres e conta associada) são enviadas com esses comentários como exemplos, para que a TypeSafe identifique spam do mesmo tipo. Logo após uma marcação, os comentários da página que não foram limpos são avaliados mais uma vez usando os exemplos (até 25 por solicitação).
 - No YouTube, somente quando você escolhe as legendas traduzidas automaticamente pelo YouTube e ativa “Melhorar legendas traduzidas automaticamente”, e o vídeo não tem legendas em chinês produzidas por uma pessoa para usar no lugar: as primeiras linhas das legendas originais (até 40) e a tradução do YouTube são enviadas para avaliar a qualidade dessa tradução.
 - Os resultados ficam em cache local por até sete dias para reduzir solicitações repetidas para o mesmo comentário no mesmo contexto. Um comentário pode ser enviado novamente se o cache for limpo, uma entrada for removida ou uma nova avaliação for necessária.
 
-### OpenRouter (`openrouter.ai`) — tradução
+### OpenRouter (`openrouter.ai`) — tradução e avaliação por padrão
 
-Os dados só são enviados se você informar uma chave do OpenRouter e ativar a tradução para aquele site.
+As solicitações de tradução só são enviadas se você informar uma chave do OpenRouter e ativar a tradução para aquele site. Sem uma chave da TypeSafe, o OpenRouter também encaminha as solicitações de avaliação descritas acima.
 
 - O texto das publicações e dos comentários que precisam de tradução, ou de uma tradução melhor que a do X. Não são enviados o autor, o ID da publicação nem qualquer outra coisa da página.
 - No YouTube, somente quando a TypeSafe considera ruim a tradução automática das legendas feita pelo YouTube, conforme explicado acima: as legendas originais do trecho do vídeo que você está assistindo, cerca de 40 linhas por vez, são enviadas para retradução. A conversão de legendas do chinês tradicional para o simplificado acontece no seu computador e não envia nada.
@@ -42,7 +42,7 @@ Quando você clica em “Testar conexão” nas Configurações, um pequeno text
 
 Os dados a seguir ficam no armazenamento da extensão no seu navegador (`chrome.storage.local` e IndexedDB). As chaves de API autenticam as solicitações aos respectivos serviços, e o spam que você marcou pode ser enviado à TypeSafe como exemplo, conforme explicado acima. Os demais dados armazenados não são enviados:
 
-- Suas configurações e suas duas chaves de API. As chaves ficam no banco de dados da própria extensão neste navegador, que os sites visitados (e os scripts da extensão executados neles) não conseguem ler; só o processo em segundo plano da extensão as usa. Elas não são criptografadas.
+- Suas configurações e suas chaves de API (a do OpenRouter e, se você adicionar uma, a da TypeSafe). As chaves ficam no banco de dados da própria extensão neste navegador, que os sites visitados (e os scripts da extensão executados neles) não conseguem ler; só o processo em segundo plano da extensão as usa. Elas não são criptografadas.
 - Contadores diários (quantos itens foram limpos ou traduzidos e custo estimado).
 - Suas correções (“não é spam”, “ocultar esta resposta”) e o spam que você marcou, com o texto do comentário (até 300 caracteres; as últimas 3.000 correções e as últimas 500 respostas marcadas).
 - Um cache dos resultados da TypeSafe (apenas impressões digitais e pontuações, sem texto; excluídos sete dias após a avaliação do comentário) e um cache de traduções (o texto traduzido; excluído após 30 dias sem uso). Cada cache tem limite padrão de 50 MB; quando fica cheio, as entradas mais antigas são removidas primeiro.

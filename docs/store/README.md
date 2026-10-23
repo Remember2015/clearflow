@@ -46,10 +46,10 @@ Make comment sections on supported social sites readable: hide junk and content-
 
 | Permission | Why |
 |---|---|
-| `storage` | Settings, whether each of the user's two API keys is set (the keys themselves are kept in the extension's own IndexedDB, out of reach of content scripts), daily counters, the user's corrections and the spam they marked. Everything stays in the browser. |
+| `storage` | Settings, whether each of the user's API keys is set (the keys themselves are kept in the extension's own IndexedDB, out of reach of content scripts), daily counters, the user's corrections and the spam they marked. Everything stays in the browser. |
 | `unlimitedStorage` | Local caches of judging results and translations (50 MB each by default, adjustable), so the same content isn't sent or paid for twice. |
-| Host permission `https://api.typesafe.ai/*` | The background worker sends comments to TypeSafe's classifier with the user's own key. |
-| Host permission `https://openrouter.ai/*` | The background worker sends text to be translated to OpenRouter with the user's own key. |
+| Host permission `https://api.typesafe.ai/*` | Only if the user adds the optional TypeSafe key: the background worker sends comments to TypeSafe's classifier with that key (otherwise judging goes through OpenRouter). |
+| Host permission `https://openrouter.ai/*` | The background worker sends comments to be judged (OpenRouter passes them to TypeSafe's classifier) and text to be translated to OpenRouter with the user's own key. |
 | Content scripts on `x.com`, `twitter.com`, `www.reddit.com`, `www.youtube.com`, `www.xiaohongshu.com`, `www.rednote.com`, `news.ycombinator.com` | Read comments and posts on these sites, hide junk replies, insert translations. Two small scripts run in the page context on X and YouTube to read the site's own API responses (original text, authors); they don't send anything. |
 | Optional host permissions `pbs.twimg.com`, `i.redd.it`, `preview.redd.it`, `*.xhscdn.com` | Requested only when the user turns on "Look at images in replies": the extension downloads and downscales images attached to replies to send them with the text to TypeSafe. Released again when the option is turned off. `xhscdn.com` serves some comment images over http, hence `*://`. |
 | Remote code | None. All code is in the package. |
@@ -58,15 +58,15 @@ Make comment sections on supported social sites readable: hide junk and content-
 
 Declare:
 
-- **Website content** — text and (optionally) images of comments and posts on the supported sites, including commenters' public display names and handles. Sent to TypeSafe and OpenRouter to provide the extension's single purpose.
+- **Website content** — text and (optionally) images of comments and posts on the supported sites, including commenters' public display names and handles. Sent to OpenRouter (and through it to TypeSafe), or straight to TypeSafe if the user added a TypeSafe key, to provide the extension's single purpose.
 - **Authentication information** — the API keys the user enters, sent only to the service each key belongs to.
 
 Certify: data is not sold to third parties; not used or transferred for purposes unrelated to the single purpose; not used to determine creditworthiness or for lending.
 
 ## Notes for the review team (Chrome: "Test instructions"; Edge: "Notes for certification")
 
-Without API keys the extension still runs its local rules (open a post on x.com with many replies). To review cleaning and translation fully, enter the TypeSafe and OpenRouter keys provided in this field on the setup page that opens after installation (Settings → Run first-time setup again). Suggested pages: any popular post on x.com with replies; a Reddit comment thread; a YouTube video's comments; a Hacker News item in another language.
+Without API keys the extension still runs its local rules (open a post on x.com with many replies). To review cleaning and translation fully, enter the OpenRouter key provided in this field on the setup page that opens after installation (Settings → Run first-time setup again). Suggested pages: any popular post on x.com with replies; a Reddit comment thread; a YouTube video's comments; a Hacker News item in another language.
 
 ### Keys for reviewers
 
-Don't give reviewers your everyday keys. Create a separate TypeSafe key and a separate OpenRouter key with a small credit limit (OpenRouter lets you cap each key), paste them into the notes field yourself, and revoke both once the review is through. Each new version goes through review again, so keep a pair ready for updates.
+Don't give reviewers your everyday keys. Create a separate OpenRouter key with a small credit limit (OpenRouter lets you cap each key), paste it into the notes field yourself, and revoke it once the review is through. Each new version goes through review again, so keep one ready for updates.

@@ -7,7 +7,7 @@ ClearFlow sorgt dafür, dass Kommentarbereiche auf X, Reddit, YouTube, Xiaohongs
 • Übersetzt fremdsprachige Beiträge und Kommentare direkt an Ort und Stelle in deine Sprache. Du kannst jederzeit zum Original zurückschalten. Auf X ersetzt ClearFlow die automatische Übersetzung von X, wenn diese schlecht ist.
 • Schalte die Funktionen für jede Website einzeln ein oder aus und wähle Bereinigung und Übersetzung separat aus.
 
-ClearFlow nutzt zwei Dienste, für die du dich anmelden musst und nutzungsabhängig bezahlst: TypeSafe (bewertet Antworten) und OpenRouter (Übersetzung). Dafür benötigst du jeweils einen eigenen API-Schlüssel. Eine Einrichtungsseite hilft dir bei der Eingabe; in den Einstellungen siehst du deine Ausgaben. Ohne Schlüssel werden nur die integrierten lokalen Regeln angewendet.
+ClearFlow nutzt OpenRouter, einen Dienst, für den du dich anmeldest und nutzungsabhängig bezahlst, mit deinem eigenen API-Schlüssel: OpenRouter leitet Antworten zur Bewertung an TypeSafes Jev-Modell und Texte an ein Übersetzungsmodell weiter. Eine Einrichtungsseite hilft dir bei der Eingabe des Schlüssels; in den Einstellungen siehst du deine Ausgaben. Ohne Schlüssel werden nur die integrierten lokalen Regeln angewendet.
 
 Datenschutz: Kommentare und Beiträge, die du auf unterstützten Websites ansiehst, werden zur Bewertung oder Übersetzung an diese beiden Dienste gesendet (gegebenenfalls zusammen mit den zuletzt von dir markierten Spam-Antworten als Beispiele). An uns wird nichts gesendet. Es gibt weder Analysen noch Tracking. Schlüssel und Verlauf bleiben in deinem Browser. Open Source (MIT): https://github.com/remember2015/clearflow
 

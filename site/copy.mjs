@@ -48,13 +48,13 @@ export const COPY = {
       h2: "清流如何工作",
       steps: [
         ["先用本地规则", "识别推广链接、隐藏的联系方式、重复话术等结构特征，无需密钥，也不产生费用。"],
-        ["AI 结合上下文判断", "本地规则无法判断的回复，会连同原帖发送给 TypeSafe 的 Jev 模型。模型识别推广、辱骂和色情内容，达到所设阈值后才清理。"],
+        ["AI 结合上下文判断", "本地规则无法判断的回复，会连同原帖经 OpenRouter 发送给 TypeSafe 的 Jev 模型。模型识别推广、辱骂和色情内容，达到所设阈值后才清理。"],
         ["通过 OpenRouter 翻译", "需要翻译的文字会发送给所选模型，默认使用 OpenAI，DeepSeek 备用。仅发送文字，不附带作者和帖子 ID。"],
       ],
     },
     cost: {
       h2: "按量付费，无需订阅",
-      body: "使用你自己的 TypeSafe 和 OpenRouter 账号，费用直接支付给对应服务。请求不经过清流的服务器。",
+      body: "使用你自己的 OpenRouter 账号，费用直接支付给服务商。请求不经过清流的服务器。",
       stat: "≈ $0.10",
       statLabel: "浏览约 5,000 条 X 回复的费用估算，含清理与按需翻译。实际费用因内容和模型而异。",
       points: [
@@ -68,7 +68,7 @@ export const COPY = {
       h2: "不向开发者发送数据",
       items: [
         ["无追踪，无数据上报", "使用和费用统计仅保存在本机，不上传分析数据或崩溃报告，也不含广告代码。"],
-        ["直接连接服务商", "启用 AI 功能后，相关帖子和评论使用你的密钥，直接发送至 TypeSafe 判断、OpenRouter 翻译。"],
+        ["直接连接服务商", "启用 AI 功能后，相关帖子和评论用你的密钥直接发送给 OpenRouter，由它转给 TypeSafe 的 Jev 判断、转给翻译模型翻译。"],
         ["密钥和记录保存在本机", "密钥存于扩展专用数据库，网页无法读取。卸载扩展会删除本地数据。"],
         ["开源，可自行查验", "代码以 MIT 许可公开在 GitHub 上，可查看数据如何处理、向谁发送。"],
       ],
@@ -78,7 +78,7 @@ export const COPY = {
       h2: "常见问题",
       items: [
         ["为什么需要自己的 API 密钥？", "内容可以直接发送给对应服务，不经过清流的服务器，也无需向清流支付订阅费。初次使用需注册服务商账号并创建密钥。<a href=\"keys/\">API 密钥设置</a>"],
-        ["不填密钥能用吗？", "可以。本地规则可清理推广链接、隐藏的联系方式和重复话术。识别辱骂、色情、无实质内容的短评，以及翻译功能，需要配置相应密钥。"],
+        ["不填密钥能用吗？", "可以。本地规则可清理推广链接、隐藏的联系方式和重复话术。识别辱骂、色情、无实质内容的短评，以及翻译功能，需要配置 OpenRouter 密钥。"],
         ["会误判正常评论吗？", "有可能。每条清理都有原因，点击可查看原文并反馈误判。清理强度针对各网站分别设置，也可以调为“宽松”。"],
         ["支持哪些网站和浏览器？", "X、Reddit、YouTube、小红书、Hacker News。Chrome 120 以上，以及 Edge、Arc、Brave 等 Chromium 浏览器。"],
         ["支持哪些语言？", "界面支持 19 种语言，包括中文。设置页和弹窗跟随浏览器语言；网页提示和翻译目标通常跟随网站界面语言。Hacker News 始终使用浏览器语言，其他网站无法识别界面语言时也使用浏览器语言。"],
@@ -90,24 +90,24 @@ export const COPY = {
     footer: { privacy: "隐私政策", keys: "API 密钥设置", license: "MIT 许可", disclaimer: "清流与 X、Reddit、YouTube、小红书、Y Combinator 均无关联。" },
     keys: {
       title: "获取 API 密钥 · 清流",
-      description: "为清流配置 TypeSafe 和 OpenRouter 的 API 密钥，启用 AI 清理与翻译。",
+      description: "为清流配置 OpenRouter 的 API 密钥，启用 AI 清理与翻译。",
       h1: "获取 API 密钥",
-      lede: "AI 清理使用 TypeSafe，翻译使用 OpenRouter，两项服务各需一个 API 密钥，按用量直接向服务商付费。安装清流后，在引导页填入密钥；之后可在设置的“连接和费用”中修改。",
+      lede: "AI 清理和翻译都通过 OpenRouter，只需一个 API 密钥，按用量直接向服务商付费。安装清流后，在引导页填入密钥；之后可在设置的“连接和费用”中修改。",
       sections: [
-        { h2: "TypeSafe：AI 清理", tag: "清理", steps: [
-          "打开 <a href=\"https://console.typesafe.ai/\">TypeSafe 控制台</a>，注册并登录。",
-          "进入 <a href=\"https://console.typesafe.ai/keys\">Keys</a> 页面，创建并复制密钥。",
-          "将密钥粘贴到清流设置的“Jev (TypeSafe)”栏。",
-        ], note: "按 token 用量计费。判定结果最多缓存 7 天，减少重复请求。" },
-        { h2: "OpenRouter：翻译", tag: "翻译", steps: [
+        { h2: "OpenRouter：AI 清理和翻译", tag: "必需", steps: [
           "打开 <a href=\"https://openrouter.ai/\">OpenRouter</a>，注册并登录，在 Credits 页面充值。",
           "进入 <a href=\"https://openrouter.ai/keys\">Keys</a> 页面，点击 Create Key。建议设置每月重置的额度上限，例如 $2。",
           "复制以 sk-or- 开头的密钥，粘贴到清流设置的“OpenRouter”栏。",
-        ], note: "默认使用 OpenAI 模型翻译，DeepSeek 备用。可在设置中更换。" },
+        ], note: "AI 清理用 TypeSafe 的 Jev 模型，翻译默认用 OpenAI 模型、DeepSeek 备用，都通过 OpenRouter 调用、按 token 计费。判定结果最多缓存 7 天，减少重复请求。" },
+        { h2: "TypeSafe：可选", tag: "可选", steps: [
+          "打开 <a href=\"https://console.typesafe.ai/\">TypeSafe 控制台</a>，注册并登录（直接申请可能需要排队）。",
+          "进入 <a href=\"https://console.typesafe.ai/keys\">Keys</a> 页面，创建并复制密钥。",
+          "将密钥粘贴到清流设置“高级”里的“TypeSafe（可选）”栏。",
+        ], note: "填了之后判断直接发给 TypeSafe：快一点，也能检查回复里的图片（OpenRouter 暂时不转发图片）。不填也能正常清理。" },
       ],
       after: [
         ["验证连接", "有效密钥会显示勾选标记；连接失败时会显示原因，可点击“测试连接”重试。"],
-        ["按需配置", "只配置 TypeSafe，可用 AI 清理；只配置 OpenRouter，可用翻译。无论是否配置密钥，本地清理规则都可使用。"],
+        ["一个密钥就够", "配置 OpenRouter 密钥即可使用 AI 清理和翻译，TypeSafe 密钥是可选的。无论是否配置密钥，本地清理规则都可使用。"],
         ["保护密钥", "密钥仅保存在你的浏览器中，请勿分享给任何人，包括开发者。如怀疑泄露，请在对应服务的控制台删除旧密钥并重新创建。"],
       ],
       back: "返回首页",
@@ -154,13 +154,13 @@ export const COPY = {
       h2: "How ClearFlow works",
       steps: [
         ["Local rules first", "Detect referral links, hidden contact details and repeated messages by their structure. No API key or payment needed."],
-        ["AI checks the context", "Replies that local rules cannot classify are sent with the original post to TypeSafe’s Jev model. It checks for promotions, abuse and sexual content, using your chosen thresholds."],
+        ["AI checks the context", "Replies that local rules cannot classify are sent with the original post, through OpenRouter, to TypeSafe’s Jev model. It checks for promotions, abuse and sexual content, using your chosen thresholds."],
         ["OpenRouter handles translation", "Text goes to your selected model: OpenAI by default, with DeepSeek as a fallback. Only text is sent, without author details or post IDs."],
       ],
     },
     cost: {
       h2: "Pay for what you use",
-      body: "Use your own TypeSafe and OpenRouter accounts and pay each service directly. Requests never pass through ClearFlow’s servers.",
+      body: "Use your own OpenRouter account and pay it directly. Requests never pass through ClearFlow’s servers.",
       stat: "≈ $0.10",
       statLabel: "Estimated cost of browsing 5,000 replies on X, including filtering and translation where needed. Actual costs vary with the content and model.",
       points: [
@@ -174,7 +174,7 @@ export const COPY = {
       h2: "No data is sent to the developer",
       items: [
         ["No tracking or reporting", "Usage and cost statistics stay on your device. No analytics, crash reports or ad code."],
-        ["Direct connections to your providers", "AI features send relevant posts and comments directly to TypeSafe for filtering and OpenRouter for translation, using your keys."],
+        ["Direct connections to your providers", "AI features send relevant posts and comments directly to OpenRouter with your key; it passes them to TypeSafe’s Jev for filtering and to a translation model for translation."],
         ["Keys and history stay on your device", "Keys are stored in the extension’s own database, inaccessible to websites. Uninstalling removes the local data."],
         ["Open for inspection", "The MIT-licensed code is on GitHub. You can check how data is processed and where it goes."],
       ],
@@ -184,7 +184,7 @@ export const COPY = {
       h2: "FAQ",
       items: [
         ["Why do I need my own API keys?", "Your content goes directly to the service providers, and you do not need a ClearFlow subscription. To get started, create your service accounts and API keys. <a href=\"keys/\">API key setup</a>"],
-        ["Does it work without keys?", "Yes. The local rules still hide replies with referral links or hidden contact details, and the same line posted by several accounts. API keys are needed for translation and for detecting abuse, sexual content and replies like “nice”."],
+        ["Does it work without keys?", "Yes. The local rules still hide replies with referral links or hidden contact details, and the same line posted by several accounts. An OpenRouter key is needed for translation and for detecting abuse, sexual content and replies like “nice”."],
         ["Will it hide good comments?", "Sometimes. Each hidden reply has an explanation. You can open it to read it or mark it as a mistake. Filtering levels are set separately for each site. Choose “Relaxed” in Settings if too many replies are hidden."],
         ["Which sites and browsers?", "X, Reddit, YouTube, Xiaohongshu (RedNote) and Hacker News. Chrome 120 or later, plus Edge, Arc, Brave and other Chromium browsers."],
         ["Which languages are supported?", "The interface supports 19 languages. Settings and the popup follow your browser language. In-page labels and translations usually follow the site’s interface language. Hacker News always uses your browser language, as do other sites when their interface language cannot be detected."],
@@ -196,24 +196,24 @@ export const COPY = {
     footer: { privacy: "Privacy policy", keys: "API key setup", license: "MIT license", disclaimer: "ClearFlow is not affiliated with X, Reddit, YouTube, Xiaohongshu or Y Combinator." },
     keys: {
       title: "Set up your API keys · ClearFlow",
-      description: "Connect ClearFlow to TypeSafe and OpenRouter to enable AI filtering and translation.",
+      description: "Connect ClearFlow to OpenRouter to enable AI filtering and translation.",
       h1: "Set up your API keys",
-      lede: "AI filtering uses TypeSafe; translation uses OpenRouter. Each service needs its own API key, and you pay each provider for what you use. Enter your keys during setup or update them later under Settings → Connections and cost.",
+      lede: "AI filtering and translation both go through OpenRouter, so you need just one API key and pay for what you use. Enter your key during setup or update it later under Settings → Connections and cost.",
       sections: [
-        { h2: "TypeSafe: AI filtering", tag: "Filtering", steps: [
-          "Open the <a href=\"https://console.typesafe.ai/\">TypeSafe console</a>, create an account and sign in.",
-          "On the <a href=\"https://console.typesafe.ai/keys\">Keys</a> page, create and copy a key.",
-          "Paste the key into the “Jev (TypeSafe)” field in ClearFlow’s settings.",
-        ], note: "Billed by token usage. Results are cached for up to seven days to reduce repeat requests." },
-        { h2: "OpenRouter: translation", tag: "Translation", steps: [
+        { h2: "OpenRouter: AI filtering and translation", tag: "Required", steps: [
           "Open <a href=\"https://openrouter.ai/\">OpenRouter</a>, create an account and sign in. Add credit on the Credits page.",
           "On the <a href=\"https://openrouter.ai/keys\">Keys</a> page, click Create Key. Set a monthly credit limit to control spending—for example, $2 with a monthly reset.",
           "Copy the key, which starts with sk-or-, into the “OpenRouter” field in ClearFlow’s settings.",
-        ], note: "Translation uses OpenAI by default, with DeepSeek as a fallback. You can change the model in Settings." },
+        ], note: "AI filtering uses TypeSafe’s Jev model; translation uses an OpenAI model by default, with DeepSeek as fallback. Both go through OpenRouter and are billed by token. Results are cached for up to seven days to reduce repeat requests." },
+        { h2: "TypeSafe: optional", tag: "Optional", steps: [
+          "Open the <a href=\"https://console.typesafe.ai/\">TypeSafe console</a>, create an account and sign in (direct access may have a waitlist).",
+          "On the <a href=\"https://console.typesafe.ai/keys\">Keys</a> page, create and copy a key.",
+          "Paste the key into the “TypeSafe (optional)” field under Advanced in ClearFlow’s settings.",
+        ], note: "With it, replies are checked by TypeSafe directly: a little faster, and images in replies can be checked too (OpenRouter doesn’t pass images on yet). Filtering works fine without it." },
       ],
       after: [
         ["Check the connection", "A valid key shows a check mark. If the connection fails, an explanation appears; select “Test connection” to try again."],
-        ["Choose the features you need", "A TypeSafe key enables AI filtering; an OpenRouter key enables translation. Local filtering works with or without either key."],
+        ["One key is enough", "An OpenRouter key enables both AI filtering and translation; a TypeSafe key is optional. Local filtering works with or without a key."],
         ["Keep your keys private", "Keys are stored only in your browser. Do not share them with anyone, including us. If a key may have been exposed, delete it in the provider’s dashboard and create a new one."],
       ],
       back: "Back to home",
@@ -260,13 +260,13 @@ export const COPY = {
       h2: "ClearFlow のしくみ",
       steps: [
         ["まずローカルルールで判定", "紹介リンク、隠された連絡先、繰り返しの文面などを構造から検出します。API キーは不要で、費用もかかりません。"],
-        ["AI が文脈を確認", "ルールで判定できない返信は、元の投稿とともに TypeSafe の Jev モデルへ送信。勧誘・誹謗中傷・性的な内容を、設定した基準で判定します。"],
+        ["AI が文脈を確認", "ルールで判定できない返信は、元の投稿とともに OpenRouter 経由で TypeSafe の Jev モデルへ送信。勧誘・誹謗中傷・性的な内容を、設定した基準で判定します。"],
         ["OpenRouter で翻訳", "文章を選択したモデルへ送ります。標準は OpenAI、予備は DeepSeek です。送るのは文章のみで、投稿者情報や投稿 ID は含みません。"],
       ],
     },
     cost: {
       h2: "使った分だけ、直接お支払い",
-      body: "ご自身の TypeSafe と OpenRouter のアカウントを使用し、各サービスに直接支払います。通信は ClearFlow のサーバーを経由しません。",
+      body: "ご自身の OpenRouter のアカウントを使用し、直接支払います。通信は ClearFlow のサーバーを経由しません。",
       stat: "≈ $0.10",
       statLabel: "X で約 5,000 件の返信を読む場合の費用の目安。フィルタリングと必要な翻訳を含みます。実際の費用は内容やモデルによって変わります。",
       points: [
@@ -280,7 +280,7 @@ export const COPY = {
       h2: "開発者にはデータを送りません",
       items: [
         ["追跡も利用状況の送信もなし", "利用件数と費用は端末内に保存。解析データやクラッシュレポートの送信、広告コードはありません。"],
-        ["サービスに直接接続", "AI 機能では、ご自身のキーで投稿やコメントを TypeSafe へ判定用に、OpenRouter へ翻訳用に直接送ります。"],
+        ["サービスに直接接続", "AI 機能では、ご自身のキーで投稿やコメントを OpenRouter へ直接送ります。OpenRouter が判定は TypeSafe の Jev へ、翻訳は翻訳モデルへ渡します。"],
         ["キーと履歴は端末内に保存", "キーはウェブサイトからアクセスできない拡張機能専用のデータベースに保存。アンインストールでローカルデータも削除されます。"],
         ["コードを公開", "MIT ライセンスで GitHub に公開しています。データの処理方法や送信先を確認できます。"],
       ],
@@ -290,7 +290,7 @@ export const COPY = {
       h2: "よくある質問",
       items: [
         ["なぜ自分で API キーを用意するのですか？", "内容を各サービスへ直接送り、ClearFlow のサブスクリプションを不要にするためです。初回はサービスへの登録とキーの作成が必要です。<a href=\"keys/\">API キーの設定</a>"],
-        ["キーがなくても使えますか？", "使えます。紹介リンク、隠された連絡先、繰り返しの文面などは、ローカルルールで非表示にします。誹謗中傷・性的な返信・「いいね」だけの返信の判定と、翻訳にはキーが必要です。"],
+        ["キーがなくても使えますか？", "使えます。紹介リンク、隠された連絡先、繰り返しの文面などは、ローカルルールで非表示にします。誹謗中傷・性的な返信・「いいね」だけの返信の判定と、翻訳には OpenRouter のキーが必要です。"],
         ["普通のコメントまで隠れませんか？", "誤って非表示にすることもあります。理由と元の返信を確認し、判定ミスを報告できます。サイトごとに厳しさを調整でき、非表示が多いと感じたら「ゆるめ」を選べます。"],
         ["対応サイトとブラウザは？", "X・Reddit・YouTube・小紅書（RedNote）・Hacker News。Chrome 120 以降と、Edge・Arc・Brave などの Chromium 系ブラウザです。"],
         ["表示言語は？", "表示は 19 言語に対応しています。設定とポップアップはブラウザの言語に従います。ページ内の表示と翻訳先には通常、サイトの表示言語を使います。Hacker News では常にブラウザの言語を使い、ほかのサイトでも表示言語を判別できない場合はブラウザの言語を使います。"],
@@ -302,24 +302,24 @@ export const COPY = {
     footer: { privacy: "プライバシーポリシー", keys: "API キーの設定", license: "MIT ライセンス", disclaimer: "ClearFlow は X・Reddit・YouTube・小紅書・Y Combinator とは関係ありません。" },
     keys: {
       title: "API キーの設定 · ClearFlow",
-      description: "TypeSafe と OpenRouter の API キーを設定して、AI 判定と翻訳を利用する方法。",
+      description: "OpenRouter の API キーを設定して、AI 判定と翻訳を利用する方法。",
       h1: "API キーの設定",
-      lede: "AI 判定には TypeSafe、翻訳には OpenRouter の API キーが必要です。ご自身のアカウントで、使った分だけ各サービスへ直接支払います。インストール後の案内に従ってキーを入力してください。あとから設定の「接続と費用」で変更できます。",
+      lede: "AI 判定も翻訳も OpenRouter を通すので、API キーは 1 つで足ります。ご自身のアカウントで、使った分だけ直接支払います。インストール後の案内に従ってキーを入力してください。あとから設定の「接続と費用」で変更できます。",
       sections: [
-        { h2: "TypeSafe：AI 判定", tag: "フィルタリング", steps: [
-          "<a href=\"https://console.typesafe.ai/\">TypeSafe コンソール</a>を開き、アカウントを作成してサインインします。",
-          "<a href=\"https://console.typesafe.ai/keys\">Keys</a> ページでキーを作成し、コピーします。",
-          "ClearFlow の設定の「Jev (TypeSafe)」欄にキーを貼り付けます。",
-        ], note: "トークンの使用量に応じた課金です。判定結果は最大 7 日間保存し、重複するリクエストを減らします。" },
-        { h2: "OpenRouter：翻訳", tag: "翻訳", steps: [
+        { h2: "OpenRouter：AI 判定と翻訳", tag: "必須", steps: [
           "<a href=\"https://openrouter.ai/\">OpenRouter</a> を開き、アカウントを作成してサインインします。Credits ページでクレジットを追加します。",
           "<a href=\"https://openrouter.ai/keys\">Keys</a> ページで Create Key を選びます。毎月リセットされる利用上限（例：$2）の設定をおすすめします。",
           "sk-or- で始まるキーをコピーし、ClearFlow の設定の「OpenRouter」欄に貼り付けます。",
-        ], note: "翻訳には標準で OpenAI、予備に DeepSeek を使います。モデルは設定で変更できます。" },
+        ], note: "AI 判定は TypeSafe の Jev モデル、翻訳は標準で OpenAI のモデル（予備は DeepSeek）を使い、どちらも OpenRouter 経由でトークン単位の課金です。判定結果は最大 7 日間保存し、重複するリクエストを減らします。" },
+        { h2: "TypeSafe：任意", tag: "任意", steps: [
+          "<a href=\"https://console.typesafe.ai/\">TypeSafe コンソール</a>を開き、アカウントを作成してサインインします（直接の申し込みは順番待ちになる場合があります）。",
+          "<a href=\"https://console.typesafe.ai/keys\">Keys</a> ページでキーを作成し、コピーします。",
+          "ClearFlow の設定の「詳細設定」にある「TypeSafe（任意）」欄にキーを貼り付けます。",
+        ], note: "設定すると判定を TypeSafe に直接送ります。少し速くなり、返信の画像も確認できます（OpenRouter は現在画像を転送しません）。なくても判定は問題なく動きます。" },
       ],
       after: [
         ["接続を確認", "有効なキーにはチェックマークが表示されます。接続に失敗した場合は理由を確認し、「接続をテスト」で再試行できます。"],
-        ["必要な機能だけ設定", "TypeSafe のキーで AI 判定、OpenRouter のキーで翻訳を利用できます。ローカルルールは、キーの有無にかかわらず動作します。"],
+        ["キーは 1 つで OK", "OpenRouter のキーだけで AI 判定と翻訳を利用できます。TypeSafe のキーは任意です。ローカルルールは、キーの有無にかかわらず動作します。"],
         ["キーを安全に管理", "キーはブラウザ内にのみ保存されます。開発者を含め、誰にも共有しないでください。漏えいの疑いがある場合は、各サービスの管理画面で削除し、新しいキーを作成してください。"],
       ],
       back: "トップへ戻る",

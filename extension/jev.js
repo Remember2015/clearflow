@@ -3,6 +3,12 @@
 // 后台 service worker 和 Node 测试共用。
 
 export const API = "https://api.typesafe.ai/v1/systemone";
+// 0.29.11 起默认通过 OpenRouter 调 Jev（TypeSafe 直接申请要排队；用户只填一个 OpenRouter 密钥）：同一个请求格式、同一个模型
+// （OpenRouter 上的 typesafe/jev-1.13，服务商就是 TypeSafe，价格一样；10-23 用 129 个分数对拍，和直连的差异跟直连自己连问两次一样大）、
+// 慢约 0.4 秒。OpenRouter 收下图片却不转给 Jev（只按文字判、不报错），所以带图的只能直连（见 background.js jevRoute）。
+// key 参数：字符串 = TypeSafe 的密钥、直连；{via: "or", key} = OpenRouter 的密钥、走 OpenRouter
+export const OR_API = "https://openrouter.ai/api/v1/systemone", OR_MODEL = "typesafe/jev-1.13";
+const routeOf = (key) => (key && typeof key === "object" && key.via === "or" ? { url: OR_API, key: key.key, via: "or" } : { url: API, key: typeof key === "object" ? key?.key : key, via: "ts" });
 // 钉版本（2026-10-15）：jev-latest 原来指 1.13.0，1.14.0 发布一周后会改指 1.14.0。1.14 整体打分偏高，照现在各平台的阈值
 // 折得更多、多语言集上多出来的大多是错的（X 多语言热帖 7 对 7 错 → 7 对 9 错，YouTube 多语言集错 31 → 49），
 // 要换得按各平台的数据重定门槛（见 jev_eval/code/xr_general/README.md "Jev 1.14"）。1.13.0 下线前至少提前 60 天通知。
@@ -158,9 +164,11 @@ function sleep(ms, signal) {
 }
 
 export class JevError extends Error {
-  constructor(status, body) {
+  // via：直连 TypeSafe（ts）还是走 OpenRouter（or）——401 / 402 说的是哪个密钥、哪边的余额
+  constructor(status, body, via = "ts") {
     super(`Jev HTTP ${status}: ${String(body).slice(0, 200)}`);
     this.status = status;
+    this.via = via;
     this.code = "http";
     this.retryable = status === 429 || status >= 500;
   }
@@ -175,6 +183,13 @@ async function postJev(key, body, {
   signal?.addEventListener("abort", cancel, { once: true });
   if (signal?.aborted) cancel();
   const totalTimer = setTimeout(() => total.abort(timeoutError()), totalTimeoutMs);
+  const route = routeOf(key);
+  if (route.via === "or") { // 型号换成 OpenRouter 上的名字；图片它不转（见上），带了也去掉（调用方本来就不该带）
+    const b = JSON.parse(body);
+    delete b.assets;
+    body = JSON.stringify({ ...b, model: OR_MODEL });
+    headers = null;
+  }
   try {
     for (let i = 0; i < retries; i++) {
       total.signal.throwIfAborted();
@@ -185,15 +200,15 @@ async function postJev(key, body, {
       let retryMs = 1000 * 2 ** i;
       try {
         const data = await abortable((async () => {
-          const resp = await fetchImpl(API, {
+          const resp = await fetchImpl(route.url, {
             method: "POST",
-            headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json", ...(headers || {}) },
+            headers: { Authorization: `Bearer ${route.key}`, "Content-Type": "application/json", ...(headers || {}) },
             body, signal: request.signal,
           });
           if (!resp.ok) {
             const ra = Number(resp.headers.get("retry-after"));
             if (Number.isFinite(ra) && ra > 0) retryMs = Math.min(ra * 1000, totalTimeoutMs);
-            throw new JevError(resp.status, await resp.text());
+            throw new JevError(resp.status, await resp.text(), route.via);
           }
           return await resp.json();
         })(), request.signal);

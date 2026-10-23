@@ -7,7 +7,7 @@ ClearFlow membantu merapikan kolom komentar di X, Reddit, YouTube, Xiaohongshu (
 • Menerjemahkan postingan dan komentar berbahasa asing ke bahasa Anda langsung di tempat, dengan opsi untuk kembali ke teks asli. Di X, ClearFlow hanya menggantikan terjemahan otomatis X jika terjemahan tersebut buruk.
 • Aktifkan atau nonaktifkan per situs, dan pilih secara terpisah apakah ingin menggunakan penyaringan dan terjemahan.
 
-ClearFlow menggunakan dua layanan yang perlu Anda daftarkan dan bayar sesuai penggunaan, dengan kunci API Anda sendiri: TypeSafe (untuk menilai balasan) dan OpenRouter (untuk terjemahan). Halaman penyiapan membantu Anda memasukkan kunci; pengaturan menampilkan biaya yang telah dikeluarkan. Tanpa kunci, hanya aturan lokal bawaan yang berjalan.
+ClearFlow menggunakan OpenRouter, layanan yang Anda daftarkan dan bayar sesuai penggunaan, dengan kunci API Anda sendiri: layanan ini meneruskan balasan ke model Jev dari TypeSafe untuk dinilai dan teks ke model terjemahan. Halaman penyiapan membantu Anda memasukkan kunci; pengaturan menampilkan biaya yang telah dikeluarkan. Tanpa kunci, hanya aturan lokal bawaan yang berjalan.
 
 Privasi: komentar dan postingan yang Anda lihat di situs yang didukung akan dikirim ke kedua layanan tersebut untuk dinilai atau diterjemahkan (beserta balasan spam yang terakhir Anda tandai sebagai contoh, jika ada). Tidak ada data yang dikirim kepada kami, dan tidak ada analitik atau pelacakan. Kunci dan riwayat tersimpan di browser Anda. Sumber terbuka (MIT): https://github.com/remember2015/clearflow
 

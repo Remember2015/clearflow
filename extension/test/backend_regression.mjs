@@ -15,7 +15,8 @@ const msg = (id = "1", post = "原帖") => ({ type: "jev", postId: "P1", post, a
 const settle = () => new Promise((r) => setImmediate(r));
 
 function backend({ fetchImpl, failWrite, initial = {} } = {}) {
-  const store = { ff_key: "fake-key", ff_settings: { rev: 5, enabled: true, useJev: true, cacheMB: 50 }, ...initial };
+  // rev 跟着 settings.js 的 DEFAULTS.rev（0.29.8 起 6）：旧的会触发迁移，迁移写回去会盖掉测试随后改的设置
+  const store = { ff_key: "fake-key", ff_settings: { rev: 6, enabled: true, useJev: true, cacheMB: 50 }, ...initial };
   const records = new Map(), changes = [], keyMap = new Map();
   const keyStore = { getKey: async (n) => keyMap.get(n) || "", setKey: async (n, v) => { if (v) keyMap.set(n, v); else keyMap.delete(n); } }; // keys.js（IndexedDB）的替身
   let listener, calls = 0, writes = 0;
@@ -146,7 +147,7 @@ test("disabled or missing-key requests never enter the network", async () => {
 });
 
 test("a site with hiding turned off (0.20 sites.<id>.fold) never enters the network; other sites still work", async () => {
-  const h = backend({ initial: { ff_settings: { rev: 5, useJev: true, cacheMB: 50, sites: { reddit: { fold: false } } } } });
+  const h = backend({ initial: { ff_settings: { rev: 6, useJev: true, cacheMB: 50, sites: { reddit: { fold: false } } } } });
   assert.equal((await h.call(msg("1"), { url: "https://www.reddit.com/r/a/comments/b/c/" })).code, "disabled");
   assert.equal(h.calls, 0);
   const r = await h.call(msg("2"), { url: "https://x.com/a/status/1" });
@@ -254,4 +255,41 @@ test("a failed clear keeps the log; clearing again succeeds and the decisions ar
   assert.equal((await h.call({ type: "clearLog" })).ok, true);
   assert.equal(h.store.ff_log.length, 0);
   assert.equal((await h.call({ type: "replyOverrides", ids: ["7"] })).overrides["7"], undefined);
+});
+
+// 0.29.11：判断默认走 OpenRouter（只要一个 OpenRouter 密钥）。jev.js 一层：给 {via: "or", key} 就换 OpenRouter 的地址、型号名、密钥，
+// 图片和 Danger Zone 头去掉（OpenRouter 收下图片却不转给 Jev，只按文字判）；给字符串还是直连 TypeSafe
+test("Jev through OpenRouter: OpenRouter URL, model and key; images and the image header dropped; a plain key still goes direct", async () => {
+  const seen = [];
+  const fetchImpl = async (url, init) => { seen.push({ url, auth: init.headers.Authorization, header: init.headers["TypeSafe-Danger-Zone-Images"], body: JSON.parse(init.body) }); return response({ answers: answers(), usage: { input_tokens: 10 } }); };
+  const assets = { img_1_0: { type: "image", format: "jpg", data_base64: "AAAA" } };
+  await scoreReplies({ via: "or", key: "sk-or-x" }, "p", [{ ...reply, imageRefs: ["img_1_0"] }], { fetchImpl, assets });
+  await scoreReplies("ts-key", "p", [{ ...reply, imageRefs: ["img_1_0"] }], { fetchImpl, assets });
+  assert.equal(seen[0].url, "https://openrouter.ai/api/v1/systemone");
+  assert.equal(seen[0].body.model, "typesafe/jev-1.13");
+  assert.equal(seen[0].auth, "Bearer sk-or-x");
+  assert.equal(seen[0].body.assets, undefined); assert.equal(seen[0].header, undefined);
+  assert.equal(seen[1].url, "https://api.typesafe.ai/v1/systemone");
+  assert.equal(seen[1].body.model, "jev-1.13.0"); assert.equal(seen[1].auth, "Bearer ts-key");
+  assert.ok(seen[1].body.assets && seen[1].header === "true");
+});
+
+// 后台一层：没填 TypeSafe、有 OpenRouter 的密钥 → 判断走 OpenRouter；OpenRouter 回 401 记成 OpenRouter 的密钥无效（弹窗那头提醒 OpenRouter）
+test("without a TypeSafe key the backend judges through OpenRouter; a 401 there is recorded as the OpenRouter key being bad", async () => {
+  let url = null, auth = null, status = 200;
+  const h = backend({ initial: { ff_key: "", ff_or_key: "sk-or-x" }, fetchImpl: async (u, init) => {
+    url = u; auth = init.headers.Authorization;
+    return status === 200 ? response({ answers: answers(), usage: { input_tokens: 10 } }) : new Response("{\"error\":{\"message\":\"User not found.\",\"code\":401}}", { status });
+  } });
+  const ok = await h.call(msg("1"));
+  assert.ok(ok.scores && !ok.error, JSON.stringify(ok));
+  assert.equal(url, "https://openrouter.ai/api/v1/systemone"); assert.equal(auth, "Bearer sk-or-x");
+  status = 401;
+  const bad = await h.call(msg("2"));
+  assert.equal(bad.code, "or_badkey");
+  await settle(); await settle();
+  assert.equal(h.store.ff_health?.or?.code, "or_badkey"); assert.equal(h.store.ff_health?.jev, undefined);
+  h.store.ff_or_key = ""; // 两个都没了：nokey，不发网络
+  const before = h.calls;
+  assert.equal((await h.call(msg("3"))).code, "nokey"); assert.equal(h.calls, before);
 });

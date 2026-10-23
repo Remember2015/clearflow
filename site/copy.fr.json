@@ -176,7 +176,7 @@
       ],
       [
         "L'IA tient compte du contexte",
-        "Les réponses que les règles locales ne peuvent pas classer sont envoyées avec la publication d'origine au modèle Jev de TypeSafe. Il recherche les promotions, insultes et contenus sexuels selon les seuils que vous avez choisis."
+        "Les réponses que les règles locales ne peuvent pas classer sont envoyées avec la publication d'origine, via OpenRouter, au modèle Jev de TypeSafe. Il recherche les promotions, insultes et contenus sexuels selon les seuils que vous avez choisis."
       ],
       [
         "OpenRouter assure la traduction",
@@ -186,7 +186,7 @@
   },
   "cost": {
     "h2": "Payez selon votre usage",
-    "body": "Utilisez vos propres comptes TypeSafe et OpenRouter et payez directement chaque service. Les requêtes ne passent jamais par les serveurs de ClearFlow.",
+    "body": "Utilisez votre propre compte OpenRouter et payez directement ce service. Les requêtes ne passent jamais par les serveurs de ClearFlow.",
     "stat": "≈ $0.10",
     "statLabel": "Coût estimé pour parcourir environ 5 000 réponses sur X, avec filtrage et, si nécessaire, traduction. Le coût réel varie selon le contenu et le modèle.",
     "points": [
@@ -205,7 +205,7 @@
       ],
       [
         "Connexion directe à vos fournisseurs",
-        "Les fonctions d'IA envoient les publications et commentaires concernés directement à TypeSafe pour le filtrage et à OpenRouter pour la traduction, avec vos clés."
+        "Les fonctions d'IA envoient les publications et commentaires concernés directement à OpenRouter avec votre clé ; OpenRouter les transmet au modèle Jev de TypeSafe pour le filtrage et à un modèle de traduction pour la traduction."
       ],
       [
         "Clés et historique sur votre appareil",
@@ -227,7 +227,7 @@
       ],
       [
         "L'extension fonctionne-t-elle sans clés ?",
-        "Oui. Les règles locales masquent encore les réponses contenant des liens de parrainage ou des coordonnées dissimulées, ainsi que les mêmes messages publiés par plusieurs comptes. La traduction et la détection des insultes, contenus sexuels et réponses comme « sympa » nécessitent des clés API."
+        "Oui. Les règles locales masquent encore les réponses contenant des liens de parrainage ou des coordonnées dissimulées, ainsi que les mêmes messages publiés par plusieurs comptes. Une clé OpenRouter est nécessaire pour la traduction et la détection des insultes, contenus sexuels et réponses comme « sympa »."
       ],
       [
         "Peut-elle masquer des commentaires utiles ?",
@@ -263,29 +263,29 @@
   },
   "keys": {
     "title": "Configurer vos clés API · ClearFlow",
-    "description": "Connectez ClearFlow à TypeSafe et OpenRouter pour activer le filtrage par IA et la traduction.",
+    "description": "Connectez ClearFlow à OpenRouter pour activer le filtrage par IA et la traduction.",
     "h1": "Configurer vos clés API",
-    "lede": "Le filtrage par IA utilise TypeSafe ; la traduction utilise OpenRouter. Chaque service demande sa propre clé API et vous le payez directement selon votre usage. Saisissez vos clés lors de la configuration, ou modifiez-les plus tard dans Paramètres → Connexions et coût.",
+    "lede": "Le filtrage par IA et la traduction passent tous deux par OpenRouter : une seule clé API suffit, et vous payez selon votre usage. Saisissez vos clés lors de la configuration, ou modifiez-les plus tard dans Paramètres → Connexions et coût.",
     "sections": [
       {
-        "h2": "TypeSafe : filtrage par IA",
-        "tag": "Filtrage",
-        "steps": [
-          "Ouvrez la <a href=\"https://console.typesafe.ai/\">console TypeSafe</a>, créez un compte et connectez-vous.",
-          "Sur la page <a href=\"https://console.typesafe.ai/keys\">Keys</a>, créez une clé et copiez-la.",
-          "Collez la clé dans le champ « Jev (TypeSafe) » des paramètres de ClearFlow."
-        ],
-        "note": "Facturation selon le nombre de tokens utilisés. Les résultats sont conservés jusqu'à sept jours pour éviter les requêtes répétées."
-      },
-      {
-        "h2": "OpenRouter : traduction",
-        "tag": "Traduction",
+        "h2": "OpenRouter : filtrage par IA et traduction",
+        "tag": "Obligatoire",
         "steps": [
           "Ouvrez <a href=\"https://openrouter.ai/\">OpenRouter</a>, créez un compte et connectez-vous. Ajoutez du crédit sur la page Credits.",
           "Sur la page <a href=\"https://openrouter.ai/keys\">Keys</a>, cliquez sur Create Key. Fixez un plafond de crédit mensuel pour maîtriser vos dépenses, par exemple 2 $ avec remise à zéro chaque mois.",
           "Copiez la clé commençant par sk-or- dans le champ « OpenRouter » des paramètres de ClearFlow."
         ],
-        "note": "La traduction utilise OpenAI par défaut, avec DeepSeek en secours. Vous pouvez changer de modèle dans les paramètres."
+        "note": "Le filtrage par IA utilise le modèle Jev de TypeSafe ; la traduction utilise OpenAI par défaut, avec DeepSeek en secours. Les deux passent par OpenRouter et sont facturés au token. Les résultats sont conservés jusqu'à sept jours pour éviter les requêtes répétées."
+      },
+      {
+        "h2": "TypeSafe : facultatif",
+        "tag": "Facultatif",
+        "steps": [
+          "Ouvrez la <a href=\"https://console.typesafe.ai/\">console TypeSafe</a>, créez un compte et connectez-vous (l'accès direct peut nécessiter une inscription sur liste d'attente).",
+          "Sur la page <a href=\"https://console.typesafe.ai/keys\">Keys</a>, créez une clé et copiez-la.",
+          "Collez la clé dans le champ « TypeSafe (facultatif) » sous « Paramètres avancés » dans les paramètres de ClearFlow."
+        ],
+        "note": "Avec cette clé, les réponses sont vérifiées directement par TypeSafe : c'est un peu plus rapide, et les images dans les réponses peuvent aussi être vérifiées (OpenRouter ne transmet pas encore les images). Le filtrage fonctionne très bien sans cette clé."
       }
     ],
     "after": [
@@ -294,8 +294,8 @@
         "Une coche indique que la clé est valide. Si la connexion échoue, une explication s'affiche ; choisissez « Tester la connexion » pour réessayer."
       ],
       [
-        "Choisir les fonctions utiles",
-        "Une clé TypeSafe active le filtrage par IA ; une clé OpenRouter active la traduction. Le filtrage local fonctionne avec ou sans ces clés."
+        "Une seule clé suffit",
+        "Une clé OpenRouter active à la fois le filtrage par IA et la traduction ; une clé TypeSafe est facultative. Le filtrage local fonctionne avec ou sans clé."
       ],
       [
         "Protéger vos clés",

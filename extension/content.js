@@ -397,6 +397,7 @@
         .then((r) => {
           if (postId !== S.postId || epoch !== S.epoch) return;
           if (r.error === "badkey" || r.code === "badkey") S.jevNotice = t("cs.badkey");
+          else if (r.code === "or_badkey") S.jevNotice = t("cs.orBadkey"); // 0.29.11 起判断默认走 OpenRouter：说的是 OpenRouter 的密钥
           else if (r.error) S.jevNotice = t("cs.partial", { error: errText(r).slice(0, 80) });
           for (const it of batch) {
             it.queued = false;

@@ -16,20 +16,20 @@ The interface is available in 19 languages.
 
 ## How it works
 
-Cheap local rules run first (referral links, hidden contact info, the same line posted by several accounts, invisible characters…). Everything they can't decide is sent, with the post it belongs to, to [TypeSafe](https://typesafe.ai)'s "Jev" classifier, which answers a few yes/no questions per reply. Translation goes through [OpenRouter](https://openrouter.ai) to a model of your choice. Thresholds were tuned on each site's own data; the design rule is that local rules only look at *structure*, never at keyword lists, so the extension works the same across topics and languages.
+Cheap local rules run first (referral links, hidden contact info, the same line posted by several accounts, invisible characters…). Everything they can't decide is sent, with the post it belongs to, through [OpenRouter](https://openrouter.ai) to [TypeSafe](https://typesafe.ai)'s "Jev" classifier, which answers a few yes/no questions per reply. Translation also goes through OpenRouter, to a model of your choice. Thresholds were tuned on each site's own data; the design rule is that local rules only look at *structure*, never at keyword lists, so the extension works the same across topics and languages.
 
-## You need two API keys
+## You need one API key
 
 | Service | Used for | Get a key |
 |---|---|---|
-| TypeSafe (Jev) | cleaning; judging X's translations | https://typesafe.ai |
-| OpenRouter | translation | https://openrouter.ai/keys |
+| OpenRouter | cleaning (it passes replies to TypeSafe's Jev) and translation | https://openrouter.ai/keys |
+| TypeSafe (optional) | judging replies directly: a little faster, and needed for checking images in replies (OpenRouter doesn't pass images on) | https://typesafe.ai |
 
-Both bill by usage, to you directly. Settings shows what you've spent this month and a monthly estimate. Without a TypeSafe key only the local rules run; without an OpenRouter key nothing is translated. A first-run setup page walks you through choosing sites and entering keys.
+It bills by usage, to you directly. Settings shows what you've spent this month and a monthly estimate. Without a key only the local rules run and nothing is translated. A first-run setup page walks you through choosing sites and entering keys.
 
 ## Privacy
 
-Comments and posts you're looking at are sent to TypeSafe and OpenRouter using your keys. Nothing is sent to the developers; there's no analytics or tracking. Keys and history stay in your browser. Details: [PRIVACY.md](PRIVACY.md).
+Comments and posts you're looking at are sent to OpenRouter (which passes judging requests on to TypeSafe) using your key, or straight to TypeSafe if you added the optional TypeSafe key. Nothing is sent to the developers; there's no analytics or tracking. Keys and history stay in your browser. Details: [PRIVACY.md](PRIVACY.md).
 
 ## Install
 
