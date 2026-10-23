@@ -1,0 +1,294 @@
+{
+ "x-after.webp": [
+  600,
+  827
+ ],
+ "case-x-0-after.webp": [
+  578,
+  48
+ ],
+ "case-x-1-after.webp": [
+  578,
+  48
+ ],
+ "case-x-2-after.webp": [
+  578,
+  48
+ ],
+ "case-x-3-after.webp": [
+  296,
+  42
+ ],
+ "x-before.webp": [
+  600,
+  827
+ ],
+ "case-x-0-b0.webp": [
+  600,
+  140
+ ],
+ "case-x-0-b1.webp": [
+  600,
+  140
+ ],
+ "case-x-0-b2.webp": [
+  600,
+  140
+ ],
+ "case-x-1-b0.webp": [
+  600,
+  118
+ ],
+ "case-x-2-b0.webp": [
+  600,
+  118
+ ],
+ "case-x-3-b0.webp": [
+  600,
+  118
+ ],
+ "case-x-3-b1.webp": [
+  600,
+  118
+ ],
+ "case-x-3-b2.webp": [
+  600,
+  118
+ ],
+ "xhs-after.webp": [
+  700,
+  980
+ ],
+ "case-xhs-0-after.webp": [
+  458,
+  93
+ ],
+ "case-xhs-1-after.webp": [
+  462,
+  48
+ ],
+ "case-xhs-2-after.webp": [
+  462,
+  48
+ ],
+ "case-xhs-3-after.webp": [
+  296,
+  42
+ ],
+ "case-xhs-4-after.webp": [
+  458,
+  82
+ ],
+ "case-xhs-5-after.webp": [
+  414,
+  82
+ ],
+ "case-xhs-6-after.webp": [
+  458,
+  82
+ ],
+ "case-xhs-7-after.webp": [
+  458,
+  82
+ ],
+ "xhs-before.webp": [
+  700,
+  980
+ ],
+ "case-xhs-0-b0.webp": [
+  458,
+  103
+ ],
+ "case-xhs-1-b0.webp": [
+  458,
+  79
+ ],
+ "case-xhs-1-b1.webp": [
+  458,
+  79
+ ],
+ "case-xhs-2-b0.webp": [
+  458,
+  79
+ ],
+ "case-xhs-2-b1.webp": [
+  458,
+  103
+ ],
+ "case-xhs-3-b0.webp": [
+  458,
+  79
+ ],
+ "case-xhs-3-b1.webp": [
+  458,
+  79
+ ],
+ "case-xhs-4-b0.webp": [
+  458,
+  79
+ ],
+ "case-xhs-5-b0.webp": [
+  414,
+  79
+ ],
+ "case-xhs-6-b0.webp": [
+  458,
+  103
+ ],
+ "case-xhs-7-b0.webp": [
+  458,
+  79
+ ],
+ "reddit-after.webp": [
+  640,
+  838
+ ],
+ "case-reddit-0-after.webp": [
+  596,
+  70
+ ],
+ "case-reddit-1-after.webp": [
+  294,
+  42
+ ],
+ "case-reddit-2-after.webp": [
+  596,
+  93
+ ],
+ "case-reddit-3-after.webp": [
+  564,
+  93
+ ],
+ "case-reddit-4-after.webp": [
+  596,
+  93
+ ],
+ "case-reddit-5-after.webp": [
+  596,
+  93
+ ],
+ "case-reddit-6-after.webp": [
+  596,
+  93
+ ],
+ "reddit-before.webp": [
+  640,
+  838
+ ],
+ "case-reddit-0-b0.webp": [
+  596,
+  77
+ ],
+ "case-reddit-1-b0.webp": [
+  596,
+  77
+ ],
+ "case-reddit-2-b0.webp": [
+  596,
+  77
+ ],
+ "case-reddit-3-b0.webp": [
+  564,
+  77
+ ],
+ "case-reddit-4-b0.webp": [
+  596,
+  77
+ ],
+ "case-reddit-5-b0.webp": [
+  596,
+  77
+ ],
+ "case-reddit-6-b0.webp": [
+  596,
+  77
+ ],
+ "yt-after.webp": [
+  680,
+  915
+ ],
+ "case-yt-0-after.webp": [
+  640,
+  76
+ ],
+ "case-yt-1-after.webp": [
+  590,
+  76
+ ],
+ "case-yt-2-after.webp": [
+  294,
+  42
+ ],
+ "case-yt-3-after.webp": [
+  640,
+  80
+ ],
+ "case-yt-4-after.webp": [
+  640,
+  80
+ ],
+ "case-yt-5-after.webp": [
+  640,
+  80
+ ],
+ "case-yt-6-after.webp": [
+  640,
+  80
+ ],
+ "yt-before.webp": [
+  680,
+  915
+ ],
+ "case-yt-0-b0.webp": [
+  640,
+  94
+ ],
+ "case-yt-1-b0.webp": [
+  590,
+  74
+ ],
+ "case-yt-2-b0.webp": [
+  640,
+  74
+ ],
+ "case-yt-3-b0.webp": [
+  640,
+  74
+ ],
+ "case-yt-4-b0.webp": [
+  640,
+  74
+ ],
+ "case-yt-5-b0.webp": [
+  640,
+  74
+ ],
+ "case-yt-6-b0.webp": [
+  640,
+  74
+ ],
+ "mark-before.webp": [
+  640,
+  812
+ ],
+ "mark-after.webp": [
+  640,
+  713
+ ],
+ "xhsmark-before.webp": [
+  700,
+  1112
+ ],
+ "xhsmark-after.webp": [
+  700,
+  1075
+ ],
+ "popup.webp": [
+  340,
+  397
+ ],
+ "settings.webp": [
+  600,
+  650
+ ]
+}

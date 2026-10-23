@@ -1,0 +1,144 @@
+{
+  "brand": "ClearFlow",
+  "languageLabel": "Escolher idioma",
+  "title": "ClearFlow · Menos distrações, traduções mais claras",
+  "description": "Extensão de código aberto para Chrome que filtra respostas indesejadas no X, YouTube, Reddit, RedNote e Hacker News, traduz publicações, títulos de vídeos e comentários ainda sem tradução e melhora traduções quando necessário. Toda resposta ocultada tem uma explicação. Usa suas próprias chaves de API e não envia dados ao desenvolvedor.",
+  "nav": { "clean": "Filtragem", "tx": "Tradução", "cost": "Custo", "privacy": "Privacidade", "faq": "Dúvidas frequentes" },
+  "skip": "Ir para o conteúdo",
+  "hero": {
+    "eyebrow": "Extensão de código aberto para Chrome",
+    "h1": "Menos distrações. Leitura mais clara.",
+    "h1Parts": ["Menos distrações.", "Leitura mais clara."],
+    "trust": ["Código aberto · licença MIT", "Nenhum dado enviado ao desenvolvedor", "Interface em 19 idiomas", "Pague pelo que usar"],
+    "lede": "Filtre respostas indesejadas, traduza o que ainda não foi traduzido e melhore traduções pouco naturais. Leia publicações, títulos de vídeos e comentários com mais facilidade.",
+    "cta": "Adicionar ao Chrome",
+    "ctaNote": "Instalação gratuita"
+  },
+  "platforms": { "label": "Funciona em", "names": { "x": "X", "yt": "YouTube", "reddit": "Reddit", "xhs": "RedNote", "hn": "Hacker News" } },
+  "demo": {
+    "enlarge": "Ampliar imagem", "label": "Antes e depois do ClearFlow", "before": "Antes", "after": "Depois",
+    "tabs": { "x": "X", "xsex": "X · bots", "xhs": "RedNote", "reddit": "Reddit", "yt": "YouTube", "mark": "Reddit", "xhsmark": "RedNote" },
+    "sum": { "clean": "{n} filtradas", "filler": "{n} recolhidas", "tx": "{n} traduzidas" },
+    "note": "As páginas e os comentários da demonstração são fictícios. Eles mostram como a filtragem e a tradução aparecem no ClearFlow."
+  },
+  "eyebrow": { "clean": "Filtragem", "learn": "Seus exemplos", "tx": "Tradução", "how": "Como funciona", "cost": "Custo", "privacy": "Privacidade", "faq": "Dúvidas frequentes" },
+  "clean": {
+    "h2": "Menos spam, mais espaço para conversar",
+    "lede": "Filtre spam de bots, propaganda indesejada, golpes, ofensas e conteúdo sexual para encontrar respostas úteis com mais facilidade.",
+    "points": [
+      ["Uma explicação para cada resposta ocultada", "Veja por que uma resposta foi ocultada, abra o texto original ou sinalize um erro."],
+      ["Reações curtas agrupadas", "Respostas como “legal” e “+1” ficam recolhidas em um único aviso no início da conversa."],
+      ["Menos avisos para percorrer", "Respostas ocultadas em sequência compartilham um aviso. Em conversas com muito spam, um único contador aparece no início."]
+    ],
+    "scenes": ["x", "yt", "reddit", "xhs"],
+    "captions": {
+      "x": "Propagandas repetidas são agrupadas; ofensas e reações curtas são tratadas separadamente.",
+      "xsex": "Propagandas de conteúdo sexual e spam de airdrops são filtrados de uma conversa sobre tecnologia.",
+      "xhs": "Comentários promocionais são ocultados e mensagens repetidas são agrupadas.",
+      "yt": "Depoimentos falsos são filtrados e respostas só com emojis são recolhidas.",
+      "reddit": "Um anúncio fora de contexto é filtrado; reações curtas são recolhidas."
+    }
+  },
+  "learn": {
+    "h2": "Ajude a identificar o spam que passou pelo filtro",
+    "lede": "Marque uma resposta indesejada que não foi detectada para ocultá-la. O ClearFlow usa seus exemplos para reconhecer spam semelhante.",
+    "steps": [
+      ["Marque uma resposta não detectada", "No X, escolha “Ocultar esta resposta” no menu “…” da resposta. Nos outros sites, passe o mouse sobre a resposta e clique no ícone de funil ao lado do autor."],
+      ["Ajude a reconhecer spam semelhante", "Respostas identificadas como spam semelhante são ocultadas, com um aviso relacionando a decisão ao seu exemplo."],
+      ["Desfaça quando quiser", "Desfaça logo após marcar ou exclua exemplos salvos nas Configurações."]
+    ],
+    "before": "Antes de marcar", "after": "Depois da sua marcação", "scenes": ["mark", "xhsmark"],
+    "captions": {
+      "mark": "Exemplo: marcar uma resposta promocional ajuda a identificar outras duas com texto parecido.",
+      "xhsmark": "Exemplo: marcar um convite para um grupo ajuda a identificar outras duas propagandas semelhantes."
+    }
+  },
+  "tx": {
+    "h2": "Traduções mais fáceis de entender",
+    "lede": "Traduza o que ainda não foi traduzido e melhore traduções pouco naturais para acompanhar o conteúdo sem sair da página.",
+    "points": [
+      ["Traduza o que falta", "Leia no seu idioma as publicações do feed, os títulos e descrições dos vídeos e os comentários."],
+      ["Melhore traduções quando necessário", "O ClearFlow pode retraduzir publicações no X e melhorar as legendas do YouTube quando você usa a tradução automática."],
+      ["Leia no mesmo lugar e compare quando quiser", "Links e formatação são preservados. Volte a qualquer momento ao texto original ou à tradução da plataforma."]
+    ],
+    "scenes": ["reddit", "yt", "xhs"],
+    "captions": {
+      "reddit": "Dicas de ciclismo em vários idiomas, traduzidas para o português.",
+      "yt": "Títulos de vídeos e comentários de vários lugares, traduzidos para o português.",
+      "xhs": "Leia uma publicação do RedNote e seus comentários em português."
+    }
+  },
+  "control": {
+    "points": ["Configurações por site", "Controles separados para filtragem e tradução", "Três níveis de filtragem", "Contadores desta página"],
+    "h2": "Seus sites, suas configurações",
+    "body": "Escolha as regras, a intensidade da filtragem e as opções de tradução para cada site. A janela da extensão mostra as quantidades processadas nesta página, hoje e nos últimos sete dias.",
+    "altPopup": "Janela do ClearFlow: respostas ocultadas e traduzidas na página atual",
+    "altSettings": "Configurações do ClearFlow: regras de filtragem e tradução para o Reddit"
+  },
+  "how": {
+    "h2": "Como o ClearFlow funciona",
+    "steps": [
+      ["Primeiro, regras locais", "Elas reconhecem padrões em links de indicação, dados de contato disfarçados e mensagens repetidas. Sem chave de API nem custo."],
+      ["A IA avalia o contexto", "Respostas que as regras locais não conseguem classificar são enviadas com a publicação original ao modelo Jev da TypeSafe. Ele identifica propaganda, ofensas e conteúdo sexual conforme os limites que você definiu."],
+      ["O OpenRouter faz a tradução", "O texto vai para o modelo escolhido: OpenAI por padrão, com DeepSeek como alternativa. Só o texto é enviado, sem dados do autor nem IDs das publicações."]
+    ]
+  },
+  "cost": {
+    "h2": "Pague apenas pelo que usar",
+    "body": "Use suas próprias contas da TypeSafe e do OpenRouter e pague diretamente a cada serviço. As solicitações nunca passam pelos servidores do ClearFlow.",
+    "stat": "≈ $0.10",
+    "statLabel": "Custo estimado para navegar por cerca de 5.000 respostas no X, incluindo filtragem e tradução quando necessária. O custo real varia conforme o conteúdo e o modelo.",
+    "points": ["As Configurações mostram os gastos do mês e uma previsão de gastos mensais baseada no uso dos últimos sete dias.", "Você pode definir um limite mensal de crédito para sua chave do OpenRouter.", "A filtragem local funciona sem chaves de API."],
+    "cta": "Obter suas chaves de API"
+  },
+  "privacy": {
+    "h2": "Nenhum dado enviado ao desenvolvedor",
+    "items": [
+      ["Sem rastreamento nem envio de estatísticas", "As estatísticas de uso e custo ficam no seu dispositivo. Não há análise de uso, relatórios de falhas nem código de anúncios."],
+      ["Conexão direta com seus provedores", "Os recursos de IA enviam publicações e comentários relevantes diretamente à TypeSafe para filtragem e ao OpenRouter para tradução, usando suas chaves."],
+      ["Chaves e histórico no seu dispositivo", "As chaves ficam no banco de dados da extensão, inacessível aos sites. Desinstalar a extensão apaga os dados locais."],
+      ["Código aberto para consulta", "O código sob licença MIT está no GitHub. Você pode verificar como os dados são tratados e para onde vão."]
+    ],
+    "more": "Ler a política de privacidade"
+  },
+  "faq": {
+    "h2": "Dúvidas frequentes",
+    "items": [
+      ["Por que preciso das minhas próprias chaves de API?", "Seu conteúdo vai diretamente aos provedores de serviço, sem exigir uma assinatura do ClearFlow. Para começar, crie suas contas e chaves de API. <a href=\"keys/\">Como configurar as chaves de API</a>"],
+      ["Funciona sem chaves?", "Sim. As regras locais ainda ocultam respostas com links de indicação ou dados de contato disfarçados, além do mesmo texto publicado por várias contas. A tradução e a detecção de ofensas, conteúdo sexual e respostas como “legal” exigem chaves de API."],
+      ["Pode ocultar comentários úteis?", "Às vezes. Toda resposta ocultada tem uma explicação. Você pode abrir o original ou sinalizar um erro. O nível de filtragem é definido por site. Escolha “Suave” nas Configurações se muitas respostas forem ocultadas."],
+      ["Quais sites e navegadores são compatíveis?", "X, Reddit, YouTube, Xiaohongshu (RedNote) e Hacker News. Chrome 120 ou mais recente, além de Edge, Arc, Brave e outros navegadores Chromium."],
+      ["Quais idiomas são aceitos?", "A interface oferece 19 idiomas. As Configurações e a janela da extensão seguem o idioma do navegador. Os avisos na página e o idioma da tradução geralmente seguem o idioma da interface do site. O Hacker News sempre usa o idioma do navegador; os outros sites também o usam quando não é possível identificar o idioma da interface."],
+      ["O ClearFlow tem ligação com o X ou o YouTube?", "Não. O ClearFlow é um projeto independente de código aberto, sem vínculo com X, Reddit, YouTube (Google), Xiaohongshu ou Y Combinator."],
+      ["Como relatar um problema?", "Use a opção de feedback nas Configurações da extensão, abra uma issue no <a href=\"https://github.com/remember2015/clearflow/issues\">GitHub</a> ou escreva para <a href=\"mailto:developer@ohmyai.app\">developer@ohmyai.app</a>."]
+    ]
+  },
+  "final": { "h2": "Concentre-se no que você veio ler", "cta": "Adicionar ao Chrome" },
+  "footer": { "privacy": "Política de privacidade", "keys": "Como configurar as chaves de API", "license": "Licença MIT", "disclaimer": "O ClearFlow não tem vínculo com X, Reddit, YouTube, Xiaohongshu ou Y Combinator." },
+  "keys": {
+    "title": "Configure suas chaves de API · ClearFlow",
+    "description": "Conecte o ClearFlow à TypeSafe e ao OpenRouter para ativar a filtragem por IA e a tradução.",
+    "h1": "Configure suas chaves de API",
+    "lede": "A filtragem por IA usa a TypeSafe; a tradução usa o OpenRouter. Cada serviço exige sua própria chave de API, e você paga diretamente a cada provedor pelo que usar. Informe as chaves na configuração inicial ou altere-as depois em Configurações → Conexões e custos.",
+    "sections": [
+      {
+        "h2": "TypeSafe: filtragem por IA", "tag": "Filtragem",
+        "steps": ["Acesse o <a href=\"https://console.typesafe.ai/\">console da TypeSafe</a>, crie uma conta e entre nela.", "Na página <a href=\"https://console.typesafe.ai/keys\">Keys</a>, crie e copie uma chave.", "Cole a chave no campo “Jev (TypeSafe)” das Configurações do ClearFlow."],
+        "note": "A cobrança depende do uso de tokens. Os resultados ficam em cache por até sete dias para reduzir solicitações repetidas."
+      },
+      {
+        "h2": "OpenRouter: tradução", "tag": "Tradução",
+        "steps": ["Acesse o <a href=\"https://openrouter.ai/\">OpenRouter</a>, crie uma conta e entre nela. Adicione créditos na página Credits.", "Na página <a href=\"https://openrouter.ai/keys\">Keys</a>, clique em Create Key. Defina um limite mensal de crédito para controlar os gastos, por exemplo, US$ 2 com renovação mensal.", "Copie a chave que começa com sk-or- para o campo “OpenRouter” das Configurações do ClearFlow."],
+        "note": "A tradução usa OpenAI por padrão, com DeepSeek como alternativa. Você pode mudar o modelo nas Configurações."
+      }
+    ],
+    "after": [
+      ["Verifique a conexão", "Uma marca de seleção indica que a chave é válida. Se a conexão falhar, o motivo aparecerá; selecione “Testar conexão” para tentar novamente."],
+      ["Escolha os recursos de que precisa", "Uma chave da TypeSafe ativa a filtragem por IA; uma chave do OpenRouter ativa a tradução. A filtragem local funciona com ou sem essas chaves."],
+      ["Proteja suas chaves", "As chaves ficam armazenadas apenas no seu navegador. Não as compartilhe com ninguém, nem com a equipe do ClearFlow. Se suspeitar de vazamento, exclua a chave no painel do provedor e crie outra."]
+    ],
+    "back": "Voltar ao início"
+  },
+  "privacyPage": { "title": "Política de privacidade · ClearFlow", "description": "Quais dados o ClearFlow lê, envia e armazena.", "source": "A versão oficial desta política está no GitHub:" },
+  "notFound": { "title": "Página não encontrada", "body": "Talvez haja um erro no endereço.", "home": "Voltar ao início" }
+}

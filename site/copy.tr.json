@@ -1,0 +1,149 @@
+{
+  "brand": "ClearFlow",
+  "languageLabel": "Dil seçin",
+  "title": "ClearFlow · Daha temiz yorumlar, daha anlaşılır çeviriler",
+  "description": "X, YouTube, Reddit, Xiaohongshu (RedNote) ve Hacker News'teki gereksiz yorumları ayıklayan açık kaynaklı bir Chrome uzantısı. Çevrilmemiş gönderileri, video başlıklarını ve yorumları çevirir; gerektiğinde mevcut çevirileri iyileştirir. Gizlenen her yorumun gerekçesini görebilirsiniz. Kendi API anahtarlarınızı kullanır; geliştiriciye veri göndermez.",
+  "nav": { "clean": "Yorum temizliği", "tx": "Çeviri", "cost": "Maliyet", "privacy": "Gizlilik", "faq": "SSS" },
+  "skip": "İçeriğe geç",
+  "hero": {
+    "eyebrow": "Açık kaynaklı Chrome uzantısı",
+    "h1": "Daha az gürültü, daha anlaşılır içerik",
+    "h1Parts": ["Daha az gürültü,", "daha anlaşılır içerik"],
+    "trust": ["Açık kaynak · MIT", "Geliştiriciye veri gönderilmez", "19 arayüz dili", "Kullandığınız kadar ödeyin"],
+    "lede": "Gereksiz yorumları ayıklar, eksik çevirileri tamamlar ve anlaşılması güç çevirileri iyileştirir. Gönderileri, video başlıklarını ve yorumları daha rahat okuyun.",
+    "cta": "Chrome'a ekle",
+    "ctaNote": "Kurulum ücretsiz"
+  },
+  "platforms": { "label": "Desteklenen siteler", "names": { "x": "X", "yt": "YouTube", "reddit": "Reddit", "xhs": "Xiaohongshu (RedNote)", "hn": "Hacker News" } },
+  "demo": {
+    "enlarge": "Büyük görüntüle",
+    "label": "ClearFlow öncesi ve sonrası",
+    "before": "Önce",
+    "after": "Sonra",
+    "tabs": { "x": "X", "xsex": "X · spam", "xhs": "RedNote", "reddit": "Reddit", "yt": "YouTube", "mark": "Reddit", "xhsmark": "RedNote" },
+    "sum": { "clean": "{n} yorum ayıklandı", "filler": "{n} yorum daraltıldı", "tx": "{n} öğe çevrildi" },
+    "note": "Demo sayfaları ve yorumlar kurgusaldır. ClearFlow'un ayıklama ve çeviri arayüzünü gösterir."
+  },
+  "eyebrow": { "clean": "Yorum temizliği", "learn": "Geri bildirim", "tx": "Çeviri", "how": "Nasıl çalışır?", "cost": "Maliyet", "privacy": "Gizlilik", "faq": "SSS" },
+  "clean": {
+    "h2": "Gereksiz yorumlar azalsın, sohbet öne çıksın",
+    "lede": "Bot spamını, istenmeyen tanıtımları, dolandırıcılığı, hakaretleri ve cinsel içerikli yanıtları ayıklayarak yararlı yorumları bulmayı kolaylaştırır.",
+    "points": [
+      ["Gizlenen her yorumun bir gerekçesi var", "Yorumun neden gizlendiğini görün, aslını açın veya hatalı kararı bildirin."],
+      ["Kısa tepkiler tek yerde", "‘Güzel’ ve ‘+1’ gibi kısa yanıtlar, üstteki tek bir bildirimin altında daraltılır."],
+      ["Daha az bildirim", "Art arda gizlenen yanıtlar tek bildirimde toplanır. Çok spam olan konularda üstte yalnızca sayı gösterilir."]
+    ],
+    "scenes": ["x", "yt", "reddit", "xhs"],
+    "captions": {
+      "x": "Tekrarlanan tanıtımlar birleştirilir; hakaretler ve kısa tepkiler ayrı ele alınır.",
+      "xsex": "Bir teknoloji gönderisindeki cinsel içerikli tanıtımlar ve airdrop spamı ayıklanır.",
+      "xhs": "Tanıtım yorumları gizlenir, tekrarlanan mesajlar bir araya getirilir.",
+      "yt": "Sahte kullanıcı deneyimleri ayıklanır, yalnızca emoji içeren yanıtlar daraltılır.",
+      "reddit": "Konuyla ilgisiz bir reklam ayıklanır, kısa tepkiler daraltılır."
+    }
+  },
+  "learn": {
+    "h2": "Gözden kaçan spamı işaretleyin",
+    "lede": "Gözden kaçan bir spam yanıtını işaretleyip gizleyin. ClearFlow, benzer spamı tanımak için örneklerinizden yararlanır.",
+    "steps": [
+      ["Gözden kaçan yanıtı işaretleyin", "X'te yanıtın ‘…’ menüsünden ‘Bu yanıtı gizle’yi seçin. Diğer sitelerde imleci yanıtın üzerine getirip yazarın yanındaki huni simgesine tıklayın."],
+      ["Benzer spamı belirleyin", "Benzer spam olarak belirlenen yanıtlar gizlenir; kararda işaretlediğiniz örneğin kullanıldığı belirtilir."],
+      ["İstediğiniz zaman geri alın", "İşaretlemeyi hemen geri alabilir veya kayıtlı örnekleri Ayarlar'dan silebilirsiniz."]
+    ],
+    "before": "İşaretlemeden önce",
+    "after": "Geri bildirimden sonra",
+    "scenes": ["mark", "xhsmark"],
+    "captions": {
+      "mark": "Örnek: Bir tanıtım yanıtını işaretlemek, benzer ifadeler kullanan iki yanıtı daha bulmaya yardımcı olur.",
+      "xhsmark": "Örnek: Bir grup davetini işaretlemek, benzer iki tanıtımı daha bulmaya yardımcı olur."
+    }
+  },
+  "tx": {
+    "h2": "Daha doğal, daha anlaşılır çeviriler",
+    "lede": "Çevrilmemiş metinleri çevirir, anlaşılması güç çevirileri iyileştirir. Sayfadan ayrılmadan anlatılmak isteneni takip edin.",
+    "points": [
+      ["Eksik çevirileri tamamlayın", "Akıştaki gönderileri, video başlıklarını ve açıklamalarını, yorumları kendi dilinizde okuyun."],
+      ["Gerektiğinde mevcut çeviriyi iyileştirin", "ClearFlow, X gönderilerini yeniden çevirebilir; YouTube'un otomatik çeviri altyazılarını kullandığınızda da gerektiğinde bunları iyileştirebilir."],
+      ["Yerinde okuyun, dilediğinizde karşılaştırın", "Bağlantılar ve biçimlendirme korunur. İstediğiniz zaman özgün metne veya platformun çevirisine dönebilirsiniz."]
+    ],
+    "scenes": ["reddit", "yt", "xhs"],
+    "captions": {
+      "reddit": "Farklı dillerdeki bisiklet tavsiyelerini Türkçe okuyun.",
+      "yt": "Dünyanın dört bir yanından video başlıklarını ve yorumları Türkçe okuyun.",
+      "xhs": "RedNote gönderisini ve yorumlarını Türkçe okuyun."
+    }
+  },
+  "control": {
+    "points": ["Her site için ayrı ayar", "Yorum temizliği ve çeviri için ayrı kontroller", "Üç ayıklama düzeyi", "Bu sayfadaki işlem sayıları"],
+    "h2": "Her siteyi kendinize göre ayarlayın",
+    "body": "Her site için ayıklama kurallarını, hassasiyeti ve çeviriyi seçin. Araç çubuğu açılır penceresinde bu sayfa, bugün ve son yedi gün için işlem sayılarını görün.",
+    "altPopup": "ClearFlow açılır penceresi: Bu sayfada gizlenen ve çevrilen yanıt sayıları",
+    "altSettings": "ClearFlow ayarları: Reddit için ayıklama kuralları ve çeviri"
+  },
+  "how": {
+    "h2": "ClearFlow nasıl çalışır?",
+    "steps": [
+      ["Önce yerel kurallar", "Yönlendirme bağlantılarını, gizlenmiş iletişim bilgilerini ve tekrarlanan mesajları yapılarından tanır. API anahtarı veya ödeme gerekmez."],
+      ["AI bağlamı inceler", "Yerel kuralların sınıflandıramadığı yanıtlar, asıl gönderiyle birlikte TypeSafe'in Jev modeline gönderilir. Model tanıtım, hakaret ve cinsel içeriği seçtiğiniz eşiklere göre değerlendirir."],
+      ["Çeviriyi OpenRouter yapar", "Metin, seçtiğiniz modele gider: Varsayılan OpenAI, yedek DeepSeek. Yazar bilgisi veya gönderi kimliği olmadan yalnızca metin gönderilir."]
+    ]
+  },
+  "cost": {
+    "h2": "Yalnızca kullandığınız kadar ödeyin",
+    "body": "Kendi TypeSafe ve OpenRouter hesaplarınızı kullanır, her hizmete doğrudan ödeme yaparsınız. İstekler ClearFlow sunucularından geçmez.",
+    "stat": "≈ $0.10",
+    "statLabel": "X'te yaklaşık 5.000 yanıtı okumanın tahmini maliyeti; ayıklama ve gerektiğinde çeviri dahildir. Gerçek maliyet, içeriğe ve modele göre değişir.",
+    "points": ["Ayarlar, bu ayki harcamanızı ve son yedi güne göre tahmini aylık maliyeti gösterir.", "OpenRouter anahtarınız için aylık kullanım limiti belirleyebilirsiniz.", "Yerel ayıklama, API anahtarı olmadan da çalışır."],
+    "cta": "API anahtarlarını alın"
+  },
+  "privacy": {
+    "h2": "Geliştiriciye veri gönderilmez",
+    "items": [
+      ["İzleme veya raporlama yok", "Kullanım ve maliyet istatistikleri cihazınızda kalır. Analiz veya çökme raporu gönderilmez; reklam kodu yoktur."],
+      ["Hizmet sağlayıcılara doğrudan bağlantı", "AI özellikleri, ilgili gönderi ve yorumları anahtarlarınızla ayıklama için TypeSafe'e, çeviri için OpenRouter'a doğrudan gönderir."],
+      ["Anahtarlar ve kayıtlar cihazınızda kalır", "Anahtarlar, sitelerin erişemediği uzantıya ait veritabanında saklanır. Uzantıyı kaldırınca yerel veriler silinir."],
+      ["Kod herkese açık", "MIT lisanslı kod GitHub'dadır. Verilerin nasıl işlendiğini ve nereye gönderildiğini inceleyebilirsiniz."]
+    ],
+    "more": "Gizlilik politikasının tamamını okuyun"
+  },
+  "faq": {
+    "h2": "Sık sorulan sorular",
+    "items": [
+      ["Neden kendi API anahtarlarım gerekiyor?", "İçeriğiniz doğrudan hizmet sağlayıcılara gider ve ClearFlow aboneliği ödemeniz gerekmez. Başlamak için hizmetlerde hesap açıp API anahtarı oluşturun. <a href=\"keys/\">API anahtarı kurulumu</a>"],
+      ["Anahtar olmadan çalışır mı?", "Evet. Yerel kurallar, yönlendirme bağlantısı veya gizli iletişim bilgisi içeren yanıtları ve birçok hesabın paylaştığı aynı ifadeleri yine gizler. Çeviri ile hakaret, cinsel içerik ve ‘güzel’ gibi kısa yanıtları belirlemek için API anahtarları gerekir."],
+      ["Normal yorumları da gizler mi?", "Bazen olabilir. Her gizlenen yanıtın gerekçesini görebilir, yanıtı açabilir veya hatayı bildirebilirsiniz. Ayıklama düzeyini her site için ayrı ayarlayabilirsiniz. Çok fazla yanıt gizleniyorsa Ayarlar'da ‘Gevşek’ düzeyini seçin."],
+      ["Hangi siteler ve tarayıcılar destekleniyor?", "X, Reddit, YouTube, Xiaohongshu (RedNote) ve Hacker News. Chrome 120 veya üzeri ile Edge, Arc, Brave ve diğer Chromium tabanlı tarayıcılar."],
+      ["Hangi diller destekleniyor?", "Arayüz 19 dili destekler. Ayarlar ve açılır pencere tarayıcı dilinizi kullanır. Sayfa içi etiketler ve çeviri hedefi genellikle sitenin arayüz dilini izler. Hacker News her zaman tarayıcı dilinizi kullanır; diğer sitelerde arayüz dili belirlenemezse yine tarayıcı dili kullanılır."],
+      ["X veya YouTube ile bağlantısı var mı?", "Hayır. ClearFlow bağımsız bir açık kaynak projesidir; X, Reddit, YouTube (Google), Xiaohongshu veya Y Combinator ile bağlantılı değildir."],
+      ["Sorunları nasıl bildirebilirim?", "Uzantı ayarlarındaki Geri Bildirim bölümünü kullanın, <a href=\"https://github.com/remember2015/clearflow/issues\">GitHub</a>'da bir konu açın veya <a href=\"mailto:developer@ohmyai.app\">developer@ohmyai.app</a> adresine yazın."]
+    ]
+  },
+  "final": { "h2": "Dikkatinizi okumak istediğinize verin", "cta": "Chrome'a ekle" },
+  "footer": { "privacy": "Gizlilik politikası", "keys": "API anahtarı kurulumu", "license": "MIT lisansı", "disclaimer": "ClearFlow'un X, Reddit, YouTube, Xiaohongshu veya Y Combinator ile bağlantısı yoktur." },
+  "keys": {
+    "title": "API anahtarlarını ayarlayın · ClearFlow",
+    "description": "AI ile yorum ayıklama ve çeviri için ClearFlow'u TypeSafe ve OpenRouter'a bağlayın.",
+    "h1": "API anahtarlarını ayarlayın",
+    "lede": "AI ile yorum ayıklama TypeSafe'i, çeviri OpenRouter'ı kullanır. Her hizmet için ayrı bir API anahtarı gerekir ve kullanımınıza göre sağlayıcılara doğrudan ödeme yaparsınız. Anahtarları ilk kurulumda girin veya daha sonra Ayarlar → Bağlantılar ve maliyet bölümünden değiştirin.",
+    "sections": [
+      {
+        "h2": "TypeSafe: AI ile yorum ayıklama", "tag": "Yorum temizliği",
+        "steps": ["<a href=\"https://console.typesafe.ai/\">TypeSafe konsolunu</a> açın, hesap oluşturup oturum açın.", "<a href=\"https://console.typesafe.ai/keys\">Anahtarlar (Keys) sayfasında</a> bir anahtar oluşturup kopyalayın.", "Anahtarı ClearFlow ayarlarındaki ‘Jev (TypeSafe)’ alanına yapıştırın."],
+        "note": "Ücret, kullanılan token miktarına göre hesaplanır. Tekrarlanan istekleri azaltmak için sonuçlar en fazla yedi gün önbellekte tutulur."
+      },
+      {
+        "h2": "OpenRouter: çeviri", "tag": "Çeviri",
+        "steps": ["<a href=\"https://openrouter.ai/\">OpenRouter</a>'ı açın, hesap oluşturup oturum açın. Kredi (Credits) sayfasından bakiye yükleyin.", "<a href=\"https://openrouter.ai/keys\">Anahtarlar (Keys) sayfasında</a> Anahtar Oluştur'a (Create Key) tıklayın. Harcamayı kontrol etmek için aylık sıfırlanan bir limit belirleyin; örneğin $2.", "sk-or- ile başlayan anahtarı kopyalayıp ClearFlow ayarlarındaki ‘OpenRouter’ alanına yapıştırın."],
+        "note": "Çeviride varsayılan olarak OpenAI, yedek olarak DeepSeek kullanılır. Modeli Ayarlar'dan değiştirebilirsiniz."
+      }
+    ],
+    "after": [
+      ["Bağlantıyı kontrol edin", "Geçerli bir anahtarda onay işareti görünür. Bağlantı başarısızsa nedeni gösterilir; ‘Bağlantıyı test et’ ile yeniden deneyebilirsiniz."],
+      ["Gereken özellikleri seçin", "Yalnızca TypeSafe anahtarı AI ile yorum ayıklamayı, yalnızca OpenRouter anahtarı çeviriyi etkinleştirir. Yerel kurallar anahtar olmadan da çalışır."],
+      ["Anahtarlarınızı koruyun", "Anahtarlar yalnızca tarayıcınızda saklanır. Geliştirici dahil kimseyle paylaşmayın. Bir anahtarın açığa çıktığından şüpheleniyorsanız sağlayıcının panelinden eski anahtarı silip yenisini oluşturun."]
+    ],
+    "back": "Ana sayfaya dön"
+  },
+  "privacyPage": { "title": "Gizlilik politikası · ClearFlow", "description": "ClearFlow'un hangi verileri okuduğunu, gönderdiğini ve cihazınızda sakladığını öğrenin.", "source": "Bu politikanın geçerli kaynak metni GitHub'da tutulur:" },
+  "notFound": { "title": "Sayfa bulunamadı", "body": "Bağlantı yanlış yazılmış olabilir.", "home": "Ana sayfaya dön" }
+}

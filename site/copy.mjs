@@ -1,3 +1,4 @@
+import fs from "node:fs";
 // Website copy, one object per language. Strings may contain HTML (written here, never from users).
 // Keep every claim true for the version on the Chrome Web Store, and keep the wording in line with the store descriptions
 // (public/docs/store/descriptions/) and README. The cost figure is the developer's own usage, measured 2026-10-12 (extension/README.md).
@@ -6,34 +7,31 @@ export const STORE = "https://chromewebstore.google.com/detail/clearflow/dfojglb
 export const REPO = "https://github.com/remember2015/clearflow";
 export const MAIL = "developer@ohmyai.app";
 
-export const LANGS = {
-  zh: { html: "zh-CN", assets: "zh-CN", name: "中文", og: "zh_CN" },
-  en: { html: "en", assets: "en", name: "English", og: "en_US" },
-  ja: { html: "ja", assets: "ja", name: "日本語", og: "ja_JP" },
-};
+export { LANGS } from "./locales.mjs";
 
 export const COPY = {
   zh: {
     brand: "清流",
-    title: "清流 · 清理垃圾评论，原地翻译外文",
-    description: "清流是开源的 Chrome 扩展，自动清理 X、YouTube、Reddit、小红书和 Hacker News 的垃圾评论，原地翻译外文帖子和评论。每条清理都有原因，可随时查看原文。使用你自己的 API 密钥，不向开发者发送数据。",
+    languageLabel: "选择语言",
+    title: "清流 · 清理垃圾评论，改善外文阅读",
+    description: "清流是开源的 Chrome 扩展，自动清理 X、YouTube、Reddit、小红书和 Hacker News 的垃圾评论，补全外文帖子、视频标题和评论的翻译，并按需改善已有译文。每条清理都有原因，可随时查看原文。使用你自己的 API 密钥，不向开发者发送数据。",
     nav: {"clean": "清理", "tx": "翻译", "cost": "费用", "privacy": "隐私", "faq": "常见问题"},
     skip: "跳到正文",
     hero: {
       eyebrow: "开源 Chrome 扩展",
-      h1: "让评论区，更好读",
-      h1Parts: ["让评论区，", "更好读"],
-      lede: "自动清理垃圾评论，原地翻译外文帖子和评论，让阅读少些干扰。",
+      h1: "内容更好懂，阅读更清爽",
+      h1Parts: ["内容更好懂，", "阅读更清爽"],
+      lede: "清理垃圾评论，补全并改善翻译。从信息流里的帖子到视频标题和评论，让你更轻松地读懂内容。",
       trust: ["开源 · MIT", "不向开发者发送数据", "19 种界面语言", "按量付费，无需订阅"],
       cta: "添加到 Chrome",
       ctaNote: "免费安装",
     },
     platforms: {"label": "支持平台", "names": {"x": "X", "yt": "YouTube", "reddit": "Reddit", "xhs": "小红书", "hn": "Hacker News"}},
-    demo: {"enlarge": "查看大图", "label": "使用清流前后对比", "before": "使用前", "after": "使用后", "tabs": {"xnews": "X", "xsex": "X · 垃圾回复", "x": "X", "xhs": "小红书", "reddit": "Reddit", "yt": "YouTube", "hn": "Hacker News", "mark": "Reddit", "xhsmark": "小红书"},"sum": {"clean": "清理 {n} 条", "filler": "收起 {n} 条", "tx": "翻译 {n} 段"}, "note": "演示使用模拟页面和评论，清理与翻译均由清流实际完成。"},
+    demo: {"enlarge": "查看大图", "label": "使用清流前后对比", "before": "使用前", "after": "使用后", "tabs": {"xnews": "X", "xsex": "X · 垃圾回复", "x": "X", "xhs": "小红书", "reddit": "Reddit", "yt": "YouTube", "hn": "Hacker News", "mark": "Reddit", "xhsmark": "小红书"},"sum": {"clean": "清理 {n} 条", "filler": "收起 {n} 条", "tx": "翻译 {n} 段"}, "note": "页面和评论均为虚构示例，用于展示清流的清理和翻译效果。"},
     eyebrow: {"clean":"清理","learn":"手动标记","tx":"翻译","how":"工作原理","cost":"费用","privacy":"隐私","faq":"常见问题"},
     clean: {"h2": "垃圾评论，自动清理", "lede": "过滤刷屏、推广、骗局、辱骂和色情回复，让有用的讨论更容易找到。", "points": [["原因清楚，原文可查", "每条清理都显示原因。点击即可查看原文，也能反馈误判。"],["简短附和，集中收起", "“赞”“+1”等缺乏实质内容的回复，收在评论区顶部的一行提示中。"],["重复提示，合并显示", "连续清理的回复合并为一条提示。垃圾回复过多时，在顶部统一显示数量。"]], "scenes": ["x", "yt", "reddit", "xhs"],"captions": {"xnews": "识别重复推广、色情回复和无实质内容的短评。", "xsex": "清理数码帖下的色情推广和空投广告。", "x": "重复推广合并显示，辱骂和短评分别处理。", "xhs": "清理引流评论，将“码住”“蹲”等短评集中收起。", "yt": "清理骗局推广，收起纯表情回复。", "reddit": "清理无关广告，收起“nice”等简短附和。"}},
     learn: {"h2": "手动标记，帮助识别同类垃圾", "lede": "遇到漏掉的垃圾评论，可以手动清理。你的标记会作为识别样例，帮助清流判断类似回复。", "steps": [["标记漏掉的垃圾", "X：在评论的“…”菜单中选“清理掉这条”。其他网站：将鼠标移到评论上，点击作者行末的漏斗图标。"],["为后续识别提供参考", "识别出的同类垃圾会被清理，并注明与手动标记的内容相似。"],["随时撤销标记", "标记后可立即撤销，也能在设置中删除已有标记。"]],"before": "标记前", "after": "标记后的效果", "scenes": ["mark", "xhsmark"],"captions": {"mark": "示例：标记一条推广评论后，另外两条相似话术也被识别。", "xhsmark": "示例：标记一条群聊推广后，另外两条类似评论也被识别。"}},
-    tx: {"h2": "外文讨论，原地读懂", "lede": "帖子和评论直接翻成你的语言，保留链接与格式，随时切回原文。", "points": [["译文留在原处", "无需跳转页面，译文同时注明原文语言。"],["原文随时可查", "点击“看原文”，即可在原文和译文之间切换。"],["保留合适的 Grok 译文", "在 X 上，只有 Grok 译文翻得不好时，才换成清流的译文。"]], "scenes": ["reddit", "yt", "hn", "xhs"],"captions": {"reddit": "不同语言的骑行建议，统一翻成中文。", "yt": "来自不同国家的烹饪评论，直接用中文阅读。", "hn": "英文技术讨论翻成中文，保留代码和链接。", "xhs": "英文、韩文评论直接翻成中文。"}},
+    tx: {"h2": "让译文更自然、更好懂", "lede": "补上未翻译的内容，改善生硬、难懂的译文。看帖子、视频和评论，都能少些语言障碍。", "points": [["补全未翻译的内容", "翻译信息流里的帖子、视频标题与简介，以及评论中的外文。"], ["按需改进已有译文", "在 X 中按需重译；使用 YouTube 自动翻译字幕时，也会检查译文，并按需改善。"], ["留在原处，随时对照", "译文直接显示在原处，保留链接与格式，随时切回原文或平台译文。"]], "scenes": ["reddit", "yt", "hn", "xhs"], "captions": {"reddit": "不同语言的骑行建议，统一翻成中文。", "yt": "视频标题与多语评论，直接用中文阅读。", "hn": "英文技术讨论翻成中文，保留代码和链接。", "xhs": "英文、韩文评论直接翻成中文。"}},
     control: {
       points: [
         "按网站设置",
@@ -57,8 +55,8 @@ export const COPY = {
     cost: {
       h2: "按量付费，无需订阅",
       body: "使用你自己的 TypeSafe 和 OpenRouter 账号，费用直接支付给对应服务。请求不经过清流的服务器。",
-      stat: "$0.10",
-      statLabel: "作者使用样本：2.4 天浏览 X 上约 5,000 条回复，清理与翻译共花费 $0.10，折合约 $1.30/月。实际费用取决于使用量。",
+      stat: "≈ $0.10",
+      statLabel: "浏览约 5,000 条 X 回复的费用估算，含清理与按需翻译。实际费用因内容和模型而异。",
       points: [
         "设置页显示本月花费，并根据近 7 天用量估算月费。",
         "OpenRouter 密钥可设置每月用量上限。",
@@ -88,7 +86,7 @@ export const COPY = {
         ["发现问题怎么反馈？", `使用扩展设置页中的“反馈”，也可以在 <a href="${REPO}/issues">GitHub</a> 提交问题，或发送邮件至 <a href="mailto:${MAIL}">${MAIL}</a>。`],
       ],
     },
-    final: {"h2": "让讨论更清楚，让阅读更轻松", "cta": "添加到 Chrome"},
+    final: {"h2": "把注意力留给内容", "cta": "添加到 Chrome"},
     footer: { privacy: "隐私政策", keys: "API 密钥设置", license: "MIT 许可", disclaimer: "清流与 X、Reddit、YouTube、小红书、Y Combinator 均无关联。" },
     keys: {
       title: "获取 API 密钥 · 清流",
@@ -120,25 +118,26 @@ export const COPY = {
 
   en: {
     brand: "ClearFlow",
-    title: "ClearFlow · Filter junk replies and translate in place",
-    description: "An open-source Chrome extension that filters junk replies on X, YouTube, Reddit, RedNote and Hacker News, and translates posts and comments in place. Every hidden reply has an explanation. Uses your own API keys; no data is sent to the developer.",
+    languageLabel: "Choose language",
+    title: "ClearFlow · Less clutter, clearer translations",
+    description: "An open-source Chrome extension that filters junk replies on X, YouTube, Reddit, RedNote and Hacker News, fills in missing translations for posts, video titles and comments, and improves translations where needed. Every hidden reply has an explanation. Uses your own API keys; no data is sent to the developer.",
     nav: {"clean": "Filtering", "tx": "Translation", "cost": "Cost", "privacy": "Privacy", "faq": "FAQ"},
     skip: "Skip to content",
     hero: {
       eyebrow: "Open-source Chrome extension",
-      h1: "Comment sections, minus the junk",
-      h1Parts: ["Comment sections,", "minus the junk"],
+      h1: "Less clutter. More clarity.",
+      h1Parts: ["Less clutter.", "More clarity."],
       trust: ["Open source · MIT", "No data sent to us", "19 interface languages", "Pay as you go"],
-      lede: "Filter junk replies and translate posts and comments without leaving the page.",
+      lede: "Filter junk replies, fill in missing translations and improve awkward translations. Read posts, video titles and comments with less effort.",
       cta: "Add to Chrome",
       ctaNote: "Free to install",
     },
     platforms: {"label": "Works on", "names": {"x": "X", "yt": "YouTube", "reddit": "Reddit", "xhs": "RedNote", "hn": "Hacker News"}},
-    demo: {"enlarge": "View full size", "label": "Before and after ClearFlow", "before": "Before", "after": "After", "tabs": {"x": "X", "xsex": "X · bots", "xhs": "RedNote", "reddit": "Reddit", "yt": "YouTube", "mark": "Reddit", "xhsmark": "RedNote"},"sum": {"clean": "{n} filtered", "filler": "{n} collapsed", "tx": "{n} translated"}, "note": "Demo pages and comments are fictional. Filtering and translation are performed by ClearFlow."},
+    demo: {"enlarge": "View full size", "label": "Before and after ClearFlow", "before": "Before", "after": "After", "tabs": {"x": "X", "xsex": "X · bots", "xhs": "RedNote", "reddit": "Reddit", "yt": "YouTube", "mark": "Reddit", "xhsmark": "RedNote"},"sum": {"clean": "{n} filtered", "filler": "{n} collapsed", "tx": "{n} translated"}, "note": "Fictional pages and comments illustrate ClearFlow’s filtering and translation features."},
     eyebrow: {"clean":"Filtering","learn":"Your feedback","tx":"Translation","how":"How it works","cost":"Cost","privacy":"Privacy","faq":"FAQ"},
     clean: {"h2": "Less junk. More room for discussion.", "lede": "Filter bot spam, unwanted promotions, scams, abuse and sexual content so useful replies are easier to find.", "points": [["A reason for every hidden reply", "See why a reply was hidden, open the original or report a mistake."],["Short reactions, neatly collapsed", "Replies like “nice” and “+1” are grouped behind one notice at the top."],["Fewer notices to scroll past", "Consecutive hidden replies share one notice. In heavily spammed threads, a single count appears at the top."]], "scenes": ["x", "yt", "reddit", "xhs"],"captions": {"x": "Repeated promotions are grouped together; abuse and short reactions are handled separately.", "xsex": "Sexual promotions and airdrop spam are filtered from a gadget discussion.", "xhs": "Promotional comments are hidden, with repeated messages grouped together.", "yt": "Fake testimonials are filtered out and emoji-only replies are collapsed.", "reddit": "An unrelated ad is filtered out; short reactions are collapsed."}},
     learn: {"h2": "Help catch the spam that gets through", "lede": "Flag a missed spam reply to hide it. ClearFlow uses your examples to help recognize similar spam.", "steps": [["Flag a missed reply", "On X, choose “Hide this reply” from the reply’s “…” menu. On other sites, hover over a reply and click the funnel icon beside the author."],["Help identify similar spam", "Replies identified as similar spam are hidden, with a note linking the decision to your feedback."],["Undo at any time", "Undo immediately after marking, or remove saved examples in Settings."]],"before": "Before marking", "after": "After your feedback", "scenes": ["mark", "xhsmark"],"captions": {"mark": "Example: flagging one promotional reply helps identify two others using similar wording.", "xhsmark": "Example: flagging one group invitation helps identify two similar promotions."}},
-    tx: {"h2": "Read the discussion in your language", "lede": "Translate posts and comments in place, with links and formatting intact. Switch back to the original at any time.", "points": [["Stay on the page", "Translations appear where the original text was, with the source language shown."],["Keep the original within reach", "Use “Show original” to switch between the original and translated text."],["Keep good Grok translations", "On X, ClearFlow replaces a Grok translation only when it's poor."]], "scenes": ["reddit", "yt", "xhs"],"captions": {"reddit": "Cycling advice in several languages, translated into English.", "yt": "Cooking comments from around the world, translated into English.", "xhs": "Read a RedNote post and its comments in English."}},
+    tx: {"h2": "Translations that make more sense", "lede": "Fill in missing translations and improve awkward translations, so you can follow the meaning without leaving the page.", "points": [["Translate what is still untranslated", "Read feed posts, video titles and descriptions, and comments in your language."], ["Improve translations where needed", "ClearFlow can retranslate posts on X and improve YouTube captions when you use auto-translate."], ["Read in place, compare anytime", "Keep links and formatting, and switch back to the original text or the platform’s translation."]], "scenes": ["reddit", "yt", "xhs"], "captions": {"reddit": "Cycling advice in several languages, translated into English.", "yt": "Video titles and comments from around the world, translated into English.", "xhs": "Read a RedNote post and its comments in English."}},
     control: {
       points: [
         "Settings for each site",
@@ -162,8 +161,8 @@ export const COPY = {
     cost: {
       h2: "Pay for what you use",
       body: "Use your own TypeSafe and OpenRouter accounts and pay each service directly. Requests never pass through ClearFlow’s servers.",
-      stat: "$0.10",
-      statLabel: "The developer spent $0.10 on filtering and translation over 2.4 days and about 5,000 replies on X—roughly $1.30/month. Your cost depends on usage.",
+      stat: "≈ $0.10",
+      statLabel: "Estimated cost of browsing 5,000 replies on X, including filtering and translation where needed. Actual costs vary with the content and model.",
       points: [
         "Settings show this month’s spending and an estimate based on the past seven days.",
         "You can set a monthly credit limit for your OpenRouter key.",
@@ -193,7 +192,7 @@ export const COPY = {
         ["How do I report a problem?", `Use Feedback in the extension's settings, open an issue on <a href="${REPO}/issues">GitHub</a>, or write to <a href="mailto:${MAIL}">${MAIL}</a>.`],
       ],
     },
-    final: {"h2": "Make comment sections readable again", "cta": "Add to Chrome"},
+    final: {"h2": "Focus on what you came to read", "cta": "Add to Chrome"},
     footer: { privacy: "Privacy policy", keys: "API key setup", license: "MIT license", disclaimer: "ClearFlow is not affiliated with X, Reddit, YouTube, Xiaohongshu or Y Combinator." },
     keys: {
       title: "Set up your API keys · ClearFlow",
@@ -225,25 +224,26 @@ export const COPY = {
 
   ja: {
     brand: "ClearFlow",
-    title: "ClearFlow · スパムを非表示に、外国語をその場で翻訳",
-    description: "X・YouTube・Reddit・小紅書・Hacker News のスパム返信を非表示にし、投稿やコメントをその場で翻訳するオープンソースの Chrome 拡張機能です。非表示の理由と元の返信を確認できます。ご自身の API キーを使用し、開発者にはデータを送りません。",
+    languageLabel: "言語を選択",
+    title: "ClearFlow · スパムを減らして、翻訳を読みやすく",
+    description: "X・YouTube・Reddit・小紅書・Hacker News のスパム返信を非表示にし、投稿・動画のタイトル・コメントの未翻訳部分を翻訳し、必要に応じて訳文を改善するオープンソースの Chrome 拡張機能です。非表示の理由と元の返信を確認できます。ご自身の API キーを使用し、開発者にはデータを送りません。",
     nav: {"clean":"フィルタリング","tx":"翻訳","cost":"料金","privacy":"プライバシー","faq":"よくある質問"},
     skip: "本文へスキップ",
     hero: {
       eyebrow: "オープンソースの Chrome 拡張機能",
-      h1: "コメント欄を、もっと読みやすく",
-      h1Parts: ["コメント欄を、", "もっと読みやすく"],
+      h1: "読みたい内容を、もっとわかりやすく",
+      h1Parts: ["読みたい内容を、", "もっとわかりやすく"],
       trust: ["MIT ライセンス", "開発者への送信なし", "19 言語に対応", "従量課金"],
-      lede: "スパム返信を非表示にし、外国語の投稿やコメントをその場で翻訳します。",
+      lede: "スパム返信を減らし、未翻訳の文章やわかりにくい訳文を読みやすく。フィードの投稿から動画のタイトル、コメントまで、内容を理解しやすくします。",
       cta: "Chrome に追加",
       ctaNote: "インストール無料",
     },
     platforms: {"label": "対応サイト", "names": {"x": "X", "yt": "YouTube", "reddit": "Reddit", "xhs": "小紅書", "hn": "Hacker News"}},
-    demo: {"enlarge": "拡大して見る", "label": "ClearFlow の使用前後を比較", "before": "使用前", "after": "使用後", "tabs": {"xnews": "X", "xsex": "X · ボット", "x": "X", "xhs": "小紅書", "reddit": "Reddit", "yt": "YouTube", "hn": "Hacker News", "mark": "Reddit", "xhsmark": "小紅書"},"sum": {"clean": "{n} 件を非表示", "filler": "{n} 件を折りたたみ", "tx": "{n} 件を翻訳"}, "note": "デモ用の架空のページとコメントを、ClearFlow で実際に処理しています。"},
+    demo: {"enlarge": "拡大して見る", "label": "ClearFlow の使用前後を比較", "before": "使用前", "after": "使用後", "tabs": {"xnews": "X", "xsex": "X · ボット", "x": "X", "xhs": "小紅書", "reddit": "Reddit", "yt": "YouTube", "hn": "Hacker News", "mark": "Reddit", "xhsmark": "小紅書"},"sum": {"clean": "{n} 件を非表示", "filler": "{n} 件を折りたたみ", "tx": "{n} 件を翻訳"}, "note": "架空のページとコメントで、ClearFlow のフィルタリングと翻訳機能を紹介しています。"},
     eyebrow: {"clean":"フィルタリング","learn":"手動で指定","tx":"翻訳","how":"しくみ","cost":"料金","privacy":"プライバシー","faq":"よくある質問"},
     clean: {"h2": "スパムを減らして、議論を読みやすく", "lede": "ボットの連投、勧誘、詐欺、誹謗中傷、性的な返信を非表示にし、読むべきコメントを見つけやすくします。", "points": [["非表示の理由を確認", "返信ごとに理由を表示します。元の返信を読んだり、判定ミスを報告したりできます。"],["短い相づちは、まとめて表示", "「草」「それな」などの短い返信は、コメント欄の上部にまとめます。"],["通知もまとめて、すっきりと", "連続する非表示の返信は、1 つの通知にまとめます。スパムが多い場合は、上部に件数を表示します。"]], "scenes": ["x", "yt", "reddit", "xhs"],"captions": {"xnews": "繰り返しの宣伝、性的な返信、絵文字だけのコメントを整理します。", "xsex": "ガジェットの投稿から、性的な宣伝やエアドロップの勧誘を非表示に。", "x": "繰り返しの宣伝をまとめ、誹謗中傷や短い相づちも整理します。", "xhs": "勧誘コメントを非表示にし、短い相づちはまとめます。", "yt": "宣伝目的の体験談を非表示にし、絵文字だけの返信はまとめます。", "reddit": "無関係な広告を非表示にし、短い相づちはまとめます。"}},
     learn: {"h2": "見逃したスパムは、手動で指定", "lede": "見逃したスパムを指定すると、その返信を非表示にできます。指定した内容は、似たスパムを見分ける手がかりになります。", "steps": [["スパム返信を指定", "X では返信の「…」メニューから「この返信を非表示にする」を選択。ほかのサイトでは返信にカーソルを合わせ、投稿者名の横のフィルターアイコンを押します。"],["似たスパムの判定に活用", "似たスパムと判定した返信を非表示にし、手動で指定した内容に基づく判定であることを表示します。"],["いつでも取り消し可能", "指定直後に取り消すことも、設定から保存済みの例を削除することもできます。"]],"before": "マーク前", "after": "指定後の表示", "scenes": ["mark", "xhsmark"],"captions": {"mark": "使用例：宣伝コメントを 1 件指定すると、似た内容の 2 件も検出されます。", "xhsmark": "使用例：グループへの勧誘を 1 件指定すると、似た内容の 2 件も検出されます。"}},
-    tx: {"h2": "外国語の議論も、いつもの言語で", "lede": "投稿やコメントをその場で翻訳。リンクや書式を保ち、いつでも原文に戻せます。", "points": [["ページを離れずに読める", "元の文章と同じ場所に、原文の言語と訳文を表示します。"],["原文をすぐに確認", "「原文を表示」で、原文と訳文を切り替えられます。"],["適切な Grok 訳はそのまま", "X では、Grok 訳の質が低い場合のみ ClearFlow の訳文に置き換えます。"]], "scenes": ["reddit", "yt", "hn", "xhs"],"captions": {"reddit": "さまざまな言語のサイクリングのアドバイスを、日本語で読めます。", "yt": "世界各地から寄せられた料理のコメントを、日本語で読めます。", "hn": "英語の技術的な議論を日本語に。コードやリンクはそのままです。", "xhs": "小紅書の投稿とコメントを、日本語で読めます。"}},
+    tx: {"h2": "訳文を、もっと自然でわかりやすく", "lede": "未翻訳の文章を訳し、わかりにくい訳文を読みやすく。投稿も動画もコメントも、言葉の壁を減らします。", "points": [["未翻訳の文章も読める", "フィードの投稿、動画のタイトルや説明、コメントを、いつもの言語に翻訳します。"], ["必要に応じて訳文を改善", "X の投稿を再翻訳。YouTube で自動翻訳の字幕を使うときも、必要に応じて訳文を改善します。"], ["その場で読めて、いつでも比較", "リンクや書式はそのまま。原文やサイトの訳文に、いつでも切り替えられます。"]], "scenes": ["reddit", "yt", "hn", "xhs"], "captions": {"reddit": "さまざまな言語のサイクリングのアドバイスを、日本語で読めます。", "yt": "動画のタイトルも、世界各地からのコメントも、日本語で読めます。", "hn": "英語の技術的な議論を日本語に。コードやリンクはそのままです。", "xhs": "小紅書の投稿とコメントを、日本語で読めます。"}},
     control: {
       points: [
         "サイトごとに設定",
@@ -267,8 +267,8 @@ export const COPY = {
     cost: {
       h2: "使った分だけ、直接お支払い",
       body: "ご自身の TypeSafe と OpenRouter のアカウントを使用し、各サービスに直接支払います。通信は ClearFlow のサーバーを経由しません。",
-      stat: "$0.10",
-      statLabel: "開発者の使用例：X で 2.4 日間に約 5,000 件の返信を閲覧し、判定と翻訳に $0.10。月換算で約 $1.30 です。実際の費用は利用量によって変わります。",
+      stat: "≈ $0.10",
+      statLabel: "X で約 5,000 件の返信を読む場合の費用の目安。フィルタリングと必要な翻訳を含みます。実際の費用は内容やモデルによって変わります。",
       points: [
         "設定で今月の利用額と、過去 7 日間に基づく月額の見積もりを確認できます。",
         "OpenRouter のキーには、毎月の利用上限を設定できます。",
@@ -298,7 +298,7 @@ export const COPY = {
         ["問題を見つけたら？", `拡張機能の設定ページの「フィードバック」、<a href="${REPO}/issues">GitHub</a> の issue、または <a href="mailto:${MAIL}">${MAIL}</a> までお知らせください。`],
       ],
     },
-    final: {"h2": "返信欄を、もう一度読みやすく", "cta": "Chrome に追加"},
+    final: {"h2": "読みたい内容に、集中できる", "cta": "Chrome に追加"},
     footer: { privacy: "プライバシーポリシー", keys: "API キーの設定", license: "MIT ライセンス", disclaimer: "ClearFlow は X・Reddit・YouTube・小紅書・Y Combinator とは関係ありません。" },
     keys: {
       title: "API キーの設定 · ClearFlow",
@@ -328,3 +328,7 @@ export const COPY = {
     notFound: { title: "ページが見つかりません", body: "リンクが間違っているかもしれません。", home: "トップへ戻る" },
   },
 };
+
+for (const lang of ["ko", "tr", "fr", "pt"]) {
+  COPY[lang] = JSON.parse(fs.readFileSync(new URL(`./copy.${lang}.json`, import.meta.url), "utf8"));
+}

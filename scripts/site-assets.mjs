@@ -14,9 +14,9 @@ import { COPY, LANGS } from "../site/copy.mjs";
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
 const EXT = path.join(ROOT, "extension"), UI = path.join(ROOT, "ui"), OUT = path.join(ROOT, "site/assets");
-const SITE_LOCALES = ["en", "zh-CN", "ja"];
+const SITE_LOCALES = Object.values(LANGS).map((lang) => lang.assets);
 const ONLY = process.argv.includes("--locales") ? process.argv[process.argv.indexOf("--locales") + 1].split(",") : SITE_LOCALES;
-const SYS_LANG = { en: "en_US", "zh-CN": "zh_CN", ja: "ja_JP" };
+const SYS_LANG = { en: "en_US", "zh-CN": "zh_CN", ja: "ja_JP", ko: "ko_KR", tr: "tr_TR", fr: "fr_FR", pt: "pt_BR" };
 const CHROME = process.env.CHROME_PATH || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const puppeteer = createRequire(import.meta.url)(path.join(UI, "node_modules/puppeteer-core"));
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -172,6 +172,9 @@ for (const loc of ONLY) {
       await page.setViewport({ width: sc.width, height: 1300, deviceScaleFactor: 2 });
       await page.goto(BASE + sc.path + (off ? "/off" : ""), { waitUntil: "load" });
       await wait(off ? 600 : 4500);
+      if (await page.evaluate(() => document.body.innerText.includes("【替身补翻】"))) {
+        throw new Error(`${loc}/${sc.key}: missing showcase translation`);
+      }
       return page;
     };
     // the lowest comment still shown (X's main is min-height 100vh, cleaned posts are display:none)

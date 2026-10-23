@@ -1,5 +1,51 @@
 // Accessible platform tabs and explicit before/after controls.
 (() => {
+  // Static-host/local preview fallback. Production redirects these entry URLs in worker.js.
+  const entry = document.querySelector("[data-language-entry]");
+  if (entry) {
+    const links = [...entry.querySelectorAll("a[hreflang]")];
+    const choices = navigator.languages?.length ? navigator.languages : [navigator.language];
+    let target;
+    for (const language of choices) {
+      const tag = language.toLowerCase();
+      target = links.find((a) => a.hreflang.toLowerCase() === tag)
+        || links.find((a) => a.hreflang.toLowerCase().split("-")[0] === tag.split("-")[0]);
+      if (target) break;
+    }
+    target ||= links.find((a) => a.hreflang === "en");
+    if (target) location.replace(target.pathname + location.search + location.hash);
+  }
+  const notFound = [...document.querySelectorAll("[data-not-found-copy]")];
+  if (notFound.length) {
+    const route = location.pathname.split("/")[1];
+    const preferences = [route, ...(navigator.languages || [navigator.language])].map((tag) => tag.toLowerCase().split("-")[0]);
+    const language = preferences.find((tag) => notFound.some((node) => node.dataset.notFoundCopy === tag)) || "en";
+    for (const node of notFound) node.hidden = node.dataset.notFoundCopy !== language;
+    document.documentElement.lang = notFound.find((node) => !node.hidden).lang;
+  }
+  for (const picker of document.querySelectorAll(".langs")) {
+    const summary = picker.querySelector("summary");
+    for (const link of picker.querySelectorAll("a")) {
+      const url = new URL(link.href);
+      url.search = location.search;
+      url.hash = location.hash;
+      link.href = url.href;
+    }
+    picker.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && picker.open) {
+        picker.open = false;
+        summary.focus();
+        event.preventDefault();
+      }
+    });
+    document.addEventListener("click", (event) => {
+      if (!picker.contains(event.target)) picker.open = false;
+    });
+    picker.addEventListener("focusout", (event) => {
+      if (!picker.contains(event.relatedTarget)) picker.open = false;
+    });
+  }
+
   for (const demo of document.querySelectorAll(".demo")) {
     const tabs = [...demo.querySelectorAll('[role="tab"]')];
     const select = (tab, focus) => {

@@ -1,0 +1,317 @@
+{
+  "brand": "ClearFlow",
+  "languageLabel": "Choisir la langue",
+  "title": "ClearFlow · Moins de bruit, des traductions plus claires",
+  "description": "Extension Chrome open source qui filtre les réponses indésirables sur X, YouTube, Reddit, RedNote et Hacker News, traduit les publications, titres de vidéos et commentaires encore sans traduction, et améliore les traductions si nécessaire. Chaque réponse masquée est accompagnée d'une explication. Utilise vos propres clés API et n'envoie aucune donnée au développeur.",
+  "nav": {
+    "clean": "Filtrage",
+    "tx": "Traduction",
+    "cost": "Coût",
+    "privacy": "Confidentialité",
+    "faq": "Questions fréquentes"
+  },
+  "skip": "Aller au contenu",
+  "hero": {
+    "eyebrow": "Extension Chrome open source",
+    "h1": "Moins de bruit. Une lecture plus claire.",
+    "h1Parts": [
+      "Moins de bruit.",
+      "Une lecture plus claire."
+    ],
+    "trust": [
+      "Open source · licence MIT",
+      "Aucune donnée envoyée au développeur",
+      "Interface en 19 langues",
+      "Paiement à l'usage"
+    ],
+    "lede": "Filtrez les réponses indésirables, traduisez ce qui ne l'est pas encore et améliorez les traductions maladroites. Lisez plus facilement les publications, titres de vidéos et commentaires.",
+    "cta": "Ajouter à Chrome",
+    "ctaNote": "Installation gratuite"
+  },
+  "platforms": {
+    "label": "Compatible avec",
+    "names": {
+      "x": "X",
+      "yt": "YouTube",
+      "reddit": "Reddit",
+      "xhs": "RedNote",
+      "hn": "Hacker News"
+    }
+  },
+  "demo": {
+    "enlarge": "Agrandir l'image",
+    "label": "Avant et après ClearFlow",
+    "before": "Avant",
+    "after": "Après",
+    "tabs": {
+      "x": "X",
+      "xsex": "X · robots",
+      "xhs": "RedNote",
+      "reddit": "Reddit",
+      "yt": "YouTube",
+      "mark": "Reddit",
+      "xhsmark": "RedNote"
+    },
+    "sum": {
+      "clean": "{n} filtrées",
+      "filler": "{n} repliées",
+      "tx": "{n} traduites"
+    },
+    "note": "Les pages et commentaires de la démonstration sont fictifs. Ils illustrent l'interface de filtrage et de traduction de ClearFlow."
+  },
+  "eyebrow": {
+    "clean": "Filtrage",
+    "learn": "Vos signalements",
+    "tx": "Traduction",
+    "how": "Fonctionnement",
+    "cost": "Coût",
+    "privacy": "Confidentialité",
+    "faq": "Questions fréquentes"
+  },
+  "clean": {
+    "h2": "Moins de spam, plus de place pour discuter",
+    "lede": "Filtrez les messages automatiques, promotions importunes, arnaques, insultes et contenus sexuels pour retrouver plus facilement les réponses utiles.",
+    "points": [
+      [
+        "Une explication pour chaque réponse masquée",
+        "Voyez pourquoi une réponse a été masquée, affichez l'original ou signalez une erreur."
+      ],
+      [
+        "Les réactions brèves regroupées",
+        "Les réponses comme « sympa » ou « +1 » sont repliées derrière une seule indication en haut de la discussion."
+      ],
+      [
+        "Moins d'avis à faire défiler",
+        "Les réponses masquées à la suite partagent une indication. Si une discussion est envahie de spam, un compteur unique apparaît en haut."
+      ]
+    ],
+    "scenes": [
+      "x",
+      "yt",
+      "reddit",
+      "xhs"
+    ],
+    "captions": {
+      "x": "Les promotions répétées sont regroupées ; les insultes et réactions brèves sont traitées séparément.",
+      "xsex": "Les promotions à caractère sexuel et les publicités pour des airdrops sont filtrées dans une discussion sur les gadgets.",
+      "xhs": "Les commentaires promotionnels sont masqués et les messages répétés regroupés.",
+      "yt": "Les faux témoignages sont filtrés et les réponses composées uniquement d'émojis sont repliées.",
+      "reddit": "Une publicité sans rapport est filtrée ; les réactions brèves sont repliées."
+    }
+  },
+  "learn": {
+    "h2": "Signalez les spams non détectés",
+    "lede": "Signalez une réponse indésirable que ClearFlow n'a pas détectée pour la masquer. Vos exemples l'aident à reconnaître les messages similaires.",
+    "steps": [
+      [
+        "Signaler un spam non détecté",
+        "Sur X, choisissez « Masquer cette réponse » dans le menu « … » de la réponse. Sur les autres sites, survolez-la et cliquez sur l'icône d'entonnoir à côté de l'auteur."
+      ],
+      [
+        "Reconnaître les spams similaires",
+        "Les réponses reconnues comme similaires sont masquées, avec une indication reliant cette décision à votre signalement."
+      ],
+      [
+        "Annuler quand vous voulez",
+        "Annulez juste après le signalement ou supprimez vos exemples enregistrés dans les paramètres."
+      ]
+    ],
+    "before": "Avant le signalement",
+    "after": "Après votre signalement",
+    "scenes": [
+      "mark",
+      "xhsmark"
+    ],
+    "captions": {
+      "mark": "Exemple : signaler une réponse promotionnelle aide à en repérer deux autres formulées de la même manière.",
+      "xhsmark": "Exemple : signaler une invitation à rejoindre un groupe aide à repérer deux promotions similaires."
+    }
+  },
+  "tx": {
+    "h2": "Des traductions plus faciles à comprendre",
+    "lede": "Traduisez les contenus encore sans traduction et améliorez les traductions maladroites pour suivre le fil sans quitter la page.",
+    "points": [
+      [
+        "Traduire ce qui ne l'est pas encore",
+        "Lisez dans votre langue les publications de votre fil, les titres et descriptions de vidéos ainsi que les commentaires."
+      ],
+      [
+        "Améliorer les traductions si nécessaire",
+        "ClearFlow peut retraduire les publications sur X et améliorer les sous-titres YouTube lorsque vous utilisez la traduction automatique."
+      ],
+      [
+        "Lire sur place, comparer à tout moment",
+        "Les liens et la mise en forme sont conservés. Revenez quand vous voulez au texte original ou à la traduction de la plateforme."
+      ]
+    ],
+    "scenes": [
+      "reddit",
+      "yt",
+      "xhs"
+    ],
+    "captions": {
+      "reddit": "Des conseils de cyclisme en plusieurs langues, traduits en français.",
+      "yt": "Des titres de vidéos et commentaires du monde entier, traduits en français.",
+      "xhs": "Lisez une publication RedNote et ses commentaires en français."
+    }
+  },
+  "control": {
+    "points": [
+      "Réglages par site",
+      "Commandes distinctes pour le filtrage et la traduction",
+      "Trois niveaux de filtrage",
+      "Compteurs pour cette page"
+    ],
+    "h2": "Vos sites, vos réglages",
+    "body": "Choisissez les règles de filtrage, leur sensibilité et les options de traduction pour chaque site. La fenêtre de l'extension affiche les nombres d'éléments traités sur cette page, aujourd'hui et au cours des sept derniers jours.",
+    "altPopup": "Fenêtre ClearFlow : réponses masquées et traduites sur la page actuelle",
+    "altSettings": "Paramètres ClearFlow : règles de filtrage et traduction pour Reddit"
+  },
+  "how": {
+    "h2": "Comment fonctionne ClearFlow",
+    "steps": [
+      [
+        "D'abord, les règles locales",
+        "Elles repèrent la structure des liens de parrainage, coordonnées dissimulées et messages répétés. Aucune clé API ni aucun paiement requis."
+      ],
+      [
+        "L'IA tient compte du contexte",
+        "Les réponses que les règles locales ne peuvent pas classer sont envoyées avec la publication d'origine au modèle Jev de TypeSafe. Il recherche les promotions, insultes et contenus sexuels selon les seuils que vous avez choisis."
+      ],
+      [
+        "OpenRouter assure la traduction",
+        "Le texte est envoyé au modèle choisi : OpenAI par défaut, avec DeepSeek en secours. Seul le texte est transmis, sans information sur l'auteur ni identifiant de publication."
+      ]
+    ]
+  },
+  "cost": {
+    "h2": "Payez selon votre usage",
+    "body": "Utilisez vos propres comptes TypeSafe et OpenRouter et payez directement chaque service. Les requêtes ne passent jamais par les serveurs de ClearFlow.",
+    "stat": "≈ $0.10",
+    "statLabel": "Coût estimé pour parcourir environ 5 000 réponses sur X, avec filtrage et, si nécessaire, traduction. Le coût réel varie selon le contenu et le modèle.",
+    "points": [
+      "Les paramètres affichent les dépenses du mois et une estimation des dépenses mensuelles fondée sur les sept derniers jours.",
+      "Vous pouvez fixer un plafond de crédit mensuel pour votre clé OpenRouter.",
+      "Le filtrage local fonctionne sans clé API."
+    ],
+    "cta": "Obtenir vos clés API"
+  },
+  "privacy": {
+    "h2": "Aucune donnée envoyée au développeur",
+    "items": [
+      [
+        "Ni suivi ni remontée de données",
+        "Les statistiques d'utilisation et de coût restent sur votre appareil. Aucun outil d'analyse, rapport de plantage ou code publicitaire."
+      ],
+      [
+        "Connexion directe à vos fournisseurs",
+        "Les fonctions d'IA envoient les publications et commentaires concernés directement à TypeSafe pour le filtrage et à OpenRouter pour la traduction, avec vos clés."
+      ],
+      [
+        "Clés et historique sur votre appareil",
+        "Les clés sont conservées dans la base de données propre à l'extension, inaccessible aux sites web. La désinstallation supprime les données locales."
+      ],
+      [
+        "Code consultable librement",
+        "Le code sous licence MIT est disponible sur GitHub. Vous pouvez vérifier comment les données sont traitées et où elles vont."
+      ]
+    ],
+    "more": "Lire la politique de confidentialité"
+  },
+  "faq": {
+    "h2": "Questions fréquentes",
+    "items": [
+      [
+        "Pourquoi faut-il mes propres clés API ?",
+        "Votre contenu va directement aux fournisseurs de services et vous n'avez pas besoin d'abonnement ClearFlow. Pour commencer, créez vos comptes et vos clés API. <a href=\"keys/\">Configurer les clés API</a>"
+      ],
+      [
+        "L'extension fonctionne-t-elle sans clés ?",
+        "Oui. Les règles locales masquent encore les réponses contenant des liens de parrainage ou des coordonnées dissimulées, ainsi que les mêmes messages publiés par plusieurs comptes. La traduction et la détection des insultes, contenus sexuels et réponses comme « sympa » nécessitent des clés API."
+      ],
+      [
+        "Peut-elle masquer des commentaires utiles ?",
+        "Cela peut arriver. Chaque réponse masquée a une explication : vous pouvez afficher l'original ou signaler une erreur. Le niveau de filtrage se règle par site. Choisissez « Souple » dans les paramètres si trop de réponses sont masquées."
+      ],
+      [
+        "Quels sites et navigateurs sont compatibles ?",
+        "X, Reddit, YouTube, Xiaohongshu (RedNote) et Hacker News. Chrome 120 ou version ultérieure, ainsi qu'Edge, Arc, Brave et les autres navigateurs Chromium."
+      ],
+      [
+        "Quelles langues sont prises en charge ?",
+        "L'interface est disponible en 19 langues. Les paramètres et la fenêtre de l'extension suivent la langue du navigateur. Les indications sur les pages et la langue de traduction suivent généralement celle de l'interface du site. Sur Hacker News, la langue du navigateur est toujours utilisée ; elle l'est aussi sur les autres sites si leur langue ne peut pas être détectée."
+      ],
+      [
+        "ClearFlow est-il lié à X ou YouTube ?",
+        "Non. ClearFlow est un projet open source indépendant, sans lien avec X, Reddit, YouTube (Google), Xiaohongshu ou Y Combinator."
+      ],
+      [
+        "Comment signaler un problème ?",
+        "Utilisez « Donner votre avis » dans les paramètres de l'extension, ouvrez un ticket sur <a href=\"https://github.com/remember2015/clearflow/issues\">GitHub</a> ou écrivez à <a href=\"mailto:developer@ohmyai.app\">developer@ohmyai.app</a>."
+      ]
+    ]
+  },
+  "final": {
+    "h2": "Concentrez-vous sur ce que vous êtes venu lire",
+    "cta": "Ajouter à Chrome"
+  },
+  "footer": {
+    "privacy": "Politique de confidentialité",
+    "keys": "Configurer les clés API",
+    "license": "Licence MIT",
+    "disclaimer": "ClearFlow n'a aucun lien avec X, Reddit, YouTube, Xiaohongshu ou Y Combinator."
+  },
+  "keys": {
+    "title": "Configurer vos clés API · ClearFlow",
+    "description": "Connectez ClearFlow à TypeSafe et OpenRouter pour activer le filtrage par IA et la traduction.",
+    "h1": "Configurer vos clés API",
+    "lede": "Le filtrage par IA utilise TypeSafe ; la traduction utilise OpenRouter. Chaque service demande sa propre clé API et vous le payez directement selon votre usage. Saisissez vos clés lors de la configuration, ou modifiez-les plus tard dans Paramètres → Connexions et coût.",
+    "sections": [
+      {
+        "h2": "TypeSafe : filtrage par IA",
+        "tag": "Filtrage",
+        "steps": [
+          "Ouvrez la <a href=\"https://console.typesafe.ai/\">console TypeSafe</a>, créez un compte et connectez-vous.",
+          "Sur la page <a href=\"https://console.typesafe.ai/keys\">Keys</a>, créez une clé et copiez-la.",
+          "Collez la clé dans le champ « Jev (TypeSafe) » des paramètres de ClearFlow."
+        ],
+        "note": "Facturation selon le nombre de tokens utilisés. Les résultats sont conservés jusqu'à sept jours pour éviter les requêtes répétées."
+      },
+      {
+        "h2": "OpenRouter : traduction",
+        "tag": "Traduction",
+        "steps": [
+          "Ouvrez <a href=\"https://openrouter.ai/\">OpenRouter</a>, créez un compte et connectez-vous. Ajoutez du crédit sur la page Credits.",
+          "Sur la page <a href=\"https://openrouter.ai/keys\">Keys</a>, cliquez sur Create Key. Fixez un plafond de crédit mensuel pour maîtriser vos dépenses, par exemple 2 $ avec remise à zéro chaque mois.",
+          "Copiez la clé commençant par sk-or- dans le champ « OpenRouter » des paramètres de ClearFlow."
+        ],
+        "note": "La traduction utilise OpenAI par défaut, avec DeepSeek en secours. Vous pouvez changer de modèle dans les paramètres."
+      }
+    ],
+    "after": [
+      [
+        "Vérifier la connexion",
+        "Une coche indique que la clé est valide. Si la connexion échoue, une explication s'affiche ; choisissez « Tester la connexion » pour réessayer."
+      ],
+      [
+        "Choisir les fonctions utiles",
+        "Une clé TypeSafe active le filtrage par IA ; une clé OpenRouter active la traduction. Le filtrage local fonctionne avec ou sans ces clés."
+      ],
+      [
+        "Protéger vos clés",
+        "Les clés ne sont stockées que dans votre navigateur. Ne les partagez avec personne, pas même avec nous. Si vous pensez qu'une clé a été divulguée, supprimez-la dans l'interface du fournisseur et créez-en une nouvelle."
+      ]
+    ],
+    "back": "Retour à l'accueil"
+  },
+  "privacyPage": {
+    "title": "Politique de confidentialité · ClearFlow",
+    "description": "Quelles données ClearFlow lit, envoie et conserve.",
+    "source": "La version de référence de cette politique est publiée sur GitHub :"
+  },
+  "notFound": {
+    "title": "Page introuvable",
+    "body": "L'adresse contient peut-être une erreur.",
+    "home": "Retour à l'accueil"
+  }
+}

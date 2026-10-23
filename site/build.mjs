@@ -1,4 +1,4 @@
-// Builds the website (https://clearflow.ohmyai.app) into site/dist/: /zh/, /en/, /ja/ (home, keys/, privacy/), 404.html,
+// Builds the website (https://clearflow.ohmyai.app) into site/dist/: one route per language (home, keys/, privacy/), 404.html,
 // sitemap, robots, icons. Copy lives in copy.mjs, images in assets/ (rendered by scripts/site-assets.mjs), the privacy page is
 // PRIVACY.md (public/PRIVACY.md in the monorepo, PRIVACY.md at the root of the public repo). "/" is answered by worker.js.
 // Usage: node site/build.mjs        Deploy: site/deploy.sh
@@ -80,7 +80,8 @@ function shell({ lang, C, title, description, pathFor, body }) {
   const url = ORIGIN + pathFor(lang);
   const alternates = Object.entries(LANGS).map(([k, v]) => `<link rel="alternate" hreflang="${v.html}" href="${ORIGIN}${pathFor(k)}">`).join("")
     + `<link rel="alternate" hreflang="x-default" href="${ORIGIN}${pathFor("en")}">`;
-  const langNav = Object.entries(LANGS).map(([k, v]) => k === lang ? `<a href="${pathFor(k)}" aria-current="true" lang="${v.html}">${v.name}</a>` : `<a href="${pathFor(k)}" hreflang="${v.html}" lang="${v.html}">${v.name}</a>`).join("");
+  const flag = (L) => `<img class="language-flag" src="/assets/flags/${L.flag}.svg" width="20" height="15" alt="">`;
+  const langNav = Object.entries(LANGS).map(([k, v]) => `<a href="${pathFor(k)}" hreflang="${v.html}" lang="${v.html}"${k === lang ? ' aria-current="true"' : ""}>${flag(v)}<span>${v.name}</span>${k === lang ? icon("check", "i language-check") : ""}</a>`).join("");
   const home = `/${lang}/`;
   return `<!doctype html>
 <html lang="${L.html}" class="no-js">
@@ -120,7 +121,10 @@ function shell({ lang, C, title, description, pathFor, body }) {
       <a href="${home}#faq">${esc(C.nav.faq)}</a>
       <a href="${REPO}">GitHub</a>
     </nav>
-    <div class="langs">${langNav}</div>
+    <details class="langs">
+      <summary aria-label="${esc(C.languageLabel)}: ${esc(L.name)}">${flag(L)}<span lang="${L.html}">${L.shortName || L.name}</span>${icon("chevron", "i language-chevron")}</summary>
+      <nav class="language-options" aria-label="${esc(C.languageLabel)}">${langNav}</nav>
+    </details>
     <a class="btn primary sm top-cta" href="${store(lang, "header")}">${icon("plus")}<span>${esc(C.hero.cta)}</span></a>
   </div>
 </header>
@@ -205,7 +209,10 @@ function viewer(lang, loc, sec, scenes, captions, heads, resultOnly = false) {
 
 function home(lang) {
   const C = COPY[lang], loc = LANGS[lang].assets;
-  const have = (list) => list.filter((k) => MARKS[loc][k]);
+  const have = (list) => {
+    for (const key of list) if (!MARKS[loc][key]) throw new Error(`Missing showcase: ${loc}/${key}`);
+    return list;
+  };
   const pointsOf = (items, icons) => `<ul class="mod-points">${items.map(([h, p], i) => `<li>${icon(icons[i], "i mp-i")}<div><h3>${phrases(lang, h)}</h3><p>${esc(p)}</p></div></li>`).join("")}</ul>`;
   const steps = C.how.steps.map(([h, p], i) => `<li class="step"><span class="step-n">${i + 1}</span><h3>${phrases(lang, h)}</h3><p>${esc(p)}</p></li>`).join("\n      ");
   const learnSteps = C.learn.steps.map(([h, p], i) => `<li><span class="ls-n">${i + 1}</span><div><h3>${phrases(lang, h)}</h3><p>${esc(p)}</p></div></li>`).join("");
@@ -216,15 +223,12 @@ function home(lang) {
   const trust = C.hero.trust.map((t) => `<li>${icon("check", "i ok")}<span>${esc(t)}</span></li>`).join("");
   const platforms = Object.entries(C.platforms.names).map(([key, name]) => `<li>${platformLogo(key)}<span>${esc(name)}</span></li>`).join("");
   const [h1a, h1b] = C.hero.h1Parts;
-  const sectionNumber = { clean: "01", tx: "02", learn: "03" };
-  const eb = (k) => `<p class="sec-eyebrow">${sectionNumber[k] ? `<span>${sectionNumber[k]}</span>` : ""}${esc(C.eyebrow[k])}</p>`;
   const cleanScenes = have(C.clean.scenes), txScenes = have(C.tx.scenes), learnScenes = have(C.learn.scenes);
   const ctrl = C.control.points.map((t) => `<li>${icon("check", "i ok")}<span>${esc(t)}</span></li>`).join("");
   const body = `
 <section class="hero">
   <div class="wrap hero-copy">
-    <p class="eyebrow">${esc(C.hero.eyebrow)}</p>
-    <h1><span class="ph">${esc(h1a)}</span>${lang === "en" ? " " : ""}<span class="ph accent">${esc(h1b)}</span></h1>
+    <h1><span class="ph">${esc(h1a)}</span>${["zh", "ja"].includes(lang) ? "" : " "}<span class="ph accent">${esc(h1b)}</span></h1>
     <p class="lede">${phrases(lang, C.hero.lede)}</p>
     <div class="ctas">
       ${cta(lang, C, "hero", C.hero.cta)}
@@ -241,7 +245,7 @@ function home(lang) {
 
 <section id="clean" class="sec mod">
   <div class="wrap">
-    <div class="mod-head">${eb("clean")}<h2>${phrases(lang, C.clean.h2)}</h2><p class="mod-lede">${esc(C.clean.lede)}</p></div>
+    <div class="mod-head"><h2>${phrases(lang, C.clean.h2)}</h2><p class="mod-lede">${esc(C.clean.lede)}</p></div>
     ${viewer(lang, loc, "clean", cleanScenes, C.clean.captions, [C.demo.before, C.demo.after])}
     ${pointsOf(C.clean.points, ["reason", "filler", "merge"])}
   </div>
@@ -249,7 +253,7 @@ function home(lang) {
 
 <section id="translate" class="sec mod alt">
   <div class="wrap">
-    <div class="mod-head">${eb("tx")}<h2>${phrases(lang, C.tx.h2)}</h2><p class="mod-lede">${esc(C.tx.lede)}</p></div>
+    <div class="mod-head"><h2>${phrases(lang, C.tx.h2)}</h2><p class="mod-lede">${esc(C.tx.lede)}</p></div>
     ${viewer(lang, loc, "tx", txScenes, C.tx.captions, [C.demo.before, C.demo.after])}
     ${pointsOf(C.tx.points, ["translate", "eye", "spark"])}
   </div>
@@ -258,7 +262,7 @@ function home(lang) {
 <section id="learn" class="sec mod">
   <div class="wrap learn-grid">
     <div class="learn-copy">
-      <div class="mod-head">${eb("learn")}<h2>${phrases(lang, C.learn.h2)}</h2><p class="mod-lede">${esc(C.learn.lede)}</p></div>
+      <div class="mod-head"><h2>${phrases(lang, C.learn.h2)}</h2><p class="mod-lede">${esc(C.learn.lede)}</p></div>
       <ol class="learn-steps">${learnSteps}</ol>
     </div>
     ${viewer(lang, loc, "learn", learnScenes, C.learn.captions, [C.learn.before, C.learn.after], true)}
@@ -274,7 +278,6 @@ function home(lang) {
 
 <section class="sec how">
   <div class="wrap">
-    ${eb("how")}
     <h2>${phrases(lang, C.how.h2)}</h2>
     <ol class="steps">
       ${steps}
@@ -285,7 +288,6 @@ function home(lang) {
 <section id="cost" class="sec">
   <div class="wrap cost-grid">
     <div class="cost-copy">
-      ${eb("cost")}
       <h2>${phrases(lang, C.cost.h2)}</h2>
       <p>${esc(C.cost.body)}</p>
       <ul class="points">${points}</ul>
@@ -297,7 +299,6 @@ function home(lang) {
 
 <section id="privacy" class="sec dark">
   <div class="wrap">
-    ${eb("privacy")}
     <h2>${phrases(lang, C.privacy.h2)}</h2>
     <ul class="pvs">
       ${priv}
@@ -385,7 +386,7 @@ function privacy(lang) {
   const C = COPY[lang], P = C.privacyPage;
   const md = fs.readFileSync(PRIVACY, "utf8");
   const [en, zh] = md.split(/<a id="中文"><\/a>/);
-  const part = (lang === "ja" ? fs.readFileSync(path.join(SITE, "privacy.ja.md"), "utf8") : lang === "zh" ? zh : en).replace(/\s*·\s*\[中文版本见下方\]\(#中文\)/, "");
+  const part = (lang === "zh" ? zh : lang === "en" ? en : fs.readFileSync(path.join(SITE, `privacy.${lang}.md`), "utf8")).replace(/\s*·\s*\[中文版本见下方\]\(#中文\)/, "");
   const body = `
 <section class="page-head">
   <div class="wrap narrow"><p class="src">${esc(P.source)} <a href="${REPO}/blob/main/PRIVACY.md">PRIVACY.md</a></p></div>
@@ -405,13 +406,13 @@ for (const lang of Object.keys(LANGS)) {
 }
 
 // 404 (one page for every path) and a plain chooser at / in case the worker doesn't answer it
-const chooser = (h1, p) => `<!doctype html><html lang="en" class="no-js"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+const chooser = (h1, p, auto = false) => `<!doctype html><html lang="en" class="no-js"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(h1)}</title><link rel="icon" href="/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="${CSS_URL}"></head>
-<body><main class="chooser"><img src="/icon.svg" alt="" width="56" height="56"><h1>${h1}</h1><p>${p}</p>
-<p class="choose">${Object.entries(LANGS).map(([k, v]) => `<a class="btn ghost" href="/${k}/" lang="${v.html}">${v.name}</a>`).join("")}</p></main></body></html>
+<body><main class="chooser"${auto ? ' data-language-entry' : ""}><img src="/icon.svg" alt="" width="56" height="56"><h1>${h1}</h1><p>${p}</p>
+<p class="choose">${Object.entries(LANGS).map(([k, v]) => `<a class="btn ghost" href="/${k}/" hreflang="${v.html}" lang="${v.html}">${v.name}</a>`).join("")}</p></main><script src="${JS_URL}" defer></script></body></html>
 `;
-write("404.html", chooser(Object.keys(LANGS).map((k) => COPY[k].notFound.title).join(" · "), Object.keys(LANGS).map((k) => esc(COPY[k].notFound.body)).join(" ")));
-write("index.html", chooser("ClearFlow · 清流", "Choose a language · 选择语言 · 言語を選択"));
+write("404.html", chooser("404", Object.entries(COPY).map(([lang, C]) => `<span data-not-found-copy="${lang}" lang="${LANGS[lang].html}"${lang === "en" ? "" : " hidden"}>${esc(C.notFound.body)}</span>`).join("")));
+write("index.html", chooser("ClearFlow · 清流", "Choose a language · 选择语言 · 言語を選択", true));
 write("robots.txt", `User-agent: *\nAllow: /\nSitemap: ${ORIGIN}/sitemap.xml\n`);
 const pagesFor = ["/", "/keys/", "/privacy/"];
 write("sitemap.xml", `<?xml version="1.0" encoding="UTF-8"?>

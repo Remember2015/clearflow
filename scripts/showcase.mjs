@@ -5,23 +5,28 @@
 // 每个语言的那套：X 上是那个语言自己的帖子（看清理）；Reddit、YouTube 上挑的都是对那个语言来说是外文的评论（看翻译），
 // 每条原文配好译成五种界面语言的译文；第 4 张（0.26 起，以前是小红书 / Hacker News）标一条、同类都清理。
 
+import { NEW_DEMOS } from "./showcase-locales.mjs";
+
 export const LOCALES = ["en", "zh-CN", "zh-TW", "ja", "ko"];
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const AV = ["#f4b183", "#9dc3e6", "#c5e0b4", "#ffd966", "#d5a6bd", "#b4a7d6", "#a9d18e", "#f8cbad", "#9fc5e8", "#ffe599", "#c9daf8", "#ead1dc"];
 // 中日韩的字用对字形：日文用日文字体、繁中用繁中字体（都列在 sans-serif 前面，没装就退回系统的）
-const FONT = { en: '"PingFang SC"', "zh-CN": '"PingFang SC"', "zh-TW": '"PingFang TC"', ja: '"Hiragino Sans","Hiragino Kaku Gothic ProN"', ko: '"Apple SD Gothic Neo"' };
+const FONT = { en: '"PingFang SC"', "zh-CN": '"PingFang SC"', "zh-TW": '"PingFang TC"', ja: '"Hiragino Sans","Hiragino Kaku Gothic ProN"', ko: '"Apple SD Gothic Neo"', tr: '"Arial"', fr: '"Arial"', pt: '"Arial"' };
 export const fontOf = (loc) => FONT[loc] || FONT.en;
 
 // language of a text (the stand-in for chrome.i18n.detectLanguage): by script, then by a few common words
 const DETECT = `window.__ffDetect = (t) => {
   const L = (l) => ({ isReliable: true, languages: [{ language: l, percentage: 97 }] });
+  const own = window.__ffOwn;
+  if (own && own.texts.includes(String(t).replace(/@[\\w.]+/g, " ").replace(/\\s+/g, " ").trim())) return L(own.lang);
   if (/[\\u0400-\\u04ff]/.test(t)) return L("ru"); if (/[\\u0e00-\\u0e7f]/.test(t)) return L("th"); if (/[\\u0600-\\u06ff]/.test(t)) return L("ar");
   if (/[\\u3040-\\u30ff]/.test(t)) return L("ja"); if (/[\\uac00-\\ud7af]/.test(t)) return L("ko"); if (/[\\u0900-\\u097f]/.test(t)) return L("hi");
   if (/[\\u4e00-\\u9fff]/.test(t)) return L("zh");
+  if (/[ğşıİ]|\\b(kaç|bisiklet|boya|ayında|yılda|teşekkürler)\\b/i.test(t)) return L("tr");
   if (/[¿¡ñ]|\\b(qué|quiero|puede|integral|envidia)\\b/i.test(t)) return L("es");
-  if (/\\b(fiz|ficou|minha|salvei|aventura)\\b/i.test(t)) return L("pt");
+  if (/\\b(fiz|ficou|minha|salvei|aventura|arroz|família|você|ônibus)\\b/i.test(t)) return L("pt");
   if (/\\b(wie|bist|und|der|das|Wetter)\\b/.test(t)) return L("de");
-  if (/\\b(récit|dormi|sauvage)\\b/i.test(t)) return L("fr");
+  if (/[çœ]|\\b(récit|dormi|sauvage|vélo|combien|peinture|merci|j'ai|c'est|pourquoi|vous)\\b/i.test(t)) return L("fr");
   return /^[\\x00-\\x7f\\u2019\\u2014–—]+$/.test(t) && t.length > 3 ? L("en") : { isReliable: false, languages: [] };
 };`;
 // stand-in translations: whole text, or each innermost <pN>/<tN> piece when the extension sends formatted text
@@ -36,10 +41,14 @@ window.__ffTxFn = (m) => {
   return { action: "fill", text, model: "openai/gpt-6-luna", cost: 0, cached: false };
 };`;
 const route = (path, jev) => `history.replaceState({}, "", ${JSON.stringify(path)} + (${JSON.stringify(path)}.includes("?") ? "&" : "?") + "jev=" + encodeURIComponent(${JSON.stringify(JSON.stringify(jev))}));`;
+const ownDetect = (loc, texts) => NEW_DEMOS[loc] ? `window.__ffOwn = ${JSON.stringify({ lang: loc, texts: texts.map((t) => t.replace(/@[\w.]+/g, " ").replace(/\s+/g, " ").trim()) })};` : "";
 const shell = (lang, title, css, body, setup, bundle) => `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><title>${esc(title)}</title>
 <style>${css}</style></head><body>${body}<script>${DETECT}\n${setup}\nconst sc = document.createElement("script"); sc.src = "/${bundle}"; document.body.appendChild(sc);</script></body></html>`;
-// [原文, {界面语言: 译文}] → 这个语言的替身译文表（没写这个语言的译文，就是原文本来就是这个语言）
-const dictOf = (loc, items) => Object.fromEntries(items.map(([src, tx]) => [src, tx[loc] ?? src]));
+// [原文, {界面语言: 译文}] → 替身译文表。新官网语言必须显式写出每条译文，同语言时值为原文。
+const dictOf = (loc, items) => Object.fromEntries(items.map(([src, tx]) => {
+  if (NEW_DEMOS[loc] && tx[loc] == null) throw new Error(`Missing ${loc} translation: ${src}`);
+  return [src, tx[loc] ?? src];
+}));
 
 // ---------- the words of each locale's fake site chrome ----------
 const UI = {
@@ -49,6 +58,7 @@ const UI = {
   ja: { ago: (n) => `${n}時間前`, min: (n) => `${n}分`, reply: "返信", share: "共有", views: "4.1万 回視聴 · 2 日前", comments: (n) => `コメント ${n} 件`, follow: "フォロー", total: (n) => `コメント ${n} 件` },
   ko: { ago: (n) => `${n}시간 전`, min: (n) => `${n}분`, reply: "답글", share: "공유", views: "조회수 4.1만회 · 2일 전", comments: (n) => `댓글 ${n}개`, follow: "팔로우", total: (n) => `댓글 ${n}개` },
 };
+for (const [loc, data] of Object.entries(NEW_DEMOS)) UI[loc] = { ...UI[loc], ...data.ui };
 
 // ---------- X: cleaning (reasons, a merged run, "nice" / "+1" replies), in each locale's own language ----------
 // names：第一条"赞"、刷同一句的三个、第二三条"赞"、@ 陌生账号的、第四条"赞"、骂人的
@@ -119,6 +129,7 @@ const XC = {
     names: ["아키", "조던", "경제적자유", "마르코", "샘", "다나", "알렉스", "지나가던사람", "케브"],
   },
 };
+for (const [loc, data] of Object.entries(NEW_DEMOS)) if (data.xc) XC[loc] = data.xc;
 function xPage(loc) {
   const u = UI[loc], C = XC[loc], N = C.names;
   let n = 0;
@@ -143,7 +154,8 @@ main{border-inline:1px solid #eff3f4;min-height:100vh} article{position:relative
 article::before{content:"";position:absolute;left:16px;top:14px;width:40px;height:40px;border-radius:50%;background:var(--av)}
 [data-testid=User-Name]{white-space:pre;font-weight:700;line-height:1.25} time{color:#536471;font-size:13px} a{text-decoration:none}
 [data-testid=tweetText]{margin-top:4px} [data-testid=caret]{display:none} main > div:first-child article{padding-top:18px} main > div:first-child [data-testid=tweetText]{font-size:17px}`;
-  return { key: "x", width: 600, path: `/sc/${loc}/x`, html: shell(loc, "X", css, `<main>${posts.join("")}</main>`, route(`/${C.post[1].slice(1)}/status/9100`, jev), "inject_bundle.js") };
+  const own = [C.post[2], C.a[2], C.spam, ...C.spamVar, ...C.fill, C.b[2], C.m1, C.c[2], C.abuse, C.d[2]];
+  return { key: "x", width: 600, path: `/sc/${loc}/x`, html: shell(loc, "X", css, `<main>${posts.join("")}</main>`, `${ownDetect(loc, own)}\n${route(`/${C.post[1].slice(1)}/status/9100`, jev)}`, "inject_bundle.js") };
 }
 
 // ---------- Reddit: a Hokkaido trip post, comments in languages foreign to the locale, translated in place ----------
@@ -164,6 +176,7 @@ const RT = {
   spam: ["Cheap flights to Japan from $99!! DM me, link in my profile", { "zh-CN": "日本特价机票 99 美元起！！私信我，链接在我主页", "zh-TW": "日本特價機票 99 美元起！！私訊我，連結在我主頁", ja: "日本行き格安航空券が99ドルから！！DMください、リンクはプロフに", ko: "일본행 특가 항공권 99달러부터!! DM 주세요, 링크는 프로필에" }],
   nice: ["nice", { "zh-CN": "不错", "zh-TW": "不錯", ja: "いいね", ko: "좋네요" }],
 };
+for (const [loc, data] of Object.entries(NEW_DEMOS)) for (const [key, text] of Object.entries(data.rt)) RT[key][1][loc] = text;
 const RAUTH = { de: "kurt_on_wheels", es: "lucia_viaja", photos_ko: "minjun_rides", photos_zh: "xiaolin_rides", photos_ja: "kenji_trails", fr: "camille_bikes", pt: "rafa_trilhas" };
 function redditPage(loc) {
   const u = UI[loc], post = loc === "ja" || loc === "ko" ? "en" : "ja"; // 日文、韩文那套帖子是英文的，别的是日文的
@@ -224,6 +237,7 @@ const YT = {
   ja: ["ごま油を最後に入れるのがポイントですね。", { en: "Adding the sesame oil at the end is the trick, isn’t it?", "zh-CN": "最后再放香油是关键吧。", "zh-TW": "最後再放香油是關鍵吧。", ko: "마지막에 참기름을 넣는 게 포인트군요." }],
   en: ["Adding the sesame oil at the end is the trick, isn't it?", { ja: "最後にごま油を入れるのがポイントなんですね。" }],
 };
+for (const [loc, data] of Object.entries(NEW_DEMOS)) for (const [key, text] of Object.entries(data.yt)) YT[key][1][loc] = text;
 const YAUTH = { pt: "@ana.cozinha", hi: "@priya_cooks", es: "@marta_en_casa", ar: "@layla_cooks", ja: "@kenji_eats", en: "@mike_cooks_at_home" };
 function ytPage(loc) {
   const u = UI[loc], VID = "SHOWVIDEO01"; // YouTube 的视频 id 是 11 位
@@ -304,6 +318,7 @@ const MK = {
     n3: "스프레드시트 아직 공유해 주시나요?",
     c: "여기서 누가 추천해 준 트레이딩 코치 덕분에 빚 없이 살아요. 인생 최고의 결정이에요. 방법 궁금하면 물어보세요." },
 };
+for (const [loc, data] of Object.entries(NEW_DEMOS)) if (data.mk) MK[loc] = data.mk;
 function markPage(loc) {
   const u = UI[loc], C = MK[loc];
   let n = 0;
@@ -332,7 +347,7 @@ def("shreddit-post", ["full-post-link", "credit-bar", "title", "post-flair", "te
 .rgrid{padding-left:28px} [slot=actionRow]{display:flex;gap:14px;font-size:12px;color:#576f76;margin-top:2px} [slot=actionRow] button{border:0;background:none;color:#576f76;font:inherit;padding:0}`;
   return { key: "mark", width: 740, path: `/sc/${loc}/mark`,
     html: shell(loc, "r/personalfinance", css, `<shreddit-app><div class="wrap">${post}<shreddit-comment-tree post-id="t3_mk1">${tree}</shreddit-comment-tree></div></shreddit-app>`,
-      `${shadow}\n${route("/r/personalfinance/comments/mk1/debt/", jev)}`, "inject_reddit.js"), markTarget: "t1_m2", hoverAfter: "t1_m5" };
+      `${shadow}\n${ownDetect(loc, Object.values(C))}\n${route("/r/personalfinance/comments/mk1/debt/", jev)}`, "inject_reddit.js"), markTarget: "t1_m2", hoverAfter: "t1_m5" };
 }
 
 export function pages(locale) {
@@ -341,8 +356,8 @@ export function pages(locale) {
 }
 
 // ======================= website-only scenes (scripts/site-assets.mjs → site/) =======================
-// `sitePages(locale)` for en, zh-CN, ja: the four store pages plus an X tech-news post in another language with scam replies,
-// a Xiaohongshu note and (for Chinese and Japanese readers) a Hacker News thread. Every account, post and comment is invented;
+// `sitePages(locale)` uses the store-page templates and adds website-only scenes by locale.
+// Every account, post and comment is invented;
 // the situations are modelled on what readers of those sites see every day. `pages()` (the store screenshots) is unchanged.
 
 // emoji don't decide the language (the stand-in detector wants plain ASCII for English)
@@ -474,11 +489,17 @@ const XHS = {
     "蹲一个": { en: "following", ja: "待機" },
   },
 };
+for (const [loc, data] of Object.entries(NEW_DEMOS)) {
+  const sources = Object.keys(XHS.tx);
+  if (data.xhs.length !== sources.length) throw new Error(`Wrong ${loc} XHS translation count`);
+  sources.forEach((src, i) => { XHS.tx[src][loc] = data.xhs[i]; });
+}
 function xhsNote(loc, D, key, base) {
-  const dict = Object.fromEntries(Object.entries(D.tx).map(([k, v]) => [k, v[loc] ?? k]));
+  const dict = dictOf(loc, Object.entries(D.tx));
   const X = { en: { follow: "Follow", total: (n) => `${n} comments`, edited: "Edited", reply: "Reply", author: "Author", say: "Say something…" },
     "zh-CN": { follow: "关注", total: (n) => `共 ${n} 条评论`, edited: "编辑于", reply: "回复", author: "作者", say: "说点什么…" },
-    ja: { follow: "フォロー", total: (n) => `コメント ${n} 件`, edited: "編集日", reply: "返信", author: "作者", say: "コメントする…" } }[loc] || {};
+    ja: { follow: "フォロー", total: (n) => `コメント ${n} 件`, edited: "編集日", reply: "返信", author: "作者", say: "コメントする…" },
+    ...Object.fromEntries(Object.keys(NEW_DEMOS).map((code) => [code, UI[code]])) }[loc] || {};
   let n = 0;
   const one = (name, text, place, likes, sub) => {
     const id = (base + n).toString(16).padStart(24, "0"), uid = (base - 0x1000 + n).toString(16).padStart(24, "0"), av = AV[(n++ * 7 + 1) % AV.length];
@@ -675,12 +696,21 @@ const XHM = {
     "退租的时候这些能带走吗？": { en: "Can you take these with you when you move out?", ja: "退去するときにこれ全部持っていける？" },
   },
 };
+for (const [loc, data] of Object.entries(NEW_DEMOS)) {
+  const sources = Object.keys(XHM.tx);
+  if (data.xhsmark.length !== sources.length) throw new Error(`Wrong ${loc} XHS mark translation count`);
+  sources.forEach((src, i) => { XHM.tx[src][loc] = data.xhsmark[i]; });
+}
 const xhsMarkPage = (loc) => xhsNote(loc, XHM, "xhsmark", 0x6f40);
 
 // ======================= what the website shows =======================
 // One render per page; build.mjs puts the pages into the sections (clean / learn / translate).
 const SITE_ORDER = {
   en: ["x", "xsex", "xhs", "reddit", "yt", "mark", "xhsmark"],
+  ko: ["x", "xhs", "reddit", "yt", "mark", "xhsmark"],
+  tr: ["x", "xhs", "reddit", "yt", "mark", "xhsmark"],
+  fr: ["x", "xhs", "reddit", "yt", "mark", "xhsmark"],
+  pt: ["x", "xhs", "reddit", "yt", "mark", "xhsmark"],
   "zh-CN": ["xnews", "xsex", "x", "xhs", "reddit", "yt", "hn", "mark", "xhsmark"],
   ja: ["xnews", "xsex", "x", "xhs", "reddit", "yt", "hn", "mark", "xhsmark"],
 };
