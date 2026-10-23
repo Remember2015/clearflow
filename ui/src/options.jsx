@@ -373,6 +373,51 @@ function KeyRow({ id, name, hint, has, code, placeholder, test, link, note }) {
     </div>
   );
 }
+// 首次设置那一页填 key（0.29.10，用户 10-23：字多、按钮链接多，不好看）：一行"用途 · 服务名"、右边"获取密钥"，下面输入框和保存，一句灰字。
+// 不放"没填"和"测试连接"：保存时顺手测一次，能用打勾、不能用写原因（只说能不能用，不报分数）。设置页还是 KeyRow
+function WelcomeKey({ id, name, has, code, placeholder, test, link, note }) {
+  const [editing, setEditing] = React.useState(false);
+  const [value, setValue] = React.useState("");
+  const [msg, setMsg] = React.useState(null);
+  const [tone, stateKey] = stateOf(has, code);
+  const open = editing || !has, usable = stateKey === "opt.state.ok";
+  const doSave = async () => {
+    const v = value.trim();
+    if (!v) { setMsg([t("err.nokey"), "err"]); return; }
+    setMsg([t("c.testing"), ""]);
+    try {
+      await send({ type: "setKey", which: id, value: v });
+      setEditing(false); setValue("");
+      // 测出来不能用：输入框留着好马上改；密钥无效就直说，别的（网络之类）照旧"失败：……请重试"
+      try { await test(v); setMsg([t("welcome.keyOk"), "ok"]); } catch (e) { setEditing(true); setMsg([/badkey$/.test(e?.code || "") ? t("welcome.keyBad") : failText(e), "err"]); }
+    } catch (e) { setMsg([failText(e), "err"]); }
+  };
+  const msgTone = msg && (msg[1] === "err" ? "text-destructive" : msg[1] === "ok" ? "text-green-700 dark:text-green-400" : "text-muted-foreground");
+  return (
+    <div className={cn(ROW, "row-col flex flex-col gap-2")} id={`row-${id}`}>
+      <div className="flex min-h-8 items-center gap-2">
+        <span className={cn(NAME, "font-medium")}>{name}</span>
+        {has && usable && <span className="state inline-flex text-green-700 dark:text-green-400" id={`${id}State`} title={t(stateKey)}><IconCheck className="size-4" /><span className="sr-only">{t(stateKey)}</span></span>}
+        {has && !usable && !msg && <Badge id={`${id}State`} className={cn("state", tone)}>{t(stateKey)}</Badge>}
+        <span className="ms-auto">
+          {open ? <a href={link} target="_blank" rel="noopener noreferrer" id={`${id}Get`} className="key-get text-sm text-primary no-underline hover:underline">{t("welcome.getKey")} ↗</a>
+            : <Button variant="outline" size="sm" className="btn" id={`${id}Change`} onClick={() => { setEditing(true); setMsg(null); }}>{t("opt.change")}</Button>}
+        </span>
+      </div>
+      {open && (
+        <div className="flex gap-2">
+          <Input type="password" id={id === "jev" ? "key" : "orKey"} className="h-8 min-w-0 flex-1 text-sm md:text-sm" autoComplete="off" spellCheck={false} placeholder={placeholder}
+            aria-label={`${name} API key`} value={value} onKeyDown={(e) => { if (e.key === "Enter") doSave(); }}
+            onChange={(e) => { setValue(e.target.value); if (msg && msg[1] === "err") setMsg(null); }} />{/* 重新输入时收起上一次的报错 */}
+          <Button size="sm" className="btn" id={id === "jev" ? "saveKey" : "saveOrKey"} onClick={doSave}>{t("c.save")}</Button>
+          {has && <Button variant="ghost" size="sm" className="btn" onClick={() => { setEditing(false); setValue(""); setMsg(null); }}>{t("c.cancel")}</Button>}
+        </div>
+      )}
+      {msg ? <p className={cn("row-note text-xs", msgTone)} role="status" id={id === "jev" ? "keyMsg" : "orKeyMsg"}>{msg[0]}</p>
+        : open && note && <p className="row-note text-xs text-muted-foreground" id={`${id}Note`}>{note}</p>}
+    </div>
+  );
+}
 // 去哪里拿 key（用户 10-17 定：Jev 链到 TypeSafe 官网）
 const KEY_URL = { jev: "https://typesafe.ai", or: "https://openrouter.ai/keys" };
 // 按最近 7 天的花费估一个月：7 天的总花费按 7 天平均（刚装几天的按装了几天：最早有统计的那天起算）。
@@ -583,8 +628,8 @@ function Welcome({ d }) {
       <div className="flex gap-1.5" aria-hidden="true">{[1, 2, 3].map((n) => <span key={n} className={cn("size-1.5 rounded-full", n === step ? "bg-foreground" : "bg-foreground/20")} />)}</div>
       <div className="flex items-center gap-2">
         {step > 1 && <Button variant="ghost" size="sm" className="btn" id="welcomeBack" onClick={() => setStep(step - 1)}>{t("welcome.back")}</Button>}
-        {step === 2 && !hasKey(d, "jev") && <Button variant="ghost" size="sm" className="btn" id="welcomeLater" onClick={() => setStep(3)}>{t("welcome.later")}</Button>}
-        {step < 3 ? <Button size="sm" className="btn" id="welcomeNext" onClick={() => setStep(step + 1)}>{t("welcome.next")}</Button>
+        {/* 第 2 步一个都没填：同一个按钮写"稍后再填"（0.29.10 以前"稍后再填""下一步"两个按钮做同一件事） */}
+        {step < 3 ? <Button size="sm" className="btn" id="welcomeNext" onClick={() => setStep(step + 1)}>{t(step === 2 && !hasKey(d, "jev") && !hasKey(d, "or") ? "welcome.later" : "welcome.next")}</Button>
           : <Button size="sm" className="btn" id="welcomeDone" onClick={finish}>{t("welcome.finish")}</Button>}
       </div>
     </div>
@@ -620,14 +665,14 @@ function Welcome({ d }) {
       )}
       {step === 2 && (
         <>
-          <p className="px-1 text-sm text-muted-foreground" id="welcomeKeysIntro">{t("welcome.keysIntro")}</p>
-          {/* key 放在哪（用户 10-18：引导页上要告诉用户密钥是放本地的）：单独一行带锁，填之前就看得到 */}
-          <p className="flex items-start gap-2 px-1 text-sm text-muted-foreground" id="welcomeKeysLocal"><IconLock className="mt-0.5 size-4 shrink-0" />{t("welcome.keysLocal")}</p>
+          <div className="flex flex-col gap-1.5 px-1 text-sm text-muted-foreground">
+            <p id="welcomeKeysIntro">{t("welcome.keysIntro")}</p>
+            {/* key 放在哪（用户 10-18：引导页上要告诉用户密钥是放本地的）：单独一行带锁，填之前就看得到 */}
+            <p className="flex items-start gap-2" id="welcomeKeysLocal"><IconLock className="mt-0.5 size-4 shrink-0" />{t("welcome.keysLocal")}</p>
+          </div>
           <Section id="welcomeKeys" label={t("welcome.keysTitle")}>
-            <KeyRow id="jev" name="Jev (TypeSafe)" hint="opt.jevHint" has={hasKey(d, "jev")} code={h.jev?.code} placeholder="apikey_…" test={testJev}
-              link={KEY_URL.jev} note={t("welcome.jevNote")} />
-            {anyTx && <KeyRow id="or" name="OpenRouter" hint="opt.orHint" has={hasKey(d, "or")} code={h.or?.code} placeholder="sk-or-…" test={testOr}
-              link={KEY_URL.or} note={t("welcome.orNote")} />}
+            <WelcomeKey id="jev" name={t("welcome.jevName")} has={hasKey(d, "jev")} code={h.jev?.code} placeholder="apikey_…" test={testJev} link={KEY_URL.jev} note={t("welcome.jevNote")} />
+            {anyTx && <WelcomeKey id="or" name={t("welcome.orName")} has={hasKey(d, "or")} code={h.or?.code} placeholder="sk-or-…" test={testOr} link={KEY_URL.or} note={t("welcome.orNote")} />}
           </Section>
         </>
       )}

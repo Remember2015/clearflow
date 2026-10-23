@@ -1,6 +1,6 @@
 // 首次设置和建议与反馈（0.23），真插件（不调任何接口）：无头 Chrome 装上插件（存储是空的，等于第一次安装）
 // ① 装上以后自动打开 options.html#welcome；第 1 步五个网站都开着、各有"清理""翻译"两个勾（HN 的叫"清理辱骂和色情评论"），改了就存进 sites；
-//    关掉的网站下面的勾不显示；② 第 2 步 Jev 和 OpenRouter 两个 key，各带"去哪里拿"（typesafe.ai、openrouter.ai/keys），一个网站都没开翻译时不问 OpenRouter；
+//    关掉的网站下面的勾不显示；② 第 2 步 Jev 和 OpenRouter 两个 key，各带"获取密钥"（typesafe.ai、openrouter.ai/keys；0.29.10 起没有"没填""测试连接"，保存时顺手测），一个网站都没开翻译时不问 OpenRouter；
 //    没填 key 时有"稍后再填"；③ 第 3 步开着的网站各一个"去看看"，没填 Jev key 有提醒，填了就没有；"完成"记下 ff_onboarded、关掉这一页；
 // ④ 设置页"高级"里能再走一遍；⑤ 设置页最下面"建议与反馈"：邮箱、复制、写邮件（mailto 带版本、浏览器、界面语言）；#feedback 打开时停在这张卡片；
 // ⑥ 弹窗最下面一个"反馈"（支持的、不支持的网站上都有）。设了 SHOT_DIR 就把三步和反馈卡片截图存下来。
@@ -34,7 +34,8 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
       keys: [...document.querySelectorAll("#welcomeKeys .row-name")].map((e) => e.textContent),
       links: [...document.querySelectorAll("#welcomeKeys .key-get")].map((a) => a.getAttribute("href")),
       notes: [...document.querySelectorAll("#welcomeKeys [id$='Note']")].map((e) => e.textContent),
-      later: !!document.getElementById("welcomeLater"), visit: [...document.querySelectorAll("#welcomeVisit a")].map((a) => [a.textContent, a.getAttribute("href")]),
+      next: document.getElementById("welcomeNext")?.textContent || null, extras: document.querySelectorAll("#welcomeKeys [id$='Test'], #welcomeKeys .state").length,
+      msg: document.getElementById("keyMsg")?.textContent || null, visit: [...document.querySelectorAll("#welcomeVisit a")].map((a) => [a.textContent, a.getAttribute("href")]),
       noKey: !!document.getElementById("welcomeNoKey"), doc: document.title,
       local: document.getElementById("welcomeKeysLocal")?.textContent || null, lock: !!document.querySelector("#welcomeKeysLocal svg"),
     }));
@@ -51,9 +52,11 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
       s.sites.find((x) => x.id === "hn").checks.length === 0, JSON.stringify(st.ff_settings));
     await page.click("#welcomeNext"); await wait(400);
     s = await step();
-    ok("第 2 步：Jev 和 OpenRouter 两个 key，各带去哪里拿、各有一句说明；没填有稍后再填", s.title === "设置 API 密钥" && JSON.stringify(s.keys) === JSON.stringify(["Jev (TypeSafe)", "OpenRouter"]) &&
-      JSON.stringify(s.links) === JSON.stringify(["https://typesafe.ai", "https://openrouter.ai/keys"]) && s.notes.length === 2 && s.later, JSON.stringify(s));
-    ok("第 2 步：填之前就告诉 key 只存在本地（带锁）、只发给 TypeSafe 和 OpenRouter、不发给开发者", s.lock && /只保存在这个浏览器里/.test(s.local || "") && /TypeSafe、OpenRouter/.test(s.local) && /不会发给开发者/.test(s.local), JSON.stringify(s.local));
+    // 0.29.10（用户 10-23：字多、按钮链接多）：每个 key 一行"用途 · 服务名"+ 获取密钥，没有"没填"和"测试连接"；没填时下一步那个按钮写"稍后再填"
+    ok("第 2 步：清理 · TypeSafe、翻译 · OpenRouter 两个 key，各带获取密钥、各一句说明；没有没填、测试连接；没填时按钮是稍后再填", s.title === "设置 API 密钥" &&
+      JSON.stringify(s.keys) === JSON.stringify(["清理 · TypeSafe", "翻译 · OpenRouter"]) && JSON.stringify(s.links) === JSON.stringify(["https://typesafe.ai", "https://openrouter.ai/keys"]) &&
+      s.notes.length === 2 && s.extras === 0 && s.next === "稍后再填", JSON.stringify(s));
+    ok("第 2 步：填之前就告诉 key 只存在本地（带锁）、只发给 TypeSafe 和 OpenRouter、不发给开发者", s.lock && /只保存在这个浏览器里/.test(s.local || "") && /TypeSafe 和 OpenRouter/.test(s.local) && /不会发给开发者/.test(s.local), JSON.stringify(s.local));
     if (SHOT) await page.screenshot({ path: path.join(SHOT, "welcome-2.png"), fullPage: true });
     // 一个网站都不翻译时不问 OpenRouter
     await page.evaluate(() => chrome.storage.local.get("ff_settings").then(({ ff_settings }) => {
@@ -63,17 +66,27 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     }));
     await wait(500);
     s = await step();
-    ok("一个网站都没开翻译：不问 OpenRouter", JSON.stringify(s.keys) === JSON.stringify(["Jev (TypeSafe)"]), JSON.stringify(s.keys));
-    await page.click("#welcomeLater"); await wait(400);
+    ok("一个网站都没开翻译：不问 OpenRouter", JSON.stringify(s.keys) === JSON.stringify(["清理 · TypeSafe"]), JSON.stringify(s.keys));
+    await page.click("#welcomeNext"); await wait(400); // 这时写的是"稍后再填"
     s = await step();
     ok("稍后再填 → 第 3 步：开着的四个网站各一个去看看；没填 Jev key 有提醒", s.title === "好了" && s.visit.length === 4 && s.visit[0][0] === "X" && s.visit[0][1] === "https://x.com" && s.noKey, JSON.stringify(s));
     if (SHOT) await page.screenshot({ path: path.join(SHOT, "welcome-3.png"), fullPage: true });
     await page.click("#welcomeBack"); await wait(400);
-    await page.type("#key", "fake-jev-key-for-test"); await page.click("#saveKey"); await wait(500);
+    // 保存时顺手测一次（0.29.10）：发给 TypeSafe 的请求在这里拦下、回 401（不联网），该写出原因、不打勾
+    const sw = await browser.waitForTarget((t) => t.type() === "service_worker" && t.url().startsWith(`chrome-extension://${id}/`));
+    const swc = await sw.createCDPSession();
+    const asked = [];
+    swc.on("Fetch.requestPaused", (e) => { asked.push(e.request.url); swc.send("Fetch.fulfillRequest", { requestId: e.requestId, responseCode: 401,
+      responseHeaders: [{ name: "content-type", value: "application/json" }], body: Buffer.from('{"error":"invalid api key"}').toString("base64") }).catch(() => {}); });
+    await swc.send("Fetch.enable", { patterns: [{ urlPattern: "https://api.typesafe.ai/*" }] });
+    await page.type("#key", "fake-jev-key-for-test"); await page.click("#saveKey"); await wait(1500);
     st = await stored();
     s = await step();
-    ok("回第 2 步填了 key（0.28.12 起存进后台的 IndexedDB，storage.local 只有 ff_keys 填没填）就没有稍后再填", st.ff_keys?.jev === true && !("ff_key" in st) && !JSON.stringify(st).includes("fake-jev-key-for-test") && !s.later,
-      JSON.stringify({ later: s.later, flags: st.ff_keys }));
+    ok("回第 2 步填了 key（0.28.12 起存进后台的 IndexedDB，storage.local 只有 ff_keys 填没填）：按钮换成下一步", st.ff_keys?.jev === true && !("ff_key" in st) && !JSON.stringify(st).includes("fake-jev-key-for-test") && s.next === "下一步",
+      JSON.stringify({ next: s.next, flags: st.ff_keys }));
+    ok("保存时顺手测了一次：TypeSafe 说密钥无效 → 直说用不了（不报分数、不说请重试），输入框留着好马上改，不另挂用不了的标签", asked.length >= 1 && /这个密钥用不了/.test(s.msg || "") &&
+      !/\d\.\d|重试/.test(s.msg || "") && !!(await page.$("#key")) && s.extras === 0, JSON.stringify({ asked, msg: s.msg, extras: s.extras }));
+    await swc.send("Fetch.disable").catch(() => {});
     await page.click("#welcomeNext"); await wait(400);
     s = await step();
     ok("填了 key，第 3 步不再提醒", s.title === "好了" && !s.noKey, JSON.stringify(s));

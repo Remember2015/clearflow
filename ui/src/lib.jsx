@@ -26,7 +26,7 @@ export const joinSentences = (parts) => parts.filter(Boolean).join(/^(zh|ja)/.te
 
 export async function send(msg) {
   const r = await chrome.runtime.sendMessage(msg);
-  if (!r || r.error || r.ok === false) throw new Error(r ? I18N.errText(r) : t("c.notDone"));
+  if (!r || r.error || r.ok === false) throw Object.assign(new Error(r ? I18N.errText(r) : t("c.notDone")), { code: r?.code }); // code：引导页分得清"密钥无效"和别的错
   return r;
 }
 // "失败：{msg}。请重试。"：原因自己结尾的句号去掉，不然是"……整数。。请重试。"

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.29.10 — 2026-10-23
+
+- First-time setup, API keys step: shorter text and fewer buttons. Each key has one line saying what it's for and where to get it, a field and Save. Saving checks the key right away and says whether it works, so there's no separate "Test connection"; a key that doesn't work leaves the field open to fix it. "Later" and "Next" are now one button.
+
 ## 0.29.9 — 2026-10-23
 
 - X: when ClearFlow improves Grok's translation of a post that's on screen, it now uses OpenAI's standard lane instead of trying the half-price flex lane first. The flex lane is often busy, and the post you were looking at could wait about 10 seconds before the translation even started. Posts above or below the screen that are translated ahead of time still use the flex lane, as the other translations already did.
