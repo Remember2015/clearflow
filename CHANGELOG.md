@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.29.9 — 2026-10-23
+
+- X: when ClearFlow improves Grok's translation of a post that's on screen, it now uses OpenAI's standard lane instead of trying the half-price flex lane first. The flex lane is often busy, and the post you were looking at could wait about 10 seconds before the translation even started. Posts above or below the screen that are translated ahead of time still use the flex lane, as the other translations already did.
+
 ## 0.29.8 — 2026-10-21
 
 - X: when TypeSafe judges X's own (Grok) translation of a post to be poor, ClearFlow's retranslation now replaces it directly. It used to be scored by TypeSafe again and swapped in only if it scored clearly higher, but that second score missed correct translations of slang, and on real posts it didn't make the shown translations any better. Quick checks on your computer still catch broken output — the text sent back untranslated, written in the wrong language, or far too short or long; then the fallback model tries once, and if that fails too, Grok's version stays.

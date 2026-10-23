@@ -136,12 +136,18 @@ await ok("flex：主模型 400 直接换后备（不再走标准通道试一次�
   assert.equal(r.text, "后备的");
   assert.deepEqual(net.calls.or.map((b) => [b.model, !!b.provider]), [[S.translateModel, true], [S.translateFallback, false]]); // 400 不是通道的问题：不再走标准试一次
 });
-await ok("flex：改进 Grok 译文的重译走 flex，换后备再翻的不带", async () => {
+// 0.29.9（用户 10-23："可视区域内不走半价通道"）：页面那头说不在屏幕上（flex: true）才走 flex，没说就是屏幕上的、走标准
+await ok("flex：不在屏幕上的改进走 flex，换后备再翻的（DeepSeek，不是 OpenAI 的）不带", async () => {
   const luna = "Sorry, I can't translate this.", ds = "后备模型翻得好的译文";
-  const net = fakeNet({ judgeScores: (t) => (t === item.xText ? { faithful: 0.62, complete: 0.8, natural: 0.7 } : t === luna ? { faithful: 0.5, complete: 0.8, natural: 0.7 } : good),
-    orPlan: (body) => (body.model === S.translateModel ? luna : ds) });
-  await improve({ jevKey: "j", orKey: "o", settings: S, item, cache: memCache(), fetchImpl: net.fetchImpl });
+  const net = fakeNet({ judgeScores: () => bad, orPlan: (body) => (body.model === S.translateModel ? luna : ds) });
+  await improve({ jevKey: "j", orKey: "o", settings: S, item, cache: memCache(), fetchImpl: net.fetchImpl, flex: true });
   assert.deepEqual(net.calls.or.map((b) => [b.model, !!b.provider]), [[S.translateModel, true], [S.translateFallback, false]]);
+});
+await ok("flex：屏幕上的改进（没说 flex）走标准通道，不先等 flex", async () => {
+  const net = fakeNet({ judgeScores: () => bad, orPlan: () => "屏幕上这条的译文，走标准通道翻出来" });
+  const r = await improve({ jevKey: "j", orKey: "o", settings: S, item, cache: memCache(), fetchImpl: net.fetchImpl });
+  assert.equal(r.action, "replace");
+  assert.deepEqual(net.calls.or.map((b) => [b.model, !!b.provider, !!b.stream]), [[S.translateModel, false, false]]);
 });
 
 // 0.28.5（review）

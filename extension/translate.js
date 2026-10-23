@@ -177,7 +177,8 @@
       }
       if (!source || source === xText || source.length > MAX_LEN || xText.length > MAX_LEN) { job.state = "skip"; return; }
       job.tags = tagsOf(source);
-      finish(key, job, await send({ type: "translate", id, source, xText, srcLang, target: target() }));
+      const ar = a.getBoundingClientRect(), onScreen = ar.bottom > 0 && ar.top < (innerHeight || 800); // 不在屏幕上的（提前做的）才走 flex（0.29.9）
+      finish(key, job, await send({ type: "translate", id, source, xText, srcLang, target: target(), flex: !onScreen }));
     } finally {
       inflight--;
       scheduleRender();

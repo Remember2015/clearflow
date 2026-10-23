@@ -496,7 +496,7 @@ async function handleTranslate(msg, site = null) {
     await txSlot(controller.signal);
     acquired = true;
     await sameKeys(key, jevKey);
-    const r = await translator.improve({ jevKey, orKey: key, settings: st, signal: controller.signal,
+    const r = await translator.improve({ jevKey, orKey: key, settings: st, signal: controller.signal, flex: msg.flex === true, // 页面那头说不在屏幕上才走 flex
       item: { id: msg.id, source: msg.source, xText: msg.xText, srcLang: msg.srcLang, target: msg.target || "zh" } });
     if (r.cached) bump({ tx_cached: 1 }).catch(() => {});
     else {

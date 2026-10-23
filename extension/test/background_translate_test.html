@@ -96,6 +96,8 @@ try {
   ok("Grok 差：重译了就换上（0.29.8 起不再判重译的）", r.action === "replace" && r.text.startsWith("改进的译文") && r.weak === "natural" && r.cached === false, JSON.stringify(r));
   const b = net.or[0];
   ok("请求里关掉思考、key 去掉了空格", b.reasoning?.enabled === false && b.model === "openai/gpt-6-luna" && net.jev === 1 && net.auth === "Bearer sk-or-test", JSON.stringify([b, net.auth]));
+  // 0.29.9：页面没说不在屏幕上（屏幕上的）走标准通道（说了 flex: true 的见下面清空缓存之后）
+  ok("屏幕上的改进走标准通道", !b.provider, JSON.stringify(b.provider));
   await new Promise((res) => setTimeout(res, 100));
   let s = stats();
   ok("统计：判了 1 条、重译 1 条、换上 1 条、记了花费", s.tx_judged === 1 && s.tx_retranslated === 1 && s.tx_replaced === 1 && s.tx_usd > 0 && s.tx_jev_tokens === 300, JSON.stringify(s)); // 只判 Grok 那一次
@@ -105,6 +107,8 @@ try {
   await call({ type: "txCacheClear" });
   r = await call(item("1"));
   ok("清空缓存后重新判", r.cached === false && net.jev === 2);
+  r = await call({ ...item("2"), flex: true }); // 0.29.9：提前做的（不在屏幕上）才走 flex
+  ok("不在屏幕上的改进走 flex", r.action === "replace" && JSON.stringify(net.or.at(-1).provider) === JSON.stringify({ order: ["openai/flex"], allow_fallbacks: true }), JSON.stringify([r, net.or.at(-1).provider]));
 
   // 同时来 20 条：最多 16 条一起做（0.19.4 以前 8 条、0.13.13 以前 4 条）
   net.orDelay = 120; net.maxLive = 0;

@@ -526,7 +526,9 @@ export function badOutput(text, { source, xText, target = "zh" }) {
 
 // item: {id, source, xText, srcLang, target}；返回 {action: "keep" | "replace", text?, model?, weak?（Grok 哪一问最差）, grok, grokMin,
 // retried?（换另一个模型又翻了一次）, bad?（重译的没过本地检查、留 Grok 的：same / script / length）, cost, jevTokens, cached}
-export async function improve({ jevKey, orKey, settings, item, cache = idbCache, signal, fetchImpl }) {
+// flex：这条不在屏幕上（页面那头提前做的）才走 flex 半价通道；屏幕上的走标准（0.29.9，用户 10-23："可视区域内不走半价通道"，0.28.4 定的，
+// 补翻、字幕都照做了，这里以前写死 flex: true——flex 忙时眼前这条要白等 FLEX_WAIT_MS 10 秒才换标准通道，实测一条帖子 3 次都是 10 秒超时 + 标准 2.5–3 秒）
+export async function improve({ jevKey, orKey, settings, item, cache = idbCache, signal, fetchImpl, flex = false }) {
   const key = await sha256(JSON.stringify([TRANSLATOR_VERSION, item.id, item.source, item.xText, item.target || "zh", settings.translateModel,
     settings.translateThreshold]));
   try {
@@ -548,8 +550,7 @@ export async function improve({ jevKey, orKey, settings, item, cache = idbCache,
   } else {
     let spent = { cost: 0, jevTokens: grok.tokens };
     try {
-      // 改进 Grok 的译文不急（页面上已经是 Grok 的译文了）：走 flex
-      let pick = await translate(orKey, settings, item, { signal, fetchImpl, flex: true });
+      let pick = await translate(orKey, settings, item, { signal, fetchImpl, flex });
       spent.cost = pick.cost || 0;
       let cost = pick.cost || 0, retried = false;
       // Grok 判下来不好、重译出来的就换上（0.29.8 起不再让 Jev 判重译的、比 Grok 高多少才换：用户 10-21，Jev 认不出粗口俗语，翻对的
@@ -559,7 +560,7 @@ export async function improve({ jevKey, orKey, settings, item, cache = idbCache,
       const other = [settings.translateModel, settings.translateFallback].find((m) => m && !(pick.tried || [pick.model]).includes(m));
       if (bad && other) {
         try {
-          const again = await translate(orKey, { ...settings, translateModel: other, translateFallback: null }, item, { signal, fetchImpl, flex: true });
+          const again = await translate(orKey, { ...settings, translateModel: other, translateFallback: null }, item, { signal, fetchImpl, flex });
           cost += again.cost || 0; spent.cost += again.cost || 0; retried = true;
           const bad2 = badOutput(again.text, item);
           if (!bad2) { pick = again; bad = null; }

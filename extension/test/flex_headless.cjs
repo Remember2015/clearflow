@@ -1,4 +1,4 @@
-// 翻译走哪条通道（0.28.4，用户 10-19："可见区域的用标准的，不可见预翻译的可以用 flex"）：发请求时这一批有一条在屏幕上 → 标准（flex: false），
+// 翻译走哪条通道（0.28.4，用户 10-19："可见区域的用标准的，不可见预翻译的可以用 flex"；0.29.9 起 X 首页改进 Grok 译文也查）：发请求时这一批有一条在屏幕上 → 标准（flex: false），
 // 都不在（上下一屏内的预翻译）→ flex（半价，见 translator.js）。仿页面 reddit/post_en.html（英文帖子、英日西文评论），中文界面，窗口只有 420 高：
 // 帖子在屏幕上，后面几条评论在屏幕下方（还在一屏之内，会预翻译）。位置在发请求那一刻记（翻好以后原文那一格会藏起来）。
 // 用法：node test/flex_headless.cjs <装了 puppeteer-core 的目录> [http://localhost:8767]（run_all.mjs 会起服务）
@@ -32,6 +32,26 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     ok("走 flex 的那几条都不在屏幕上", flexed.every((m) => m.top === null || m.top >= s.vh), JSON.stringify(flexed));
     ok("屏幕上的评论走标准通道", std.some((m) => m.top !== null && m.top >= 0 && m.top < s.vh), JSON.stringify(std));
     ok("每个请求都说了走哪条（flex 是 true 或 false）", s.msgs.length > 0 && s.msgs.every((m) => typeof m.flex === "boolean"), JSON.stringify(s.msgs));
+
+    // X 首页改进 Grok 的译文（0.29.9，用户 10-23："可视区域内不走半价通道"；以前这条路写死走 flex，flex 忙时眼前的帖子白等 10 秒）：
+    // 屏幕上的帖子走标准通道，屏幕下方提前做的走 flex。仿首页 translate.html，窗口 420 高
+    const px = await browser.newPage();
+    px.on("pageerror", (e) => out.push(`PAGEERROR ${e.message}`));
+    await px.evaluateOnNewDocument(() => {
+      window.__ffAt = {};
+      const where = (id) => { const a = [...document.querySelectorAll("article")].find((x) => x.querySelector(`a[href*="/status/${id}"]`)); if (!a) return null; const r = a.getBoundingClientRect(); return r.width || r.height ? r.top : null; };
+      const arr = (window.__ffTxMsgs = []);
+      const push = arr.push.bind(arr);
+      arr.push = (...ms) => { for (const m of ms) if (m && m.type === "translate" && !(m.id in window.__ffAt)) window.__ffAt[m.id] = where(m.id); return push(...ms); };
+    });
+    await px.setViewport({ width: 900, height: 420 });
+    await px.goto(`${BASE}/fakex/translate.html`, { waitUntil: "load" });
+    await wait(4000);
+    const x = await px.evaluate(() => ({ vh: innerHeight, msgs: (window.__ffTxMsgs || []).filter((m) => m.type === "translate").map((m) => ({ id: m.id, flex: m.flex, top: window.__ffAt[m.id] })) }));
+    const xf = x.msgs.filter((m) => m.flex === true), xs = x.msgs.filter((m) => m.flex === false);
+    ok("X 首页：屏幕上的帖子改进 Grok 译文走标准通道", xs.length > 0 && xs.every((m) => m.top !== null && m.top < x.vh), JSON.stringify(x.msgs));
+    ok("X 首页：屏幕下方提前做的走 flex", xf.length > 0 && xf.every((m) => m.top === null || m.top >= x.vh), JSON.stringify(x.msgs));
+    ok("X 首页：每个改进请求都说了走哪条", x.msgs.length > 0 && x.msgs.every((m) => typeof m.flex === "boolean"), JSON.stringify(x.msgs));
   } catch (e) {
     out.push(`FAIL 出错 ${e.stack || e}`);
   } finally {
