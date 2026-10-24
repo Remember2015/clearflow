@@ -2,7 +2,7 @@
   "brand": "ClearFlow",
   "languageLabel": "Escolher idioma",
   "title": "ClearFlow · Menos distrações, traduções mais claras",
-  "description": "Extensão de código aberto para Chrome que filtra respostas indesejadas no X, YouTube, Reddit, RedNote e Hacker News, traduz publicações, títulos de vídeos e comentários ainda sem tradução e melhora traduções quando necessário. Toda resposta ocultada tem uma explicação. Usa suas próprias chaves de API e não envia dados ao desenvolvedor.",
+  "description": "Extensão de código aberto para Chrome que filtra respostas indesejadas no X, YouTube, Reddit, RedNote e Hacker News e aprimora traduções: traduz publicações, títulos de vídeos e comentários que os sites deixam sem tradução e melhora as traduções dos próprios sites. Toda resposta ocultada tem uma explicação. Usa suas próprias chaves de API e não envia dados ao desenvolvedor.",
   "nav": {
     "clean": "Filtragem",
     "tx": "Tradução",
@@ -24,7 +24,7 @@
       "Interface em 19 idiomas",
       "Pague pelo que usar"
     ],
-    "lede": "Filtre respostas indesejadas, traduza o que ainda não foi traduzido e melhore traduções pouco naturais. Leia publicações, títulos de vídeos e comentários com mais facilidade.",
+    "lede": "Filtre respostas indesejadas e tenha traduções melhores: o que os sites deixam sem traduzir é traduzido, e as traduções deles são aprimoradas. Leia publicações, títulos de vídeos e comentários com mais facilidade.",
     "cta": "Adicionar ao Chrome",
     "ctaNote": "Instalação gratuita"
   },
@@ -62,7 +62,7 @@
   "eyebrow": {
     "clean": "Filtragem",
     "learn": "Seus exemplos",
-    "tx": "Tradução",
+    "tx": "Tradução aprimorada",
     "how": "Como funciona",
     "cost": "Custo",
     "privacy": "Privacidade",
@@ -129,15 +129,15 @@
   },
   "tx": {
     "h2": "Traduções mais fáceis de entender",
-    "lede": "Traduza o que ainda não foi traduzido e melhore traduções pouco naturais para acompanhar o conteúdo sem sair da página.",
+    "lede": "Melhore as traduções que os sites já oferecem e complete as que faltam, para acompanhar o sentido sem sair da página.",
     "points": [
       [
-        "Traduza o que falta",
-        "Leia no seu idioma as publicações do feed, os títulos e descrições dos vídeos e os comentários."
+        "Traduza o que os sites não traduzem",
+        "No Reddit, YouTube, RedNote e Hacker News, publicações, títulos e descrições de vídeos e comentários em outros idiomas são traduzidos diretamente na página."
       ],
       [
-        "Melhore traduções quando necessário",
-        "O ClearFlow pode retraduzir publicações no X e melhorar as legendas do YouTube quando você usa a tradução automática."
+        "Aprimore as traduções integradas",
+        "No X, traduções automáticas ruins são substituídas por versões melhores, e respostas do autor que o X deixou de traduzir são incluídas; publicações que o X não traduz ficam como estão. Nas legendas com tradução automática do YouTube, trechos fracos são retraduzidos."
       ],
       [
         "Leia no mesmo lugar e compare quando quiser",
@@ -240,6 +240,10 @@
       [
         "Quais idiomas são aceitos?",
         "A interface oferece 19 idiomas. As Configurações e a janela da extensão seguem o idioma do navegador. Os avisos na página e o idioma da tradução geralmente seguem o idioma da interface do site. O Hacker News sempre usa o idioma do navegador; os outros sites também o usam quando não é possível identificar o idioma da interface."
+      ],
+      [
+        "Por que algumas publicações no X não são traduzidas?",
+        "No X, o ClearFlow aprimora as traduções do próprio X: só atua em publicações que o X já traduziu automaticamente, substituindo traduções ruins e incluindo respostas do autor que o X deixou de traduzir. Publicações que o X não traduz ficam como estão."
       ],
       [
         "O ClearFlow tem ligação com o X ou o YouTube?",

@@ -36,7 +36,8 @@
   "filler.line.one": "{n} réponse du type « sympa » ou « +1 » masquée",
   "filler.lineShown.one": "{n} réponse du type « sympa » ou « +1 »",
   "filler.line.few": "{n} réponses du type « sympa » ou « +1 » masquées",
-  "filler.lineShown.few": "{n} réponses du type « sympa » ou « +1 »"
+  "filler.lineShown.few": "{n} réponses du type « sympa » ou « +1 »",
+  "c.siteTxPlus": "Améliorer la traduction"
  },
  "pt": {
   "tx.filled": "Traduzido pela extensão (original: {lang})",
@@ -93,7 +94,8 @@
   "heavy.spam": "垃圾回覆 {n}",
   "heavy.abuse": "辱罵 {n}",
   "heavy.sexual": "色情 {n}",
-  "heavy.filler": "「讚」／「mark」類 {n}"
+  "heavy.filler": "「讚」／「mark」類 {n}",
+  "manifest.desc": "在 X、Reddit、YouTube、小紅書和 Hacker News 上清理垃圾、辱罵和色情留言並標示原因；翻譯強化：補上沒翻譯的外文，改善 X 內建的翻譯。"
  },
  "th": {
   "group.sep": ", ",

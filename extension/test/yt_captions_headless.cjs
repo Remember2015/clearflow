@@ -10,6 +10,7 @@
 // ⑥ 一路拖过去（250、290、330 秒每 80 毫秒一下，停在 370 秒）：路过的那几处不翻，只从停下来的那一行（370 行）起翻。
 // ⑨ 流式（0.29.5，用户 10-20 要字幕跟得上）：整段 4 秒才回（?capslow=4000），后台每翻好一行先推回来——开头那段 1.5 秒内就一行行显示我们的；
 //    拖到 210 秒，从眼前这一行起翻（停下 0.6 秒才发，210–212 行；不按 40 行对齐成 200），一秒多就显示我们的。
+// ⑩ 网站设成"只翻译"（清理关掉）：繁体字幕照样转简体（0.29.12）。
 // 用法：node test/yt_captions_headless.cjs <装了 puppeteer-core 的目录> [http://localhost:8767]（run_all.mjs 会起服务）
 const path = require("path");
 const puppeteer = require(path.resolve(process.argv[2] || path.join(__dirname, "../../ui"), "node_modules/puppeteer-core"));
@@ -29,8 +30,9 @@ const at = (list, step, t) => { const i = Math.floor(t / step), r = t - i * step
 (async () => {
   const browser = await puppeteer.launch({ executablePath: process.env.CHROME_PATH || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", headless: "new",
     args: ["--no-first-run", "--autoplay-policy=no-user-gesture-required"] });
-  const open = async (q) => {
+  const open = async (q, seed) => {
     const pg = await browser.newPage();
+    if (seed) await pg.evaluateOnNewDocument((x) => { window.__ffSeed = x; }, seed);
     pg.on("pageerror", (e) => out.push(`PAGEERROR ${e.message}`));
     await pg.setViewport({ width: 900, height: 700 });
     await pg.goto(`${BASE}/fakex/yt/captions.html${q}`, { waitUntil: "load" });
@@ -137,6 +139,14 @@ const at = (list, step, t) => { const i = Math.floor(t / step), r = t - i * step
     done = await pg.evaluate(() => (window.__ffCapDone || []).length);
     ok("⑨ 拖到 210 秒：从眼前这一行起翻（210–212 行，不按 40 行对齐成 200）、整段还没回来就显示我们的", s.text === s.want && s.t > 210 && s.t < 214 && c9.some(([k, flex]) => k >= 210 && k <= 212 && flex === false) && !c9.some(([k]) => k === 200),
       JSON.stringify({ c9, done, s }));
+    await pg.close();
+    // ⑩ YouTube 设成"只翻译"（清理关掉）：字幕照样处理（0.29.12 修：以前要清理开着才工作）
+    pg = await open("", { ff_settings: { sites: { yt: { fold: false } } } });
+    await wait(600);
+    await pg.evaluate(() => window.__setTrack("zh-TW"));
+    await wait(2000);
+    s = await sample(pg, (t) => { const x = at(TW, 2.25, t); return x && conv(x); });
+    ok("⑩ 只翻译不清理：繁体字幕照样转成简体", s.text === s.want && /转成了简体/.test(s.mark || ""), JSON.stringify(s));
     await pg.close();
   } catch (e) {
     out.push(`FAIL 出错 ${e.stack || e}`);

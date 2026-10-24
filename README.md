@@ -8,7 +8,7 @@ ClearFlow (Chinese name 清流, “a clear stream”) is a Chrome extension that
 - **Hides content-free replies** like "nice", "+1", "mark", "following" (X, Reddit, YouTube, Xiaohongshu). One line at the top of the comments shows how many and brings them back.
 - **Merges runs of hidden replies** into a single line, and when a thread is full of junk (more than 5 bars), hides it all behind one line at the top that says how many and brings them back.
 - **Learns from what you mark.** Hide a spam reply yourself (the funnel on a comment, or *Hide this reply* in X's menu) and replies of the same kind — reworded, from other accounts, pushing the same scheme — are hidden too. Exact repeats, the same link and the same template are caught locally; your most recent marks also go to TypeSafe as examples in the requests it already makes. Marking can be undone.
-- **Translates** foreign-language posts and comments into your language, in place, with a switch back to the original. On X it replaces X's own automatic translations when they're poor.
+- **Better translations.** On Reddit, YouTube, Xiaohongshu and Hacker News, foreign-language posts and comments are translated into your language in place, with a switch back to the original. On X it enhances X's own translations: poor ones are replaced and author replies X skipped are filled in; posts X doesn't translate are left alone.
 
 The interface is available in 19 languages.
 

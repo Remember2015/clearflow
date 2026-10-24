@@ -2,7 +2,7 @@
   "brand": "ClearFlow",
   "languageLabel": "Dil seçin",
   "title": "ClearFlow · Daha temiz yorumlar, daha anlaşılır çeviriler",
-  "description": "X, YouTube, Reddit, Xiaohongshu (RedNote) ve Hacker News'teki gereksiz yorumları ayıklayan açık kaynaklı bir Chrome uzantısı. Çevrilmemiş gönderileri, video başlıklarını ve yorumları çevirir; gerektiğinde mevcut çevirileri iyileştirir. Gizlenen her yorumun gerekçesini görebilirsiniz. Kendi API anahtarlarınızı kullanır; geliştiriciye veri göndermez.",
+  "description": "X, YouTube, Reddit, Xiaohongshu (RedNote) ve Hacker News'teki gereksiz yorumları ayıklayan açık kaynaklı bir Chrome uzantısı. Çeviriyi de iyileştirir: Sitelerin çevirmediği gönderileri, video başlıklarını ve yorumları çevirir; sitelerin kendi çevirilerini geliştirir. Gizlenen her yorumun gerekçesini görebilirsiniz. Kendi API anahtarlarınızı kullanır; geliştiriciye veri göndermez.",
   "nav": {
     "clean": "Yorum temizliği",
     "tx": "Çeviri",
@@ -24,7 +24,7 @@
       "19 arayüz dili",
       "Kullandığınız kadar ödeyin"
     ],
-    "lede": "Gereksiz yorumları ayıklar, eksik çevirileri tamamlar ve anlaşılması güç çevirileri iyileştirir. Gönderileri, video başlıklarını ve yorumları daha rahat okuyun.",
+    "lede": "Gereksiz yorumları ayıklayın, daha iyi çevirilerle karşılaşın: Sitelerin çevirmediklerini çevirir, kendi çevirilerini iyileştirir. Gönderileri, video başlıklarını ve yorumları daha rahat okuyun.",
     "cta": "Chrome'a ekle",
     "ctaNote": "Kurulum ücretsiz"
   },
@@ -62,7 +62,7 @@
   "eyebrow": {
     "clean": "Yorum temizliği",
     "learn": "Geri bildirim",
-    "tx": "Çeviri",
+    "tx": "Çeviri iyileştirme",
     "how": "Nasıl çalışır?",
     "cost": "Maliyet",
     "privacy": "Gizlilik",
@@ -129,15 +129,15 @@
   },
   "tx": {
     "h2": "Daha doğal, daha anlaşılır çeviriler",
-    "lede": "Çevrilmemiş metinleri çevirir, anlaşılması güç çevirileri iyileştirir. Sayfadan ayrılmadan anlatılmak isteneni takip edin.",
+    "lede": "Sitelerin sunduğu çevirileri iyileştirin, çevirmediklerini tamamlayın; sayfadan ayrılmadan anlatılmak isteneni takip edin.",
     "points": [
       [
-        "Eksik çevirileri tamamlayın",
-        "Akıştaki gönderileri, video başlıklarını ve açıklamalarını, yorumları kendi dilinizde okuyun."
+        "Sitelerin çevirmediklerini çevirin",
+        "Reddit, YouTube, Xiaohongshu ve Hacker News'teki diğer dillerdeki gönderiler, video başlıkları ve açıklamaları ile yorumlar, sayfa içinde çevrilir."
       ],
       [
-        "Gerektiğinde mevcut çeviriyi iyileştirin",
-        "ClearFlow, X gönderilerini yeniden çevirebilir; YouTube'un otomatik çeviri altyazılarını kullandığınızda da gerektiğinde bunları iyileştirebilir."
+        "Yerleşik çevirileri iyileştirin",
+        "X'te yetersiz otomatik çeviriler daha iyileriyle değiştirilir ve X'in atladığı yazar yanıtları çevrilir; X'in çevirmediği gönderilere dokunulmaz. YouTube'un otomatik çevrilmiş altyazılarında da yetersiz kısımlar yeniden çevrilir."
       ],
       [
         "Yerinde okuyun, dilediğinizde karşılaştırın",
@@ -240,6 +240,10 @@
       [
         "Hangi diller destekleniyor?",
         "Arayüz 19 dili destekler. Ayarlar ve açılır pencere tarayıcı dilinizi kullanır. Sayfa içi etiketler ve çeviri hedefi genellikle sitenin arayüz dilini izler. Hacker News her zaman tarayıcı dilinizi kullanır; diğer sitelerde arayüz dili belirlenemezse yine tarayıcı dili kullanılır."
+      ],
+      [
+        "X'teki bazı gönderiler neden çevrilmiyor?",
+        "ClearFlow, X'te X'in kendi çevirilerini iyileştirir: Yalnızca X'in otomatik olarak çevirdiği gönderilerde çalışır; yetersiz çevirileri daha iyileriyle değiştirir ve X'in atladığı yazar yanıtlarını çevirir. X'in çevirmediği gönderiler olduğu gibi bırakılır."
       ],
       [
         "X veya YouTube ile bağlantısı var mı?",

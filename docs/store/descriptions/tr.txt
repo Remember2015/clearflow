@@ -4,7 +4,7 @@ ClearFlow, X, Reddit, YouTube, Xiaohongshu (RedNote) ve Hacker News’teki yorum
 • “nice”, “+1” veya “following” gibi içerik sunmayan yanıtları gizler ve yorumların en üstüne, bunları yeniden göstermenizi sağlayan tek satırlık bir seçenek ekler.
 • Art arda gelen gizli yanıtları tek satırda birleştirir; bir konu dizisi gereksiz içeriklerle doluysa hepsini tek bir özet satırının arkasına toplar.
 • İşaretlediklerinizden öğrenir: Bir spam yanıtını kendiniz gizlediğinizde, aynı türdeki yanıtlar da gizlenir. Bunlar yeniden yazılmış, başka hesaplardan gönderilmiş veya aynı yöntemi tanıtıyor olabilir. İstediğiniz zaman işlemi geri alabilirsiniz.
-• Yabancı dildeki gönderi ve yorumları, sayfada ve kendi dilinize çevirir; ayrıca özgün metne dönme seçeneği sunar. X’te, X’in otomatik çevirisi kötü olduğunda onun yerine geçer.
+• Daha iyi çeviriler: Reddit, YouTube, Xiaohongshu ve Hacker News’teki yabancı dildeki gönderi ve yorumları sayfada kendi dilinize çevirir, dilediğinizde özgün metne dönmenizi sağlar. X’te X’in kendi çevirilerini geliştirir: kötü çevirilerin yerine daha iyilerini koyar, X’in atladığı yazar yanıtlarını çevirir; X’in çevirmediği gönderileri ise olduğu gibi bırakır.
 • Her site için ayrı ayrı açıp kapatabilir; temizlik ve çeviri özelliklerini birbirinden bağımsız seçebilirsiniz.
 
 ClearFlow, kaydolup kullanıma göre ödeme yaptığınız ve kendi API anahtarınızı kullandığınız OpenRouter hizmetinden yararlanır: yanıtları değerlendirmesi için TypeSafe’in Jev modeline, metinleri ise bir çeviri modeline iletir. Kurulum sayfası anahtarı girmenize yardımcı olur; ayarlardan ne kadar harcadığınızı görebilirsiniz. Anahtar olmadan yalnızca yerleşik yerel kurallar çalışır.

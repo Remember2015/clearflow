@@ -73,6 +73,14 @@ const summary = () => new Promise((res) => {
     await wait(2500);
     b = await page.evaluate(bars);
     ok("主页上主人的帖子：\"在 @ 别人做推广\"\"伪装成普通评论的广告\"给高分也不折（只看\"引流\"），真拉人的照样折", !b["2001"] && !!b["2005"], JSON.stringify(b));
+    // 作者在分享自己做的东西（0.29.13，jev.js 的 own_work；用户 10-24：推自己的免费工具"不算拉人吧，而且是自己给自己"）：
+    // "引流"给了高分也不折；主人推"加我微信领资料"（这一问替身默认 0.1）照样折。时间线上的每条请求里都多问这一句
+    await page.goto(`${BASE}/fakex/profile.html?jev=${encodeURIComponent(JSON.stringify({ "加我微信": 0.9, "今天发了新视频": { benefit: 0.88, own_work: 0.97 } }))}`, { waitUntil: "load" });
+    await wait(2500);
+    b = await page.evaluate(bars);
+    const asked = await page.evaluate(() => (window.__ffJevAll || []).flatMap((m) => m.replies).filter((x) => (x.ask || []).includes("own_work")).map((x) => x.id));
+    ok("主页：作者分享自己做的东西（own_work 0.97）引流给 0.88 也不折；推加微信的照样折；每条都多问 own_work", !b["2001"] && !!b["2005"] && asked.includes("2001") && asked.includes("2005"),
+      JSON.stringify([b, asked]));
 
     await page.evaluate(() => window.__tab("with_replies"));
     await wait(1500);

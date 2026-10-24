@@ -6,6 +6,6 @@
     "message": "ClearFlow"
   },
   "extDesc": {
-    "message": "X, Reddit, YouTube, RedNote, Hacker News에서 스팸·욕설·성적인 댓글을 숨기고 이유를 표시합니다. X 번역을 개선하고 외국어 게시물을 번역합니다."
+    "message": "X, Reddit, YouTube, RedNote 및 HN의 스팸 댓글을 이유와 함께 숨기고, 번역이 없는 곳은 번역하며 X의 번역을 개선합니다."
   }
 }

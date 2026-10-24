@@ -70,8 +70,8 @@ SEED["ff_reply_override:" + SEED.ff_recent_folds[2].id] = { label: "missed", upd
       logo: !!document.querySelector("header.pop-head .site-logo svg path"), on: document.querySelector('header.pop-head [data-switch="on"]')?.getAttribute("aria-label"),
       rows: [...document.querySelectorAll("#feats .label")].map((e) => e.textContent), sizes: [...document.querySelectorAll("#feats .label")].map((e) => getComputedStyle(e).fontSize),
       next: document.querySelector("header.pop-head").parentElement.querySelector("#feats") ? "feats" : null, enabled: document.querySelector('[data-switch="enabled"]') }));
-    ok("第一行是当前网站（logo、名字）和它的总开关（0.21，用户：首行应该是当前平台的开启与关闭）；下面一组两项：清理垃圾评论、翻译外文，一样大",
-      head.site === "X" && head.title === "X" && head.logo && head.on === "在 X 上启用" && JSON.stringify(head.rows) === JSON.stringify(["清理垃圾评论", "翻译外文"]) &&
+    ok("第一行是当前网站（logo、名字）和它的总开关（0.21，用户：首行应该是当前平台的开启与关闭）；下面一组两项：清理垃圾评论、翻译增强（X 上叫翻译增强，0.29.12），一样大",
+      head.site === "X" && head.title === "X" && head.logo && head.on === "在 X 上启用" && JSON.stringify(head.rows) === JSON.stringify(["清理垃圾评论", "翻译增强"]) &&
       head.sizes[0] === head.sizes[1] && head.next === "feats" && !head.enabled, JSON.stringify(head));
     // 开关照苹果的比例、像素定死（0.21，用户：样式出错了——以前圆钮按 rem 算，弹窗 15px 根字号下缩小、四周留白不一样）
     const knob = await page.evaluate(() => { const sw = document.querySelector('[data-switch="on"]'), th = sw.querySelector('[data-slot="switch-thumb"]'); const a = sw.getBoundingClientRect(), b = th.getBoundingClientRect();
@@ -361,7 +361,7 @@ SEED["ff_reply_override:" + SEED.ff_recent_folds[2].id] = { label: "missed", upd
     // X：翻译开关的说明讲 Grok；补翻在翻译下面，翻译关了就灰掉；M1 在收起什么里
     await go("#site=x");
     tip = await helpText("#row-translate .help");
-    ok("X 的翻译：说明讲改进 X 自带的翻译、翻成哪种语言", /检查 X 的自动翻译/.test(tip[0] || "") && /界面语言/.test(tip[1] || ""), JSON.stringify(tip));
+    ok("X 的翻译：说明讲增强 X 自带的翻译、X 没翻的不翻、翻成哪种语言", /增强 X 自带的翻译/.test(tip[0] || "") && /X 没翻译的帖子不翻/.test(tip[0] || "") && /界面语言/.test(tip[1] || ""), JSON.stringify(tip));
     tip = await helpText("#row-m1 .help");
     ok("X 页上有 M1，说明里写着现在的长度上限（汉字和大约多少个字母）", /10 个汉字/.test(tip[0] || "") && /40 个字母/.test(tip[0] || ""), JSON.stringify(tip));
     const fillOff = () => page.$eval('[data-switch="translateFill"]', (e) => e.hasAttribute("data-disabled"));

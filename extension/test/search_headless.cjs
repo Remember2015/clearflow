@@ -49,6 +49,12 @@ const summary = () => new Promise((res) => {
     await openGroups(page);
     const b2 = await page.evaluate(bars);
     ok("搜索结果：\"在 @ 别人做推广\"\"伪装成普通评论的广告\"给高分也不折，推广（引流）的照样折", !b2["6001"] && !!b2["6003"], JSON.stringify(b2));
+    // 作者分享自己做的东西（0.29.13，own_work）：搜索结果里一样，引流高分也不折
+    await page.goto(`${BASE}/fakex/search.html?jev=${encodeURIComponent(JSON.stringify({ "加我微信": 0.9, "新歌太好听了": { benefit: 0.9, own_work: 0.95 } }))}`, { waitUntil: "load" });
+    await wait(2500);
+    await openGroups(page);
+    const b3 = await page.evaluate(bars);
+    ok("搜索结果：作者分享自己做的东西（own_work 0.95）引流给 0.9 也不折，推加微信的照样折", !b3["6001"] && !!b3["6003"], JSON.stringify(b3));
     await page.goto(`${BASE}/fakex/search.html?jev=${JEV}`, { waitUntil: "load" });
     await wait(2500);
     await openGroups(page);

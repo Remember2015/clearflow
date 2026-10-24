@@ -4,7 +4,7 @@ ClearFlow sprawia, że sekcje komentarzy na X, Reddicie, YouTube, Xiaohongshu (R
 • Ukrywa odpowiedzi niewnoszące żadnej treści, takie jak „nice”, „+1” czy „following”, i dodaje u góry komentarzy jeden wiersz, który pozwala je przywrócić.
 • Łączy ciągi ukrytych odpowiedzi w jeden wiersz, a gdy cały wątek jest pełen zbędnych treści, chowa je za jednym wierszem podsumowania.
 • Uczy się na podstawie Twoich oznaczeń: ukryj samodzielnie odpowiedź spamową, a ukryte zostaną też podobne odpowiedzi — przeredagowane, publikowane z innych kont i promujące ten sam przekręt. Cofnij tę zmianę w dowolnej chwili.
-• Tłumaczy posty i komentarze w obcych językach na Twój język, bezpośrednio na stronie, z możliwością powrotu do oryginału. Na X zastępuje automatyczne tłumaczenie X, gdy jest ono słabe.
+• Lepsze tłumaczenia: na Reddicie, YouTube, RedNote i Hacker News posty i komentarze w obcych językach są tłumaczone na Twój język bezpośrednio na stronie, z możliwością powrotu do oryginału. Na X ulepsza własne tłumaczenia X: słabe zastępuje lepszymi i uzupełnia tłumaczenia odpowiedzi autorów pominiętych przez X; posty, których X nie tłumaczy, pozostają bez zmian.
 • Włączaj lub wyłączaj rozszerzenie osobno dla każdej witryny i niezależnie wybieraj czyszczenie oraz tłumaczenie.
 
 ClearFlow korzysta z OpenRouter, usługi, w której zakładasz konto i płacisz za użycie, podając własny klucz API: przekazuje odpowiedzi modelowi Jev firmy TypeSafe do oceny, a tekst modelowi tłumaczeniowemu. Strona konfiguracji pomoże Ci wprowadzić klucz, a w ustawieniach sprawdzisz poniesione koszty. Bez klucza działają tylko wbudowane reguły lokalne.

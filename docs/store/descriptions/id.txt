@@ -4,7 +4,7 @@ ClearFlow membantu merapikan kolom komentar di X, Reddit, YouTube, Xiaohongshu (
 • Menyembunyikan balasan tanpa isi seperti “nice”, “+1”, atau “following”, dengan satu baris di bagian atas komentar untuk menampilkannya kembali.
 • Menggabungkan rangkaian balasan tersembunyi menjadi satu baris; jika utas penuh dengan balasan yang tidak diinginkan, semuanya disimpan di balik satu baris ringkasan.
 • Mempelajari balasan yang Anda tandai: sembunyikan sendiri balasan spam, maka balasan serupa—yang ditulis ulang, berasal dari akun lain, atau menjalankan modus yang sama—juga akan disembunyikan. Batalkan kapan saja.
-• Menerjemahkan postingan dan komentar berbahasa asing ke bahasa Anda langsung di tempat, dengan opsi untuk kembali ke teks asli. Di X, ClearFlow hanya menggantikan terjemahan otomatis X jika terjemahan tersebut buruk.
+• Terjemahan lebih baik: di Reddit, YouTube, RedNote, dan Hacker News, postingan dan komentar berbahasa asing diterjemahkan ke bahasa Anda langsung di tempat, dengan opsi untuk kembali ke teks asli. Di X, ClearFlow menyempurnakan terjemahan X sendiri: terjemahan yang buruk diganti dengan terjemahan yang lebih baik, dan balasan penulis yang terlewat oleh X diterjemahkan; postingan yang tidak diterjemahkan X dibiarkan apa adanya.
 • Aktifkan atau nonaktifkan per situs, dan pilih secara terpisah apakah ingin menggunakan penyaringan dan terjemahan.
 
 ClearFlow menggunakan OpenRouter, layanan yang Anda daftarkan dan bayar sesuai penggunaan, dengan kunci API Anda sendiri: layanan ini meneruskan balasan ke model Jev dari TypeSafe untuk dinilai dan teks ke model terjemahan. Halaman penyiapan membantu Anda memasukkan kunci; pengaturan menampilkan biaya yang telah dikeluarkan. Tanpa kunci, hanya aturan lokal bawaan yang berjalan.

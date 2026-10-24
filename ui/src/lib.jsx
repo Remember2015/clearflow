@@ -83,6 +83,9 @@ export function writeSite(site, patch) {
 // 网站的名字：都是专名、不翻，小红书在别的语言里叫 RedNote
 const SITE_NAMES = { x: "X", reddit: "Reddit", yt: "YouTube", hn: "Hacker News" };
 export const siteName = (id) => SITE_NAMES[id] || t(`site.${id}`);
+// 翻译开关的名字：X、YouTube 有自带的翻译，清流是在它上面增强（X 上只改进 X 翻过的、补翻作者回复，X 没翻的不翻；YouTube 评论先用自带的、
+// 字幕改善自动翻译）——叫「翻译增强」；其他网站是清流直接翻，叫「翻译外文」（用户 10-24）
+export const txLabel = (id) => t(id === "x" || id === "yt" ? "c.siteTxPlus" : "c.siteTx");
 // 网站的 logo（0.20.1）：照各家自己的图标原样画（logos.js），读屏念网站名
 export function SiteLogo({ id, size = 18, className }) {
   const parts = LOGOS[id];

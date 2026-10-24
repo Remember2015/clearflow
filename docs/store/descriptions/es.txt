@@ -4,7 +4,7 @@ ClearFlow vuelve a hacer legibles las secciones de comentarios de X, Reddit, You
 • Oculta respuestas sin contenido, como «nice», «+1» o «following», y añade una línea al principio de los comentarios para volver a mostrarlas.
 • Agrupa las respuestas ocultas consecutivas en una sola línea; si un hilo está lleno de basura, lo oculta todo tras una línea de resumen.
 • Aprende de lo que marcas: oculta una respuesta de spam y también ocultará las respuestas del mismo tipo —con otra redacción, de otras cuentas y que promuevan el mismo engaño—. Puedes deshacerlo cuando quieras.
-• Traduce las publicaciones y los comentarios en otros idiomas al tuyo, directamente en la página, con una opción para volver al original. En X, solo sustituye la traducción automática de X cuando sea deficiente.
+• Traducciones mejoradas: las publicaciones y los comentarios en otros idiomas de Reddit, YouTube, RedNote y Hacker News se traducen al tuyo directamente en la página, con una opción para volver al original. En X, se mejoran las traducciones de X: se sustituyen las deficientes y se traducen las respuestas de los autores que X pasa por alto; las publicaciones que X no traduce se dejan sin traducir.
 • Actívalo o desactívalo en cada sitio y configura por separado la limpieza y la traducción.
 
 ClearFlow utiliza OpenRouter, un servicio al que te suscribes y pagas según el uso, con tu propia clave de API: envía las respuestas al modelo Jev de TypeSafe para que las evalúe y el texto a un modelo de traducción. Una página de configuración te ayuda a introducirla; en los ajustes puedes ver cuánto has gastado. Sin clave, solo se aplican las reglas locales integradas.

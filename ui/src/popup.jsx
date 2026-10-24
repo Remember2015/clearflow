@@ -11,7 +11,7 @@
 import * as React from "react";
 import { createRoot } from "react-dom/client";
 import { DirectionProvider } from "@base-ui/react/direction-provider";
-import { t, I18N, SETTINGS, PRICE, DAY, day, usd, joinSentences, failText, useStorage, writeSite, siteName, SiteLogo, cn,
+import { t, I18N, SETTINGS, PRICE, DAY, day, usd, joinSentences, failText, useStorage, writeSite, siteName, txLabel, SiteLogo, cn,
   Toggle, TipProvider, CAT_TONE, WARN_TONE, BAD_TONE, MUTED_TONE } from "./lib.jsx";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -213,7 +213,7 @@ function Popup() {
         </header>
         <section id="feats" aria-label={siteName(site)} className={cn("feat-group rounded-2xl bg-muted px-3.5 transition-opacity duration-150", !on && "opacity-50")}>
           <SiteRow id="fold" name={t(site === "hn" ? "c.siteFoldHN" : "c.siteFold")} checked={o.fold !== false} disabled={!on} onChange={(v) => onToggle("fold", v)} />
-          <SiteRow id="translate" name={t("c.siteTx")} checked={o.translate !== false} disabled={!on} note={on ? txNote(d, st, site) : ""} onChange={(v) => onToggle("translate", v)} />
+          <SiteRow id="translate" name={txLabel(site)} checked={o.translate !== false} disabled={!on} note={on ? txNote(d, st, site) : ""} onChange={(v) => onToggle("translate", v)} />
         </section>
       </div>
       <Alerts d={d} st={st} />

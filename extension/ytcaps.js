@@ -76,7 +76,8 @@
   }
 
   // ---------- 这一条字幕怎么处理 ----------
-  const on = () => !!st && st.enabled !== false && st.translate !== false;
+  // 只看这个网站开没开翻译（forSite 的 translate 已经包含"网站开着"）；以前还要 enabled（= 开着清理），YouTube 设成"只翻译"时繁转简和字幕改善都不工作（0.29.12 修）
+  const on = () => !!st && st.translate !== false;
   async function decide() {
     const my = ++epoch;
     mode = null; showOurs = true;

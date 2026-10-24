@@ -6,6 +6,6 @@
     "message": "ClearFlow"
   },
   "extDesc": {
-    "message": "Blendet Spam, Beleidigungen und sexuelle Antworten aus und übersetzt fremdsprachige Beiträge."
+    "message": "Blendet Spam auf X, Reddit, YouTube, RedNote und HN mit Begründung aus. Übersetzt fehlende Inhalte und verbessert X-Übersetzungen."
   }
 }

@@ -4,7 +4,7 @@ ClearFlow giúp các phần bình luận dễ đọc hơn trên X, Reddit, YouTu
 • Ẩn các phản hồi không có nội dung như “nice”, “+1” hoặc “following”, kèm một dòng ở đầu phần bình luận để hiện lại chúng.
 • Gộp các chuỗi phản hồi bị ẩn thành một dòng; khi một chuỗi thảo luận đầy nội dung rác, ẩn tất cả sau một dòng tóm tắt.
 • Tìm hiểu từ những gì bạn đánh dấu: tự ẩn một phản hồi spam, các phản hồi cùng loại — được viết lại, từ tài khoản khác nhưng đẩy cùng một chiêu trò — cũng sẽ bị ẩn. Bạn có thể hoàn tác bất cứ lúc nào.
-• Dịch bài đăng và bình luận bằng ngôn ngữ khác sang ngôn ngữ của bạn ngay tại chỗ, với nút chuyển về bản gốc. Trên X, ClearFlow chỉ thay bản dịch tự động của X khi bản dịch đó kém chất lượng.
+• Bản dịch tốt hơn: Dịch bài đăng và bình luận bằng ngôn ngữ khác trên Reddit, YouTube, RedNote và Hacker News sang ngôn ngữ của bạn ngay tại chỗ, với nút chuyển về bản gốc. Trên X, ClearFlow cải thiện bản dịch của X: thay bản dịch kém chất lượng bằng bản dịch tốt hơn và bổ sung bản dịch cho các câu trả lời của tác giả mà X bỏ sót; không dịch những bài đăng X không dịch.
 • Bật hoặc tắt riêng cho từng trang web và chọn riêng tính năng dọn nội dung, dịch thuật.
 
 ClearFlow dùng OpenRouter, một dịch vụ mà bạn cần đăng ký và trả phí theo mức sử dụng bằng khóa API của riêng mình: dịch vụ này chuyển phản hồi cho mô hình Jev của TypeSafe để đánh giá và chuyển văn bản cho một mô hình dịch thuật. Trang thiết lập hướng dẫn bạn nhập khóa; phần cài đặt hiển thị số tiền bạn đã dùng. Khi không có khóa, chỉ các quy tắc cục bộ tích hợp sẵn hoạt động.

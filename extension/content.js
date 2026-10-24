@@ -318,7 +318,11 @@
   // 帖子作者自己的回复多问一句"是不是在接着讲自己这个帖子"（0.28.11，jev.js 的 op_topic）：是的话垃圾三问不清理它
   const opAsk = (it) => S.mode === "status" && !it.userLabel && !isSelf(it) && isOp(it);
   const onTopic = (it) => opAsk(it) && !!it.scores && typeof it.scores.op_topic === "number" && it.scores.op_topic >= globalThis.FFSettings.OP_TOPIC_THRESHOLD;
-  const asks = (it) => [...(fillerAsk(it) ? ["filler"] : []), ...(opAsk(it) ? ["op_topic"] : [])];
+  // 主页、搜索结果上的帖子多问一句"是不是作者在分享自己做的东西"（0.29.13，jev.js 的 own_work）：是的话"引流"那一问不清理它
+  // （用户 10-24：作者推自己做的免费工具"看起来不算拉人吧，而且是自己给自己"）。主人推"加我微信领资料"这种照样清理（以前用户定的）
+  const ownAsk = (it) => timeline() && !it.userLabel && !isSelf(it);
+  const ownWork = (it) => ownAsk(it) && !!it.scores && typeof it.scores.own_work === "number" && it.scores.own_work >= globalThis.FFSettings.OWN_WORK_THRESHOLD;
+  const asks = (it) => [...(fillerAsk(it) ? ["filler"] : []), ...(opAsk(it) ? ["op_topic"] : []), ...(ownAsk(it) ? ["own_work"] : [])];
   function decide(it) {
     if (!it.overrideReady) return { fold: false, kind: "pending" };
     if (it.userLabel === "missed") return { fold: true, kind: "user", reason: KIND("user") };
@@ -354,7 +358,7 @@
       // 垃圾回复、辱骂、色情可能同时过线，按分最高的那一类标：点名开撕的"绞杀评论区海狗@某人"拉人分 0.55 上下、辱骂 0.9，
       // 该标辱骂。辱骂、色情不用短文本豁免（"SB" 就两个字母）
       const cands = [];
-      if (best && (withImg(it) || !R.shortExempt(it.text)) && !onTopic(it)) cands.push({ kind: "jev", score: best.v, reason: `${REASON(best.k)} ${best.v.toFixed(2)}` });
+      if (best && (withImg(it) || !R.shortExempt(it.text)) && !onTopic(it) && !ownWork(it)) cands.push({ kind: "jev", score: best.v, reason: `${REASON(best.k)} ${best.v.toFixed(2)}` });
       // 和你标记过的垃圾是同一类（0.26，Jev 的 marked 那一问）：你自己标的，不用短文本豁免
       const mk = it.scores.marked;
       if (typeof mk === "number" && mk >= globalThis.FFSettings.MARKED_THRESHOLD) cands.push({ kind: "marked", score: mk, reason: KIND("marked") });
@@ -374,7 +378,8 @@
 
   function needJev(it) {
     // 已经有分、但这条该多问的 filler 没问过（刚打开这个开关）：重问一次
-    const missing = !it.scores || (fillerAsk(it) && typeof it.scores.filler !== "number") || (opAsk(it) && typeof it.scores.op_topic !== "number");
+    const missing = !it.scores || (fillerAsk(it) && typeof it.scores.filler !== "number") || (opAsk(it) && typeof it.scores.op_topic !== "number") ||
+      (ownAsk(it) && typeof it.scores.own_work !== "number");
     if (!(S.enabled && !S.settingsLoading && it.overrideReady && !it.userLabel && S.settings.useJev && S.hasKey && missing && !it.queued && !it.jevSkipped && (it.text.trim() || withImg(it)))) return false;
     if (it.translated && it.origState !== "done") return false; // 原文还没拿到
     if (isSelf(it) || (S.settings.dup && it.known) || it.markedLocal) return false;

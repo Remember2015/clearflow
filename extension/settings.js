@@ -141,5 +141,7 @@
   const MARKED_THRESHOLD = 0.6;
   // 帖子作者自己的回复"是在接着讲自己这个帖子"（jev.js 的 op_topic）到这个分：垃圾三问不清理它（0.28.11）
   const OP_TOPIC_THRESHOLD = 0.7;
-  globalThis.FFSettings = Object.freeze({ DEFAULTS, normalize, validate, forSite, siteOf, SITES, IMAGE_ORIGINS, MARKED_THRESHOLD, OP_TOPIC_THRESHOLD });
+  // 主页、搜索结果上的帖子"是作者在分享自己做的东西"（jev.js 的 own_work）到这个分："引流"那一问不清理它（0.29.13）
+  const OWN_WORK_THRESHOLD = 0.7;
+  globalThis.FFSettings = Object.freeze({ DEFAULTS, normalize, validate, forSite, siteOf, SITES, IMAGE_ORIGINS, MARKED_THRESHOLD, OP_TOPIC_THRESHOLD, OWN_WORK_THRESHOLD });
 })();

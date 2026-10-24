@@ -2,7 +2,7 @@
   "brand": "ClearFlow",
   "languageLabel": "Choisir la langue",
   "title": "ClearFlow · Moins de bruit, des traductions plus claires",
-  "description": "Extension Chrome open source qui filtre les réponses indésirables sur X, YouTube, Reddit, RedNote et Hacker News, traduit les publications, titres de vidéos et commentaires encore sans traduction, et améliore les traductions si nécessaire. Chaque réponse masquée est accompagnée d'une explication. Utilise vos propres clés API et n'envoie aucune donnée au développeur.",
+  "description": "Extension Chrome open source qui filtre les réponses indésirables sur X, YouTube, Reddit, RedNote et Hacker News, et améliore les traductions : elle traduit les publications, titres de vidéos et commentaires que les sites laissent sans traduction, et améliore leurs propres traductions. Chaque réponse masquée est accompagnée d'une explication. Utilise vos propres clés API et n'envoie aucune donnée au développeur.",
   "nav": {
     "clean": "Filtrage",
     "tx": "Traduction",
@@ -24,7 +24,7 @@
       "Interface en 19 langues",
       "Paiement à l'usage"
     ],
-    "lede": "Filtrez les réponses indésirables, traduisez ce qui ne l'est pas encore et améliorez les traductions maladroites. Lisez plus facilement les publications, titres de vidéos et commentaires.",
+    "lede": "Filtrez les réponses indésirables et profitez de meilleures traductions : ClearFlow traduit ce que les sites laissent sans traduction et améliore leurs propres traductions. Lisez plus facilement les publications, titres de vidéos et commentaires.",
     "cta": "Ajouter à Chrome",
     "ctaNote": "Installation gratuite"
   },
@@ -62,7 +62,7 @@
   "eyebrow": {
     "clean": "Filtrage",
     "learn": "Vos signalements",
-    "tx": "Traduction",
+    "tx": "Traduction améliorée",
     "how": "Fonctionnement",
     "cost": "Coût",
     "privacy": "Confidentialité",
@@ -129,15 +129,15 @@
   },
   "tx": {
     "h2": "Des traductions plus faciles à comprendre",
-    "lede": "Traduisez les contenus encore sans traduction et améliorez les traductions maladroites pour suivre le fil sans quitter la page.",
+    "lede": "Améliorez les traductions proposées par les sites et complétez celles qui manquent pour suivre le fil sans quitter la page.",
     "points": [
       [
         "Traduire ce qui ne l'est pas encore",
-        "Lisez dans votre langue les publications de votre fil, les titres et descriptions de vidéos ainsi que les commentaires."
+        "Sur Reddit, YouTube, RedNote et Hacker News, les publications, titres et descriptions de vidéos ainsi que les commentaires dans d'autres langues sont traduits directement sur la page."
       ],
       [
-        "Améliorer les traductions si nécessaire",
-        "ClearFlow peut retraduire les publications sur X et améliorer les sous-titres YouTube lorsque vous utilisez la traduction automatique."
+        "Améliorer les traductions intégrées",
+        "Sur X, les traductions automatiques maladroites sont remplacées par de meilleures traductions, et les réponses de l'auteur ignorées par X sont complétées ; les publications que X ne traduit pas restent inchangées. Avec les sous-titres traduits automatiquement par YouTube, les passages moins réussis sont retraduits."
       ],
       [
         "Lire sur place, comparer à tout moment",
@@ -240,6 +240,10 @@
       [
         "Quelles langues sont prises en charge ?",
         "L'interface est disponible en 19 langues. Les paramètres et la fenêtre de l'extension suivent la langue du navigateur. Les indications sur les pages et la langue de traduction suivent généralement celle de l'interface du site. Sur Hacker News, la langue du navigateur est toujours utilisée ; elle l'est aussi sur les autres sites si leur langue ne peut pas être détectée."
+      ],
+      [
+        "Pourquoi certaines publications sur X ne sont-elles pas traduites ?",
+        "Sur X, ClearFlow améliore les traductions de X : il intervient uniquement sur les publications que X a déjà traduites automatiquement, en remplaçant les traductions maladroites et en complétant les réponses de l'auteur ignorées par X. Les publications que X ne traduit pas restent telles quelles."
       ],
       [
         "ClearFlow est-il lié à X ou YouTube ?",

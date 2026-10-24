@@ -67,6 +67,15 @@ export const EXTRA_QUESTIONS = {
   op_topic:
     "The reply is written by the author of the post (same account as post_author). Is the author continuing their own post - adding " +
     "details, an update, an answer, or a link to the very thing the post announces or discusses - rather than advertising something unrelated to the post?",
+  // own_work（0.29.13）：只问主页、搜索结果上的帖子——是不是作者在分享自己做的东西（作品、工具、项目、产品、视频、活动，带不带链接都算），
+  // 而不是把人往别人的账号 / 生意、私信 / 联系方式 / 群、抽奖、投资或赚钱的套路上引。是的话"引流"那一问不清理它（辱骂、色情、你标记过的照旧）。
+  // 用户 10-24 报的：@sharp_maker 在自己主页上发"做了个免费工具，欢迎试用 + 链接"（还引用了自己前一天的帖子）被标成"在给别的账号或商家拉人"——
+  // 作者自己的三条 benefit 0.75–0.87，过了门槛。这一问（scratchpad/selfpromo/probe2.mjs，逐条问的格式）：自己的工具、开源软件、视频、
+  // 自家店的新品 0.95–0.98；"我的交易课程限时开放、私信我"0.07、"我发的币要 100 倍"0.27、拉人进群 / 加微信 0.02–0.09；
+  // 只有"我主页的私密内容"0.83（它的色情分 0.72 照样清理）。门槛 0.7（settings.js 的 OWN_WORK_THRESHOLD），样本小，用的是编的对照
+  own_work:
+    "Is the author of this item sharing or announcing their own work, project, product, content or event (possibly with a link to it), " +
+    "rather than steering readers to someone else's account or business, to a DM, contact or group, or to a giveaway, investment or money-making scheme?",
 };
 // 问帖子本身的（0.15.3 起）：rec——帖子是不是在请大家推荐东西。是的话回复里报名字是在回答，不算拉人，
 // 垃圾回复的门槛换成"求推荐类帖子的阈值"（默认 0.9）。以前靠只认中文的正则（推荐 / 服务商 / 有没有…靠谱），帖子译成别的语言就认不出：

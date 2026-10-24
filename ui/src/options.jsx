@@ -10,7 +10,7 @@
 import * as React from "react";
 import { createRoot } from "react-dom/client";
 import { DirectionProvider } from "@base-ui/react/direction-provider";
-import { t, I18N, SETTINGS, PRICE, DAY, day, usd, send, failText, useStorage, writeSettings, writeSite, siteName, SiteLogo, levelName, cn,
+import { t, I18N, SETTINGS, PRICE, DAY, day, usd, send, failText, useStorage, writeSettings, writeSite, siteName, txLabel, SiteLogo, levelName, cn,
   Help, Toggle, Levels, IconChevron, IconArrowLeft, IconCaret, IconCheck, IconLock, TipProvider, Toasts, toast, BAD_TONE, MUTED_TONE } from "./lib.jsx";
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader,
   AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -275,8 +275,8 @@ function SitePage({ id, d }) {
         <Row name={foldName} help={<P k={`opt.foldOn.${id}`} />} id="row-fold">
           <Toggle id="fold" checked={o.fold !== false} disabled={!on} label={foldName} onChange={(v) => put({ fold: v })} />
         </Row>
-        <Row name={t("c.siteTx")} help={<><P k={`opt.txOn.${id}`} /><P k="opt.txLang" /></>} id="row-translate">
-          <Toggle id="translate" checked={o.translate !== false} disabled={!on} label={t("c.siteTx")} onChange={(v) => put({ translate: v })} />
+        <Row name={txLabel(id)} help={<><P k={`opt.txOn.${id}`} /><P k="opt.txLang" /></>} id="row-translate">
+          <Toggle id="translate" checked={o.translate !== false} disabled={!on} label={txLabel(id)} onChange={(v) => put({ translate: v })} />
         </Row>
       </Section>
       <Section id="siteFold" title={t("opt.whatFold")}>
@@ -656,7 +656,7 @@ function Welcome({ d }) {
                 {siteOn && (
                   <div className="flex flex-wrap gap-x-5 gap-y-1 ps-[30px]">
                     <Check id={`w-${x.id}-fold`} checked={o.fold !== false} label={t(x.id === "hn" ? "c.siteFoldHN" : "c.siteFold")} onChange={(v) => put(x.id, { fold: v })} />
-                    <Check id={`w-${x.id}-tx`} checked={o.translate !== false} label={t("c.siteTx")} onChange={(v) => put(x.id, { translate: v })} />
+                    <Check id={`w-${x.id}-tx`} checked={o.translate !== false} label={txLabel(x.id)} onChange={(v) => put(x.id, { translate: v })} />
                   </div>
                 )}
               </div>

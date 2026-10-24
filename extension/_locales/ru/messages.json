@@ -6,6 +6,6 @@
     "message": "ClearFlow"
   },
   "extDesc": {
-    "message": "Скрывает спам, оскорбления и контент сексуального характера на X, Reddit, YouTube, RedNote и Hacker News. Переводит посты."
+    "message": "Скрывает спам на X, Reddit, YouTube, RedNote и HN. Переводит пропущенное и улучшает переводы X."
   }
 }
