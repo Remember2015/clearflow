@@ -52,7 +52,7 @@ const state = () => {
     return { href: a.getAttribute("href"), tx: c?.textContent || null, txShown: shown(c), origShown: shown(o), iconFirst: !!icon && before.every((e) => !shown(e)), // 前面只有藏着的（yt-icon）
       tip: a.querySelector(".ff-tx-inote")?.title || "", maxH: getComputedStyle(a).maxHeight, snip: spc?.textContent || null, snipShown: shown(spc), snipOrig: shown(spo) };
   });
-  r.jev = (window.__ffJevAll || []).map((m) => ({ post: m.post, author: m.author, ids: m.replies.map((x) => x.id), extra: m.extra || null }));
+  r.jev = (window.__ffJevAll || []).map((m) => ({ post: m.post, author: m.author, ids: m.replies.map((x) => x.id), extra: m.extra || null, keys: m.keys || null }));
   return r;
 };
 
@@ -92,6 +92,7 @@ const state = () => {
       s.Ugc13.bar === "只贴了一个链接" && s.Ugc13.hidden && !s.Ugc14.bar && !s.Ugc14.hidden, JSON.stringify([s.Ugc12, s.Ugc15, s.Ugc13, s.Ugc14].map((x) => x.bar)));
     ok("YouTube 折叠：同一个号把同一句话回了三遍，三条都折", ["Ugc12.R01", "Ugc13.R01", "Ugc14.R01"].every((k) => s[k].bar === "同一个账号发了 3 遍" && s[k].hidden),
       JSON.stringify(["Ugc12.R01", "Ugc13.R01", "Ugc14.R01"].map((k) => s[k].bar)));
+    ok("只问用得上的（0.29.14）：YouTube 不问\"伪装\"\"@ 推广\"", s.jev.length > 0 && s.jev.every((m) => JSON.stringify(m.keys) === JSON.stringify(["benefit", "abuse", "sexual"])), JSON.stringify(s.jev.map((m) => m.keys)));
     const sent = s.jev.flatMap((m) => m.ids);
     ok("发给 Jev 的：主帖是视频标题和频道、带频道主、多问 setup；频道主自己的评论也发（0.21.3）", s.jev.length >= 1 && s.jev.every((m) => m.post === "How Synthetic Engines Work, Explained\n(channel: Synthetic Channel)" &&
       m.author?.name === "Synthetic Channel" && JSON.stringify(m.extra) === '["setup"]') && sent.includes("yt_Ugc02") && sent.includes("yt_Ugc01.R01"), JSON.stringify(s.jev));

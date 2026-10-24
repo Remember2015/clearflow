@@ -37,6 +37,8 @@
   // 回复问的（蹭别人的评论区），拿去问帖子会把"感谢合作者""提到 @SpaceX"当成推广——2026-10-13 用户的记录里，
   // 主页上折的 18 条全是主人自己的帖子、16 条是这一问，没一条真是垃圾。这里只看"引流"那一问（辱骂、色情照旧）
   const POST_SPAM_KEYS = ["benefit"];
+  // 时间线上只问用得上的（0.29.14）：引流、辱骂、色情；"伪装""@ 推广"不问（帖子页照旧五问全问）
+  const TIMELINE_KEYS = [...POST_SPAM_KEYS, "abuse", "sexual"];
   // 「赞」「mark」这类回复（0.22，设置里的 filler）：帖子页上很短（rules.js 的 fillerShort）、不带图不带链接、没嵌引用卡片的回复多问 Jev 一句
   // （jev.js 的 filler），过了门槛整条藏起来、不放折叠条，主帖下面一行"清理了 N 条… · 查看"。门槛 0.7 按 X 自己的数据定
   // （jev_eval/code/xr_general/short_jev2.mjs，照插件这样 10 条一批问：纯表态藏掉 10/20，有内容的藏错 0/35；0.6 也一样，留一点余地）
@@ -398,7 +400,7 @@
       const cacheId = S.mode === "search" ? "s:search" : postId;
       send({ type: "jev", postId: cacheId, post: S.postText, author: S.postAuthor,
         replies: batch.map((it) => ({ id: it.id, name: it.name, handle: it.handle, text: it.text, ...(withImg(it) ? { images: it.images } : {}), ...(asks(it).length ? { ask: asks(it) } : {}) })),
-        ...(S.mode === "status" ? { extra: EXTRA } : {}) })
+        ...(S.mode === "status" ? { extra: EXTRA } : {}), ...(timeline() ? { keys: TIMELINE_KEYS } : {}) })
         .then((r) => {
           if (postId !== S.postId || epoch !== S.epoch) return;
           if (r.error === "badkey" || r.code === "badkey") S.jevNotice = t("cs.badkey");

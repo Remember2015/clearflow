@@ -37,6 +37,10 @@ export const QUESTIONS = {
 };
 export const SPAM_KEYS = ["benefit", "disguised", "promo_mention"];
 export const ALL_KEYS = Object.keys(QUESTIONS);
+// 这个页面要问五问里的哪几个（0.29.14，用户 10-24："改成只问用得上的"）：问题本身占请求的大头（多问一句约多 20% 的 token），
+// 以前每个页面五问全问，有的页面只用其中几个——X 主页 / 搜索结果和各站的列表页只看"引流"、YouTube 不看"伪装""@ 推广"、
+// 小红书不看"@ 推广"、Hacker News 不清理垃圾。不给（或给全了）就是五问全问，缓存指纹和以前一字不差
+export const keysOf = (keys) => (Array.isArray(keys) ? ALL_KEYS.filter((k) => keys.includes(k)) : ALL_KEYS);
 // 站点可以多问的问题（0.15.2 起 YouTube 问 setup，0.15.3 起 X、Reddit 的帖子页也问）：只有要的才问，缓存的指纹里带上问了哪几个，
 // 没多问的请求和缓存一个字不变。
 // setup：骗局的铺垫——编的发财 / 找回 / 落难故事，或者托儿式的提问、作证、推荐、联系方式暗示，目的是让读者去找某个人、某个项目。
@@ -107,8 +111,8 @@ export const askOf = (r, extra = []) => { const all = cleanExtra(extra); return 
 // 看图片（0.18）：回复上带 imageRefs（assets 里的引用名）的，state 里这条回复多一个 images 字段；Jev 把引用名换成那张图
 // 只问某几条的（0.22，filler）：回复上带 ask（EXTRA_QUESTIONS 里的名字），这一条多问这几个；state 里不带
 // examples（0.26）：你标记过的垃圾（[{handle, text}]）；给了就放进 state 的 marked_spam，每条回复多问一句 marked（见下面 MARKED_QUESTION）
-export function buildPayload(post, replies, author, extra = [], model = MODEL, assets = null, examples = null) {
-  const questions = {}, asked = { ...QUESTIONS, ...Object.fromEntries(cleanExtra(extra).map((k) => [k, EXTRA_QUESTIONS[k]])) };
+export function buildPayload(post, replies, author, extra = [], model = MODEL, assets = null, examples = null, keys = ALL_KEYS) {
+  const questions = {}, asked = { ...Object.fromEntries(keysOf(keys).map((k) => [k, QUESTIONS[k]])), ...Object.fromEntries(cleanExtra(extra).map((k) => [k, EXTRA_QUESTIONS[k]])) };
   for (const r of replies) {
     const mine = { ...asked, ...Object.fromEntries(askOf(r, extra).map((k) => [k, EXTRA_QUESTIONS[k]])) };
     for (const [name, q] of Object.entries(mine)) {
@@ -132,14 +136,15 @@ export function buildPayload(post, replies, author, extra = [], model = MODEL, a
 // 带图的请求要这个头（TypeSafe 的 Danger Zone；1.13、1.14 都能看图）
 export const IMAGE_HEADER = { "TypeSafe-Danger-Zone-Images": "true" };
 
-export const validScores = (sc, extra = []) => !!sc && [...ALL_KEYS, ...cleanExtra(extra)].every((k) =>
+export const validScores = (sc, extra = [], keys = ALL_KEYS) => !!sc && [...keysOf(keys), ...cleanExtra(extra)].every((k) =>
   typeof sc[k] === "number" && Number.isFinite(sc[k]) && sc[k] >= 0 && sc[k] <= 1);
 
 // 只缓存指纹，不额外保存原帖和回复原文；问题改动也会自动令旧结果失效。
-export async function cacheRequests(postId, post, replies, author, extra = []) {
-  const ex = cleanExtra(extra);
+export async function cacheRequests(postId, post, replies, author, extra = [], keys = ALL_KEYS) {
+  const ex = cleanExtra(extra), base = keysOf(keys);
   // 多问了的话指纹里带上问题原文（没多问时和以前一模一样，旧缓存照常命中）
-  const context = [CLASSIFIER_VERSION, MODEL, QUESTIONS, ...(ex.length ? [ex.map((k) => [k, EXTRA_QUESTIONS[k]])] : []), postId || "", post || "", author?.name || "", author?.handle || ""];
+  // 只问了五问里几个的，指纹里带的是那几个问题（五问全问时和以前一样，旧缓存照常命中）
+  const context = [CLASSIFIER_VERSION, MODEL, base.length === ALL_KEYS.length ? QUESTIONS : Object.fromEntries(base.map((k) => [k, QUESTIONS[k]])), ...(ex.length ? [ex.map((k) => [k, EXTRA_QUESTIONS[k]])] : []), postId || "", post || "", author?.name || "", author?.handle || ""];
   return Promise.all(replies.map(async (r) => {
     // 看图片：这条带了哪几张图（网址）也进指纹；没带图的和以前一模一样
     const imgs = Array.isArray(r.images) && r.images.length ? [r.images] : [];
@@ -242,10 +247,10 @@ const tokensOf = (data) => (Number.isFinite(data.usage?.input_tokens) && data.us
 const validScore = (v) => typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 1;
 
 // examples 给了的话，结果里多一个 marked：{回复 id: 0–1}（和五问的 scores 分开放、分开缓存；这一问的答案坏了只是没有，不算这条失败）
-export async function scoreReplies(key, post, replies, { author = null, extra = [], model = MODEL, assets = null, examples = null, ...opts } = {}) {
-  const keys = [...ALL_KEYS, ...cleanExtra(extra)];
+export async function scoreReplies(key, post, replies, { author = null, extra = [], model = MODEL, assets = null, examples = null, keys: only = ALL_KEYS, ...opts } = {}) {
+  const base = keysOf(only), keys = [...base, ...cleanExtra(extra)];
   const withImages = !!(assets && Object.keys(assets).length);
-  return postJev(key, JSON.stringify(buildPayload(post, replies, author, extra, model, assets, examples)), {
+  return postJev(key, JSON.stringify(buildPayload(post, replies, author, extra, model, assets, examples, base)), {
     // 带图的请求大、慢：单次、总时限放宽
     ...(withImages ? { headers: IMAGE_HEADER, requestTimeoutMs: 25000, totalTimeoutMs: 45000 } : {}),
     ...opts,
@@ -255,7 +260,7 @@ export async function scoreReplies(key, post, replies, { author = null, extra = 
       for (const r of replies) {
         const ask = askOf(r, extra);
         const sc = Object.fromEntries([...keys, ...ask].map((k) => [k, data?.answers?.[`${r.id}__${k}`]?.noul]));
-        if (validScores(sc, [...extra, ...ask])) scores[r.id] = sc; else invalid.push(r.id);
+        if (validScores(sc, [...extra, ...ask], base)) scores[r.id] = sc; else invalid.push(r.id);
       }
       if (!Object.keys(scores).length) {
         // 全坏也是付过费的：带上用掉的 token（0.28.7 以前不记，费用少算）

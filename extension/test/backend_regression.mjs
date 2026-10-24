@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
 import { webcrypto } from "node:crypto";
-import { scoreReplies, JevError, validScores, cacheRequests, cleanExtra, askOf, ALL_KEYS, markedRequests, askMarked, MARKED_MAX, MARKED_BATCH } from "../jev.js";
+import { scoreReplies, JevError, validScores, cacheRequests, cleanExtra, keysOf, askOf, ALL_KEYS, markedRequests, askMarked, MARKED_MAX, MARKED_BATCH } from "../jev.js";
 
 globalThis.crypto ||= webcrypto;
 const scores = (v = 0.1) => Object.fromEntries(ALL_KEYS.map((k) => [k, v]));
@@ -34,7 +34,7 @@ function backend({ fetchImpl, failWrite, initial = {} } = {}) {
     stats: async () => ({ count: records.size }), clear: async () => records.clear(),
   };
   const context = vm.createContext({
-    chrome, cache, keyStore, validScores, cacheRequests, cleanExtra, askOf, JevError, markedRequests, askMarked, MARKED_MAX, MARKED_BATCH, TextEncoder, crypto: webcrypto,
+    chrome, cache, keyStore, validScores, cacheRequests, cleanExtra, keysOf, askOf, JevError, markedRequests, askMarked, MARKED_MAX, MARKED_BATCH, TextEncoder, crypto: webcrypto,
     AbortController, DOMException, Date, Promise, console, URL, // URL：settings.js 按网址认网站（0.20）
     setTimeout: () => 0, // 0.28.5：后台起来 5 秒后清过期缓存（purgeCaches）；这里不跑
     scoreReplies: (key, post, replies, options) => scoreReplies(key, post, replies, {
@@ -194,6 +194,24 @@ test("partially invalid answers cache only the valid replies and report a retrya
   assert.deepEqual(r.scores["1"], scores()); assert.equal(r.scores["2"], undefined);
   assert.equal(r.code, "invalid_response"); assert.equal(r.retryable, true);
   assert.deepEqual([...h.records.keys()], ["1"]);
+});
+
+test("asking only the questions a page uses (0.29.14 keys): only those go out, they are enough to cache, and the full five don't reuse them", async () => {
+  let sent = null;
+  const h = backend({ fetchImpl: async (url, init) => {
+    const p = JSON.parse(init.body);
+    sent = Object.keys(p.questions).sort();
+    return response({ answers: Object.assign({}, ...p.state.replies.map((r) => answers(r.id))), usage: { input_tokens: 10 } });
+  } });
+  const sub = { ...msg(), keys: ["sexual", "abuse", "not_a_question"] };
+  const r = await h.call(sub);
+  assert.deepEqual(sent, ["1__abuse", "1__sexual"]);
+  assert.equal(typeof r.scores["1"].abuse, "number");
+  await h.call(sub);
+  assert.equal(h.calls, 1); // 缓存命中
+  await h.call(msg());
+  assert.equal(h.calls, 2); // 五问全问是另一份指纹，不拿只问了两问的冒充
+  assert.equal(sent.length, 5);
 });
 
 test("batch cache matches context and rejects old full-post prefetch", async () => {

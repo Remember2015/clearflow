@@ -67,6 +67,7 @@ const summary = () => new Promise((res) => {
       JSON.stringify([jev?.post, jev?.author, jev?.postId]));
     ok("评论区广告不发 Jev（本地就认出来了）；楼主的照样发（0.21.3，用户：作者的评论也得过滤）", (jev?.replies || []).some((x) => x.id === "t1_r05") && !(jev?.replies || []).some((x) => /广告/.test(x.text)), JSON.stringify((jev?.replies || []).map((x) => x.id)) + sent);
     // 这一页的记号：0.28.5 起不再给后台发"最近清理"的记录，改看发给 Jev 的请求里的 postId
+    ok("只问用得上的（0.29.14）：Reddit 帖子页五问全问（不带 keys）", !!jev && !jev.keys, JSON.stringify(jev?.keys));
     const keys = await page.evaluate(() => [...new Set((window.__ffJevAll || []).map((m) => m.postId))]);
     ok("这一页记成 r:t3_abc123（发给 Jev 的请求里）", JSON.stringify(keys) === JSON.stringify(["r:t3_abc123"]), JSON.stringify(keys));
     let sum = await page.evaluate(summary);
@@ -92,6 +93,13 @@ const summary = () => new Promise((res) => {
     ok("帖子列表：拉人帖、色情帖整张卡片折起来，正常的不折", fs.t3_f2.bar && fs.t3_f2.hidden && /色情/.test(fs.t3_f3.bar || "") && fs.t3_f3.hidden && !fs.t3_f1.bar && !fs.t3_f1.hidden, JSON.stringify(fs));
     const fj = await page.evaluate(() => window.__ffLastJev);
     ok("帖子列表：请求里说明是帖子列表、不带作者；广告帖不判", /Reddit feed/.test(fj?.post || "") && !fj?.author && fj?.postId === "r:feed" && !(fj?.replies || []).some((x) => /买它/.test(x.text)), JSON.stringify([fj?.post, fj?.postId]));
+    ok("只问用得上的（0.29.14）：Reddit 帖子列表只问引流、辱骂、色情", JSON.stringify(fj?.keys) === JSON.stringify(["benefit", "abuse", "sexual"]), JSON.stringify(fj?.keys));
+    ok("帖子列表：每条多问 own_work（0.29.15）", (fj?.replies || []).length > 0 && fj.replies.every((x) => (x.ask || []).includes("own_work")), JSON.stringify((fj?.replies || []).map((x) => x.ask)));
+    // 作者分享自己做的东西（own_work 高）引流给高分也不折；推加微信的照样折（0.29.15）
+    await page.goto(`${BASE}/fakex/reddit/feed.html?jev=${encodeURIComponent(JSON.stringify({ "加我微信": 0.9, "今天的合成日常分享": { benefit: 0.9, own_work: 0.95 } }))}`, { waitUntil: "load" });
+    await wait(2500);
+    const fo = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll("shreddit-feed shreddit-post")].map((p) => [p.id, !!(p.previousElementSibling?.classList.contains("ff-bar"))])));
+    ok("帖子列表：作者分享自己做的东西（own_work 0.95）引流 0.9 也不折，推加微信的照样折", fo.t3_f1 === false && fo.t3_f2 === true, JSON.stringify(fo));
     sum = await page.evaluate(summary);
     ok("弹窗问这个页面：帖子列表", sum && sum.kind === "feed" && sum.folds.spam === 1 && sum.folds.sexual === 1, JSON.stringify(sum));
     const flips = await page.evaluate(async () => {

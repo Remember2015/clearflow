@@ -79,6 +79,8 @@ const summary = () => new Promise((res) => {
     await wait(2500);
     b = await page.evaluate(bars);
     const asked = await page.evaluate(() => (window.__ffJevAll || []).flatMap((m) => m.replies).filter((x) => (x.ask || []).includes("own_work")).map((x) => x.id));
+    const tkeys = await page.evaluate(() => [...new Set((window.__ffJevAll || []).map((m) => JSON.stringify(m.keys || null)))]);
+    ok("只问用得上的（0.29.14）：主页上只问引流、辱骂、色情", JSON.stringify(tkeys) === JSON.stringify([JSON.stringify(["benefit", "abuse", "sexual"])]), JSON.stringify(tkeys));
     ok("主页：作者分享自己做的东西（own_work 0.97）引流给 0.88 也不折；推加微信的照样折；每条都多问 own_work", !b["2001"] && !!b["2005"] && asked.includes("2001") && asked.includes("2005"),
       JSON.stringify([b, asked]));
 

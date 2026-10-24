@@ -46,7 +46,7 @@ const state = async () => {
     return { tx: c?.textContent || null, txShown: shown(c), origShown: shown(o), iconFirst: !!icon && a.firstElementChild === icon, tip: icon?.title || "" };
   });
   r.bars = document.querySelectorAll(".ff-bar").length;
-  r.jev = (window.__ffJevAll || []).map((m) => ({ post: m.post, author: m.author, ids: m.replies.map((x) => x.id), texts: m.replies.map((x) => x.text), extra: m.extra || null }));
+  r.jev = (window.__ffJevAll || []).map((m) => ({ post: m.post, author: m.author, ids: m.replies.map((x) => x.id), texts: m.replies.map((x) => x.text), extra: m.extra || null, keys: m.keys || null }));
   r.txSrc = (window.__ffTxMsgs || []).filter((m) => m.type === "translateFill").map((m) => ({ id: m.id, source: m.source }));
   { const s = await new Promise((res) => { let done = false; for (const f of window.__ffOnMessage || []) f({ type: "pageSummary" }, {}, (s) => { if (!done) { done = true; res(s || {}); } }); setTimeout(() => { if (!done) res({}); }, 300); }); r.folded = (s.folded || []).map(([id, kind]) => ({ id, postId: s.key, kind, page: "status" })); } // 0.28.5：从弹窗那条查询里拿
   return r;
@@ -84,6 +84,7 @@ const openAll = async (pg) => {
       JSON.stringify(s.c["0003"]));
     ok("小红书折叠：引流的（?jev 0.9）折，评论配图一起藏；色情的楼中楼折", /拉人/.test(s.c["0004"].bar || "") && s.c["0004"].hidden && s.c["0004"].picHidden === true &&
       /色情/.test(s.c["0012"].bar || "") && s.c["0012"].hidden, JSON.stringify([s.c["0004"], s.c["0012"]]));
+    ok("只问用得上的（0.29.14）：小红书不问\"@ 推广\"", s.jev.length > 0 && s.jev.every((m) => JSON.stringify(m.keys) === JSON.stringify(["benefit", "disguised", "abuse", "sexual"])), JSON.stringify(s.jev.map((m) => m.keys)));
     const sent = s.jev.flatMap((m) => m.ids);
     ok("小红书：笔记作者自己的照样发给 Jev 判（0.21.3），这句没问题、不折；只有表情图片的不判；中文的、没问题的不折", !s.c["0002"].bar && !s.c["0002"].hidden && sent.includes("xh_6f10000000000000000c0002") &&
       !sent.includes("xh_6f10000000000000000c0007") && !s.c["0007"].bar && !s.c["0005"].bar && !s.c["0001"].bar, JSON.stringify({ sent, c2: s.c["0002"], c7: s.c["0007"] }));

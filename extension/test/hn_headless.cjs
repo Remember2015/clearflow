@@ -113,7 +113,7 @@ const JEV = encodeURIComponent(JSON.stringify({ "I built a tool": 0.95, "borderl
       const top = fat.querySelector(".ff-rtx-whole");
       r.main = { title: tc?.textContent || null, titleShown: shown(tc), origTitle: shown(ta), icon: !!fat.querySelector(".ff-tx-inote"), top: top ? top.textContent.replace(/\s+/g, " ").trim() : null,
         topI: top ? top.querySelectorAll("i").length : 0, topNote: fat.querySelector(".ff-rtx-bnote .ff-tx-label")?.textContent || null };
-      r.jev = (window.__ffJevAll || []).map((m) => ({ post: m.post, author: m.author, ids: m.replies.map((x) => x.id) }));
+      r.jev = (window.__ffJevAll || []).map((m) => ({ post: m.post, author: m.author, ids: m.replies.map((x) => x.id), keys: m.keys || null }));
       { const s = await new Promise((res) => { let done = false; for (const f of window.__ffOnMessage || []) f({ type: "pageSummary" }, {}, (s) => { if (!done) { done = true; res(s || {}); } }); setTimeout(() => { if (!done) res({}); }, 300); }); r.folded = (s.folded || []).map(([id, kind]) => id + "@" + s.key + ":" + kind); } // 0.28.5：从弹窗那条查询里拿（不再发"最近清理"）
       return r;
     });
@@ -132,6 +132,7 @@ const JEV = encodeURIComponent(JSON.stringify({ "I built a tool": 0.95, "borderl
     ok("HN 只折辱骂和色情：骂人的、色情的折起来（作者那一行留着），\"我做了个工具\"（引流 0.95）不折，带刺的（辱骂 0.75）不折，楼主自己的照样判、这句没问题不折",
       /辱骂/.test(I["9103"].bar || "") && I["9103"].hidden && I["9103"].headShown && /色情/.test(I["9105"].bar || "") && I["9105"].hidden &&
       !I["9104"].bar && !I["9104"].hidden && !I["9108"].bar && !I["9106"].bar, JSON.stringify(["9103", "9104", "9105", "9106", "9108"].map((k) => [k, I[k].bar, I[k].hidden])));
+    ok("只问用得上的（0.29.14）：HN 不清理垃圾，只问辱骂、色情", I.jev.length > 0 && I.jev.every((m) => JSON.stringify(m.keys) === JSON.stringify(["abuse", "sexual"])), JSON.stringify(I.jev.map((m) => m.keys)));
     const sent = I.jev.flatMap((m) => m.ids);
     ok("发给 Jev 的：主帖是标题加正文、带楼主；楼主自己的评论也发（0.21.3）；记下的折叠是 hn_… 这一页 hn:i:9100",
       I.jev.length >= 1 && I.jev.every((m) => m.post === "Ask HN: What synthetic tools do you use every day?\nI have been looking for good tools for a while.\nAny suggestions are welcome." &&

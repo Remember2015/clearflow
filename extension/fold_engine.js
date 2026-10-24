@@ -38,6 +38,14 @@
 
   function start(site) {
     const folds = { spam: true, abuse: true, sexual: true, ...(site.folds || {}) };
+    // 五问里这一页用得上的（0.29.14，jev.js 的 keysOf）：垃圾这一类看的那几问（站点的 spamKeys、帖子页的三问、列表页的"引流"）+ 折的辱骂、色情。
+    // 五问都用得上就不带（缓存指纹不变）
+    const BASE = ["benefit", "disguised", "promo_mention", "abuse", "sexual"];
+    const askKeys = () => {
+      const spam = !folds.spam ? [] : site.spamKeys ? site.spamKeys(S.mode) : S.mode === "post" ? SPAM_KEYS : POST_SPAM_KEYS;
+      const keys = BASE.filter((k) => spam.includes(k) || (folds[k] && (k === "abuse" || k === "sexual")));
+      return keys.length === BASE.length ? null : keys;
+    };
     const offset = site.thresholdOffset || {};
     const th = (v, k) => Math.min(0.99, v + (offset[k] || 0));
     const S = {
@@ -148,7 +156,11 @@
     // 帖子作者（楼主、频道主、笔记作者）自己的评论多问一句"是不是在接着讲自己这个帖子"（0.28.11，jev.js 的 op_topic）：是的话垃圾三问不清理它
     const opAsk = (it) => !!it.op && S.mode === "post" && !it.userLabel;
     const onTopic = (it) => opAsk(it) && !!it.scores && typeof it.scores.op_topic === "number" && it.scores.op_topic >= globalThis.FFSettings.OP_TOPIC_THRESHOLD;
-    const asks = (it) => [...(fillerAsk(it) ? ["filler"] : []), ...(opAsk(it) ? ["op_topic"] : [])];
+    // 列表页（Reddit 的首页信息流、搜索结果）上的帖子多问一句"是不是作者在分享自己做的东西"（0.29.15，jev.js 的 own_work，和 X 主页、搜索一样）：
+    // 是的话"引流"不清理它（用户 10-24 要加上；这里以前就记过实例："自己做的免费工具"被折）。只有判列表页的站点用得上（现在只有 Reddit）
+    const ownAsk = (it) => folds.spam && S.mode !== "post" && !it.userLabel;
+    const ownWork = (it) => ownAsk(it) && !!it.scores && typeof it.scores.own_work === "number" && it.scores.own_work >= globalThis.FFSettings.OWN_WORK_THRESHOLD;
+    const asks = (it) => [...(fillerAsk(it) ? ["filler"] : []), ...(opAsk(it) ? ["op_topic"] : []), ...(ownAsk(it) ? ["own_work"] : [])];
     function decide(it) {
       if (!it.overrideReady) return { fold: false, kind: "pending" };
       if (it.userLabel === "missed") return { fold: true, kind: "user", reason: KIND("user") };
@@ -186,7 +198,7 @@
             const need = site.spamThreshold ? site.spamThreshold(it, base, k) : k === "setup" ? base + 0.1 : base;
             if (v >= need && (!best || v - need > best.over)) best = { k, v, over: v - need };
           }
-          if (best && (withImg(it) || !R.shortExempt(it.text)) && !onTopic(it)) cands.push({ kind: "jev", score: best.v, reason: `${REASON(best.k)} ${best.v.toFixed(2)}` });
+          if (best && (withImg(it) || !R.shortExempt(it.text)) && !onTopic(it) && !ownWork(it)) cands.push({ kind: "jev", score: best.v, reason: `${REASON(best.k)} ${best.v.toFixed(2)}` });
         }
         for (const [k, on, kth] of [["abuse", st.abuse, st.abuseThreshold], ["sexual", st.sexual, st.sexualThreshold]]) {
           const v = it.scores[k];
@@ -200,7 +212,8 @@
     }
     function needJev(it) {
       // 已经有分、但这条该多问的 filler 没问过（刚打开这个开关）：重问一次
-      const missing = !it.scores || it.stale || (fillerAsk(it) && typeof it.scores.filler !== "number") || (opAsk(it) && typeof it.scores.op_topic !== "number");
+      const missing = !it.scores || it.stale || (fillerAsk(it) && typeof it.scores.filler !== "number") || (opAsk(it) && typeof it.scores.op_topic !== "number") ||
+        (ownAsk(it) && typeof it.scores.own_work !== "number");
       if (!(S.enabled && !S.loading && it.overrideReady && !it.userLabel && S.settings.useJev && S.hasKey && missing && !it.queued && !it.jevSkipped && (it.text.trim() || withImg(it)))) return false;
       if (it.markedLocal) return false;
       if (folds.spam && ((S.settings.dup && (it.dup || it.known)) || R.localVerdict(it.text, new Set(), { m1: false, m1MaxLen: S.settings.m1MaxLen, media: false }))) return false;
@@ -245,7 +258,7 @@
         S.inflight++;
         send({ type: "jev", postId: cacheId, post: S.postText, author: S.postAuthor,
           replies: batch.map((it) => ({ id: it.id, name: it.name, handle: it.handle, text: it.text, ...(withImg(it) ? { images: it.images } : {}), ...(asks(it).length ? { ask: asks(it) } : {}) })),
-          ...(site.jevExtra && S.mode === "post" ? { extra: site.jevExtra } : {}) })
+          ...(site.jevExtra && S.mode === "post" ? { extra: site.jevExtra } : {}), ...(askKeys() ? { keys: askKeys() } : {}) })
           .then((r) => {
             if (key !== S.key || epoch !== S.epoch) return;
             for (const it of batch) {

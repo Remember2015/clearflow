@@ -1,6 +1,6 @@
 // 后台 service worker：替内容脚本调 Jev（页面里直接请求会被跨域拦下），结果存本地缓存（IndexedDB，见 cache.js），记统计和反馈，
 // 记下最近折叠的回复（弹窗里"判对了吗"用），出问题（key 无效、余额不足）时留个标记让弹窗提示。
-import { scoreReplies, JevError, validScores, cacheRequests, cleanExtra, askOf, askPost, postFingerprint, validPostScores, markedRequests, askMarked, MARKED_MAX, MARKED_BATCH } from "./jev.js";
+import { scoreReplies, JevError, validScores, cacheRequests, cleanExtra, keysOf, askOf, askPost, postFingerprint, validPostScores, markedRequests, askMarked, MARKED_MAX, MARKED_BATCH } from "./jev.js";
 import "./i18n_all.js";
 import "./i18n.js";
 import "./settings.js";
@@ -292,9 +292,10 @@ async function prepareImages(missing, signal) {
   return { ask: ask.filter((r) => r.text.trim() || r.imageRefs), assets, noCache };
 }
 
-async function handleJev({ postId, post, author, replies: raw, extra: wanted }, site = null) {
+async function handleJev({ postId, post, author, replies: raw, extra: wanted, keys: wantedKeys }, site = null) {
   if (!validBatch(raw)) return { error: "无效的回复批次", code: "invalid_request", retryable: false };
   const extra = cleanExtra(wanted); // 站点要多问的（YouTube 的 setup）；不认识的丢掉
+  const keys = keysOf(wantedKeys); // 五问里这个页面用得上的（0.29.14）；不给就是五问
   const revision = configRevision;
   const access = await permission(undefined, site);
   if (access.error) return access;
@@ -317,10 +318,10 @@ async function handleJev({ postId, post, author, replies: raw, extra: wanted }, 
   let acquired = false, out = {};
   try {
     if (revision !== configRevision) throw cancelled();
-    const queries = await cacheRequests(postId, post, replies, author, extra);
+    const queries = await cacheRequests(postId, post, replies, author, extra, keys);
     try {
       out = await cache.getMany(queries);
-      for (const id of Object.keys(out)) if (!validScores(out[id], need.get(id))) delete out[id];
+      for (const id of Object.keys(out)) if (!validScores(out[id], need.get(id), keys)) delete out[id];
     } catch { /* 缓存坏了就当未命中 */ }
     controller.signal.throwIfAborted();
     if (Object.keys(out).length) bump({ cache_hits: Object.keys(out).length }).catch(() => {});
@@ -335,7 +336,7 @@ async function handleJev({ postId, post, author, replies: raw, extra: wanted }, 
     // 等待槽期间别的页面可能已填好缓存。
     try {
       const cached = await cache.getMany(queries);
-      for (const [id, sc] of Object.entries(cached)) if (!out[id] && validScores(sc, need.get(id))) out[id] = sc;
+      for (const [id, sc] of Object.entries(cached)) if (!out[id] && validScores(sc, need.get(id), keys)) out[id] = sc;
     } catch { /* 仍可直接请求 */ }
     const missing = replies.filter((r) => !out[r.id]);
     if (!missing.length) return { scores: await withMarked(out) };
@@ -345,13 +346,13 @@ async function handleJev({ postId, post, author, replies: raw, extra: wanted }, 
     const nImages = Object.keys(assets).length;
     let res;
     try {
-      res = ask.length ? await scoreReplies(access.key, post, ask, { author, extra, assets, examples: examples.length ? examples : null, signal: controller.signal }) : { scores: {}, invalid: [], tokens: 0 };
+      res = ask.length ? await scoreReplies(access.key, post, ask, { author, extra, keys, assets, examples: examples.length ? examples : null, signal: controller.signal }) : { scores: {}, invalid: [], tokens: 0 };
     } catch (e) {
       // 图有毛病（格式、尺寸、太大）整批被拒：去掉图再问一次，这次的结果不进缓存
       if (!nImages || !(e instanceof JevError) || (e.status !== 400 && e.status !== 413)) throw e;
       for (const r of ask) if (r.imageRefs) noCache.add(r.id);
       const plain = ask.filter((r) => r.text.trim()).map(({ imageRefs, ...r }) => r);
-      res = plain.length ? await scoreReplies(access.key, post, plain, { author, extra, examples: examples.length ? examples : null, signal: controller.signal }) : { scores: {}, invalid: [], tokens: 0 };
+      res = plain.length ? await scoreReplies(access.key, post, plain, { author, extra, keys, examples: examples.length ? examples : null, signal: controller.signal }) : { scores: {}, invalid: [], tokens: 0 };
     }
     const { scores, invalid = [], tokens, marked = {} } = res;
     controller.signal.throwIfAborted();
@@ -711,10 +712,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       case "cachedForPost": {
         // 旧内容脚本只有 postId，无法验证回复正文，不能返回旧分数。
         if (!validBatch(msg.replies)) return { scores: {} };
-        const queries = await cacheRequests(msg.postId, msg.post, withImages(msg.replies, await imagesOn(await settings(site), await jevRoute())), msg.author, msg.extra);
+        const queries = await cacheRequests(msg.postId, msg.post, withImages(msg.replies, await imagesOn(await settings(site), await jevRoute())), msg.author, msg.extra, keysOf(msg.keys));
         const scores = await cache.getMany(queries);
         const ex = cleanExtra(msg.extra), need = new Map(msg.replies.map((r) => [r.id, [...ex, ...askOf(r, ex)]]));
-        for (const id of Object.keys(scores)) if (!validScores(scores[id], need.get(id))) delete scores[id];
+        for (const id of Object.keys(scores)) if (!validScores(scores[id], need.get(id), keysOf(msg.keys))) delete scores[id];
         // "是不是和标记过的同一类"缓存里有的也带上（只查缓存，不发请求）
         const examples = site ? await feedback.examplesFor(site, MARKED_MAX).catch(() => []) : [];
         if (examples.length && Object.keys(scores).length) {
