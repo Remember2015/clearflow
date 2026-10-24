@@ -41,6 +41,7 @@
   "demo": {
     "enlarge": "Ampliar imagem",
     "label": "Antes e depois do ClearFlow",
+    "full": "Ver comparação da página inteira",
     "before": "Antes",
     "after": "Depois",
     "tabs": {
@@ -50,14 +51,17 @@
       "reddit": "Reddit",
       "yt": "YouTube",
       "mark": "Reddit",
-      "xhsmark": "RedNote"
+      "xhsmark": "RedNote",
+      "xtx": "X"
     },
     "sum": {
       "clean": "{n} filtradas",
       "filler": "{n} recolhidas",
       "tx": "{n} traduzidas"
     },
-    "note": "As páginas e os comentários da demonstração são fictícios. Eles mostram como a filtragem e a tradução aparecem no ClearFlow."
+    "note": "As páginas e os comentários da demonstração são fictícios. Eles mostram como a filtragem e a tradução aparecem no ClearFlow.",
+    "gloss": "Significa:",
+    "close": "Fechar"
   },
   "eyebrow": {
     "clean": "Filtragem",
@@ -145,6 +149,7 @@
       ]
     ],
     "scenes": [
+      "xtx",
       "reddit",
       "yt",
       "xhs"
@@ -152,7 +157,8 @@
     "captions": {
       "reddit": "Dicas de ciclismo em vários idiomas, traduzidas para o português.",
       "yt": "Títulos de vídeos e comentários de vários lugares, traduzidos para o português.",
-      "xhs": "Leia uma publicação do RedNote e seus comentários em português."
+      "xhs": "Leia uma publicação do RedNote e seus comentários em português.",
+      "xtx": "Quando a tradução do X soa estranha, uma versão mais natural a substitui. Volte à do Grok quando quiser."
     }
   },
   "control": {

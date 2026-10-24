@@ -1,5 +1,25 @@
 // Accessible platform tabs and explicit before/after controls.
 (() => {
+  // "View full size": the screenshot opens over the page (a dialog: Esc, the close button or a click outside it closes it, focus goes
+  // back to the link) instead of leaving the page for the bare image file. Without scripts the link still opens the image.
+  const box = document.querySelector("dialog.lightbox");
+  if (box && typeof box.showModal === "function") {
+    const shot = box.querySelector("img"), cap = box.querySelector(".lightbox-cap");
+    document.addEventListener("click", (e) => {
+      const a = e.target.closest && e.target.closest("a.enlarge");
+      if (!a || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      e.preventDefault();
+      shot.src = a.href;
+      shot.alt = a.getAttribute("aria-label") || "";
+      if (cap) cap.textContent = a.dataset.label || ""; // "Before" / "After"
+      box.showModal();
+      box.scrollTop = 0;
+    });
+    box.addEventListener("click", (e) => { if (e.target === box || e.target.closest(".lightbox-close")) box.close(); });
+    box.addEventListener("close", () => { shot.removeAttribute("src"); });
+  }
+  // Wide screens: the cleaning examples also show the whole page cleaned (the comparison under the cases starts open); narrow ones keep it folded.
+  if (typeof matchMedia === "function" && matchMedia("(min-width: 900px)").matches) document.querySelectorAll("#clean details.full-view").forEach((d) => { d.open = true; });
   // Static-host/local preview fallback. Production redirects these entry URLs in worker.js.
   const entry = document.querySelector("[data-language-entry]");
   if (entry) {

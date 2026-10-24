@@ -73,6 +73,7 @@ const XC = {
     m1: "@quickcash_365 look at this 😍",
     c: ["Ruth Okafor", "@ruth_okafor", "My dad rode the same model to work for twenty years. Seeing it shine again made my day."],
     abuse: "Nobody cares about your junk bike, you absolute clown.",
+    sexual: ["Mia", "@mia_x_2006", "so bored tonight… my private pics are on my profile, come see 💋"],
     d: ["Ines", "@ines_builds", "Where did you find the original decals? I’ve been looking for those for months."],
     names: ["Aki", "Jordan Wu", "Priya", "Marco D", "Sam", "Dana", "Alex", "bikefan", "Kev"],
   },
@@ -86,6 +87,7 @@ const XC = {
     m1: "@quickcash_888 看这个😍",
     c: ["周阿姨", "@zhou_ayi_ride", "我爸也骑过同款，骑了二十年去上班。看到它重新亮起来，心情一下子好了。"],
     abuse: "谁在乎你这堆破铜烂铁，蠢货一个。",
+    sexual: ["糖糖", "@tangtang_9921", "一个人好无聊，主页有我的私密照片，想看的来💋"],
     d: ["Ines", "@ines_builds", "原厂贴花在哪儿找到的？我找了好几个月了。"],
     names: ["小凯", "王总说", "财富自由", "马克", "阿森", "丹丹", "阿亮", "路人甲", "老K"],
   },
@@ -99,6 +101,7 @@ const XC = {
     m1: "@quickcash_888 看這個😍",
     c: ["周阿姨", "@zhou_ayi_ride", "我爸也騎過同款，騎了二十年去上班。看到它重新亮起來，心情一下子變好了。"],
     abuse: "誰在乎你這堆破銅爛鐵，蠢貨一個。",
+    sexual: ["糖糖", "@tangtang_9921", "一個人好無聊，主頁有我的私密照片，想看的來💋"],
     d: ["Ines", "@ines_builds", "原廠貼紙在哪裡找到的？我找了好幾個月了。"],
     names: ["小凱", "王總說", "財富自由", "馬克", "阿森", "丹丹", "阿亮", "路人甲", "老K"],
   },
@@ -112,6 +115,7 @@ const XC = {
     m1: "@quickcash_888 これ見て😍",
     c: ["山田", "@yamada_ride", "父も同じモデルで20年通勤してました。また輝いているのを見て、なんだか嬉しくなりました。"],
     abuse: "お前のガラクタ自転車なんて誰も興味ねえよ、バカじゃねえの。",
+    sexual: ["あや", "@aya_x_9921", "ひとりで暇してる…プロフに秘密の写真あるよ、見に来て💋"],
     d: ["Ines", "@ines_builds", "オリジナルのデカールはどこで見つけたんですか？何か月も探してるんです。"],
     names: ["アキ", "FX王", "自由人", "マルコ", "サトシ", "ダナ", "アキラ", "通りすがり", "ケン"],
   },
@@ -125,6 +129,7 @@ const XC = {
     m1: "@quickcash_888 이거 봐요😍",
     c: ["박선영", "@park_ride", "저희 아버지도 같은 모델로 20년 동안 출퇴근하셨어요. 다시 반짝이는 걸 보니 괜히 기분이 좋네요."],
     abuse: "네 고물 자전거 아무도 관심 없어, 진짜 한심하다.",
+    sexual: ["하나", "@hana_x_9921", "혼자라 너무 심심해… 프로필에 비밀 사진 있어요, 보러 와요💋"],
     d: ["Ines", "@ines_builds", "순정 데칼은 어디서 구하셨어요? 몇 달째 찾고 있거든요."],
     names: ["아키", "조던", "경제적자유", "마르코", "샘", "다나", "알렉스", "지나가던사람", "케브"],
   },
@@ -146,15 +151,15 @@ function xPage(loc) {
     art(N[1], "@jwu_fx_77", C.spamVar[0], 77), art(N[2], "@priya_trades", C.spam, 76), art(N[3], "@marco_d_wins", C.spamVar[1], 75),
     art(N[4], "@samuel_b_44", C.fill[1], 74), art(...C.b, 70), art(N[5], "@dana_k_5513", C.fill[2], 66),
     art(N[6], "@alex_m_3390", C.m1, 64), art(...C.c, 60), art(N[7], "@bikefan_8812", C.fill[3], 58),
-    art(N[8], "@kev_rants_01", C.abuse, 55), art(...C.d, 50),
+    art(N[8], "@kev_rants_01", C.abuse, 55), art(...C.sexual, 52), art(...C.d, 50),
   ];
-  const jev = Object.fromEntries([...C.fill.map((f) => [f, { filler: 0.94 }]), [C.abuse.slice(0, 12), { abuse: 0.93 }]]);
+  const jev = Object.fromEntries([...C.fill.map((f) => [f, { filler: 0.94 }]), [C.abuse.slice(0, 12), { abuse: 0.93 }], [C.sexual[2].slice(0, 12), { sexual: 0.95 }]]);
   const css = `body{font:15px/1.45 -apple-system,"Segoe UI",Roboto,${fontOf(loc)},sans-serif;max-width:600px;margin:0 auto;background:#fff;color:#0f1419;-webkit-font-smoothing:antialiased}
 main{border-inline:1px solid #eff3f4;min-height:100vh} article{position:relative;padding:12px 16px 12px 68px;border-bottom:1px solid #eff3f4;display:flow-root}
 article::before{content:"";position:absolute;left:16px;top:14px;width:40px;height:40px;border-radius:50%;background:var(--av)}
 [data-testid=User-Name]{white-space:pre;font-weight:700;line-height:1.25} time{color:#536471;font-size:13px} a{text-decoration:none}
 [data-testid=tweetText]{margin-top:4px} [data-testid=caret]{display:none} main > div:first-child article{padding-top:18px} main > div:first-child [data-testid=tweetText]{font-size:17px}`;
-  const own = [C.post[2], C.a[2], C.spam, ...C.spamVar, ...C.fill, C.b[2], C.m1, C.c[2], C.abuse, C.d[2]];
+  const own = [C.post[2], C.a[2], C.spam, ...C.spamVar, ...C.fill, C.b[2], C.m1, C.c[2], C.abuse, C.sexual[2], C.d[2]];
   return { key: "x", width: 600, path: `/sc/${loc}/x`, html: shell(loc, "X", css, `<main>${posts.join("")}</main>`, `${ownDetect(loc, own)}\n${route(`/${C.post[1].slice(1)}/status/9100`, jev)}`, "inject_bundle.js") };
 }
 
@@ -540,7 +545,8 @@ function xhsNote(loc, D, key, base) {
 .content{margin-top:3px;font-size:15px;line-height:1.55;color:#333} .comment-item .info{display:flex;justify-content:space-between;font-size:12px;color:#999;margin-top:6px}
 .location{margin-left:8px} .interactions{display:flex;gap:16px} .like-i{margin-right:3px} .reply-container{margin-left:44px}
 .engage-bar{margin-top:auto;position:sticky;bottom:0;background:#fff;border-top:1px solid #eee;display:flex;gap:18px;align-items:center;padding:12px 0;color:#333;font-size:14px}
-.engage-bar .say{flex:1;background:#f5f5f5;border-radius:999px;padding:8px 14px;color:#999}`;
+.engage-bar .say{flex:1;background:#f5f5f5;border-radius:999px;padding:8px 14px;color:#999}
+@media(max-width:599px){.media-container{display:none}.interaction-container{padding:16px 16px 0}.author-container .author-wrapper{gap:12px}.follow-button{padding:6px 12px}}`;
   const ids = D.comments.map((c, i) => `comment-${(base + D.comments.slice(0, i).reduce((k, x) => k + 1 + (x[5] ? x[5].length : 0), 0)).toString(16).padStart(24, "0")}`);
   return { key, width: 700, path: `/sc/${loc}/${key}`, dict, ids,
     html: shell(loc, D.title, css, body, `${txScript(dict)}\n${NO_EMOJI_DETECT}\n${route(`/explore/${D.noteId}?xsec_token=DEMO&xsec_source=pc_feed`, jev)}`, "inject_xhs.js") };
@@ -703,20 +709,65 @@ for (const [loc, data] of Object.entries(NEW_DEMOS)) {
 }
 const xhsMarkPage = (loc) => xhsNote(loc, XHM, "xhsmark", 0x6f40);
 
+
+// ---------- X: posts X translated itself (Grok), a stiff translation replaced by a better one (the website's "enhanced translation") ----------
+// Each post: [name, handle, source language, original, X's translation, the improved translation]. The extension reads the original by
+// pressing X's "show original" (same as the test page extension/test/fakex/translate.html) and gets the improved text from the stand-in
+// (window.__ffTxPlan, by post id). X's interface words are the locale's.
+const XTX = {"en": {"from": {"es": "Translated from Spanish", "ja": "Translated from Japanese"}, "show": "Show original", "showTx": "Show translation", "about": "About auto-translation", "posts": [["Lucía Romero", "@lucia_romero_dev", "es", "No te voy a mentir, esta actualización es una pasada. Cinco minutos para configurarla y funciona sin más.", "I'm not going to lie to you, this update is a pass. Five minutes to configure it and it works without more.", "Honestly, this update is amazing. Five minutes to set up and it just works."], ["Kenta", "@kenta_uiux", "ja", "正直、旧UIの方がエモかった。異論は認める。", "Honestly, the old UI was more emo. I admit objections.", "Honestly, the old UI had more soul. Happy to hear other takes."]]}, "zh-CN": {"from": {"en": "翻译自 英语"}, "show": "显示原文", "showTx": "显示翻译", "about": "关于自动翻译", "posts": [["Jess Park", "@jesspark_dev", "en", "Not gonna lie, this update is a game changer. Took five minutes to set up and it just works.", "不会撒谎，这个更新是一个游戏改变者。花了五分钟设置，它就是工作。", "说实话，这次更新太强了。五分钟就装好，直接能用。"], ["Omar K.", "@omar_k_ui", "en", "Hot take: the old UI slapped way harder. Change my mind.", "热门观点：旧的用户界面扇得更狠。改变我的想法。", "暴论：旧版界面强太多了。不服来辩。"]]}, "ja": {"from": {"en": "英語から翻訳"}, "show": "原文を表示", "showTx": "翻訳を表示", "about": "自動翻訳について", "posts": [["Jess Park", "@jesspark_dev", "en", "Not gonna lie, this update is a game changer. Took five minutes to set up and it just works.", "嘘はつかない、このアップデートはゲームチェンジャーだ。設定に5分かかり、それはただ動く。", "正直、今回のアップデートは神。5分で設定できて、普通にちゃんと動く。"], ["Omar K.", "@omar_k_ui", "en", "Hot take: the old UI slapped way harder. Change my mind.", "ホットテイク：古いUIはずっと強く叩いた。私の心を変えて。", "異論は認めるけど、旧UIのほうが断然よかった。反論どうぞ。"]]}, "ko": {"from": {"en": "영어에서 번역됨"}, "show": "원문 보기", "showTx": "번역 보기", "about": "자동 번역 정보", "posts": [["Jess Park", "@jesspark_dev", "en", "Not gonna lie, this update is a game changer. Took five minutes to set up and it just works.", "거짓말하지 않겠다, 이 업데이트는 게임 체인저다. 설정하는 데 5분이 걸렸고 그것은 그냥 작동한다.", "솔직히 이번 업데이트 진짜 대박이에요. 5분 만에 설정했는데 그냥 잘 돌아가요."], ["Omar K.", "@omar_k_ui", "en", "Hot take: the old UI slapped way harder. Change my mind.", "뜨거운 의견: 오래된 UI가 훨씬 더 세게 때렸다. 내 마음을 바꿔라.", "논란 각오하고 말하자면, 예전 UI가 훨씬 나았어요. 반박 환영해요."]]}, "fr": {"from": {"en": "Traduit de l'anglais"}, "show": "Afficher l'original", "showTx": "Afficher la traduction", "about": "À propos de la traduction automatique", "posts": [["Jess Park", "@jesspark_dev", "en", "Not gonna lie, this update is a game changer. Took five minutes to set up and it just works.", "Je ne vais pas mentir, cette mise à jour est un changeur de jeu. A pris cinq minutes à configurer et ça fonctionne juste.", "Franchement, cette mise à jour change tout. Cinq minutes pour la configurer, et ça marche, tout simplement."], ["Omar K.", "@omar_k_ui", "en", "Hot take: the old UI slapped way harder. Change my mind.", "Prise chaude : l'ancienne interface giflait beaucoup plus fort. Changez mon esprit.", "Avis impopulaire : l'ancienne interface était bien meilleure. Convainquez-moi du contraire."]]}, "pt": {"from": {"en": "Traduzido do inglês"}, "show": "Mostrar original", "showTx": "Mostrar tradução", "about": "Sobre a tradução automática", "posts": [["Jess Park", "@jesspark_dev", "en", "Not gonna lie, this update is a game changer. Took five minutes to set up and it just works.", "Não vou mentir, esta atualização é um mudador de jogo. Levou cinco minutos para configurar e apenas funciona.", "Sendo sincero, essa atualização mudou tudo. Em cinco minutos estava configurada e funcionando."], ["Omar K.", "@omar_k_ui", "en", "Hot take: the old UI slapped way harder. Change my mind.", "Tomada quente: a interface antiga batia muito mais forte. Mude minha mente.", "Opinião polêmica: a interface antiga era muito melhor. Me convençam do contrário."]]}, "tr": {"from": {"en": "İngilizce dilinden çevrildi"}, "show": "Orijinali göster", "showTx": "Çeviriyi göster", "about": "Otomatik çeviri hakkında", "posts": [["Jess Park", "@jesspark_dev", "en", "Not gonna lie, this update is a game changer. Took five minutes to set up and it just works.", "Yalan söylemeyeceğim, bu güncelleme bir oyun değiştirici. Kurması beş dakika sürdü ve sadece çalışıyor.", "Açıkçası bu güncelleme çok iyi olmuş. Beş dakikada kurdum, sorunsuz çalışıyor."], ["Omar K.", "@omar_k_ui", "en", "Hot take: the old UI slapped way harder. Change my mind.", "Sıcak görüş: eski arayüz çok daha sert vuruyordu. Fikrimi değiştir.", "Popüler olmayan görüş: eski arayüz çok daha iyiydi. Aksini düşünen varsa buyursun."]]}};
+function xTxPage(loc) {
+  const T = XTX[loc] || XTX.en, u = UI[loc] || UI.en;
+  const arts = T.posts.map(([name, handle, src, orig, grok], i) => `<div data-testid="cellInnerDiv"><div><article data-testid="tweet" data-fid="${9300 + i}" style="--av:${AV[(i + 3) % AV.length]}">
+  <div data-testid="User-Name">${esc(name)}\n${handle}</div>
+  <a href="/${handle.slice(1)}/status/${9300 + i}"><time datetime="2026-10-10T00:00:00.000Z">${u.ago(i + 2)}</time></a>
+  <div class="x-tr"></div><div data-testid="tweetText" dir="auto"></div>
+  <div role="group" aria-label="replies"></div></article></div></div>`).join("");
+  const posts = Object.fromEntries(T.posts.map(([, , src, orig, grok], i) => [9300 + i, { src, orig, grok }]));
+  const plan = Object.fromEntries(T.posts.map((p, i) => [String(9300 + i), { action: "replace", tried: true, text: p[5], model: "openai/gpt-6-luna", weak: "natural", grokMin: 0.42, cached: false }]));
+  const css = `body{font:15px/1.45 -apple-system,"Segoe UI",Roboto,${fontOf(loc)},sans-serif;max-width:600px;margin:0 auto;background:#fff;color:#0f1419;-webkit-font-smoothing:antialiased}
+main{border-inline:1px solid #eff3f4;min-height:100vh} article{position:relative;padding:14px 16px 14px 68px;border-bottom:1px solid #eff3f4;display:flow-root}
+article::before{content:"";position:absolute;left:16px;top:16px;width:40px;height:40px;border-radius:50%;background:var(--av)}
+[data-testid=User-Name]{white-space:pre;font-weight:700;line-height:1.25} time{color:#536471;font-size:13px} a{text-decoration:none}
+.x-tr{display:flex;align-items:center;gap:6px;margin-top:6px;color:#536471;font-size:13px} .x-tr svg{width:13px;height:13px;border-radius:50%;background:#536471}
+.x-tr button{border:0;background:none;padding:0;color:#1d9bf0;font:inherit;cursor:pointer} [data-testid=tweetText]{margin-top:4px;font-size:16px}`;
+  const setup = `window.__ffTxPlan = ${JSON.stringify(plan)};
+const XP = ${JSON.stringify(posts)}, L = ${JSON.stringify({ from: T.from, show: T.show, showTx: T.showTx, about: T.about, lang: loc })};
+function fill(a, mode) {
+  const d = XP[a.dataset.fid], tt = a.querySelector('[data-testid="tweetText"]'), row = a.querySelector(".x-tr");
+  tt.setAttribute("lang", mode === "tr" ? L.lang : d.src);
+  tt.textContent = mode === "tr" ? d.grok : d.orig;
+  row.innerHTML = '<svg data-testid="grok"></svg><span>' + L.from[d.src] + '</span>' + (mode === "tr"
+    ? '<button type="button" data-x="orig">' + L.show + '</button>'
+    : '<button type="button" data-x="tr">' + L.showTx + '</button><button type="button" data-x="about">' + L.about + '</button>');
+  a.dataset.mode = mode;
+}
+document.querySelectorAll("article[data-fid]").forEach((a) => fill(a, "tr"));
+document.addEventListener("click", (e) => {
+  const b = e.target.closest(".x-tr button[data-x=orig], .x-tr button[data-x=tr]");
+  if (!b) return;
+  const a = b.closest("article"), mode = b.dataset.x;
+  queueMicrotask(() => fill(a, mode));
+});
+${route("/home", {})}`;
+  return { key: "xtx", width: 600, path: `/sc/${loc}/xtx`, dict: Object.fromEntries(T.posts.map((p) => [p[4], p[5]])),
+    html: shell(loc, "X", css, `<main>${arts}</main>`, setup, "inject_bundle.js") };
+}
+
 // ======================= what the website shows =======================
 // One render per page; build.mjs puts the pages into the sections (clean / learn / translate).
 const SITE_ORDER = {
-  en: ["x", "xsex", "xhs", "reddit", "yt", "mark", "xhsmark"],
-  ko: ["x", "xhs", "reddit", "yt", "mark", "xhsmark"],
-  tr: ["x", "xhs", "reddit", "yt", "mark", "xhsmark"],
-  fr: ["x", "xhs", "reddit", "yt", "mark", "xhsmark"],
-  pt: ["x", "xhs", "reddit", "yt", "mark", "xhsmark"],
-  "zh-CN": ["xnews", "xsex", "x", "xhs", "reddit", "yt", "hn", "mark", "xhsmark"],
-  ja: ["xnews", "xsex", "x", "xhs", "reddit", "yt", "hn", "mark", "xhsmark"],
+  en: ["x", "xtx", "xsex", "xhs", "reddit", "yt", "mark", "xhsmark"],
+  ko: ["x", "xtx", "xhs", "reddit", "yt", "mark", "xhsmark"],
+  tr: ["x", "xtx", "xhs", "reddit", "yt", "mark", "xhsmark"],
+  fr: ["x", "xtx", "xhs", "reddit", "yt", "mark", "xhsmark"],
+  pt: ["x", "xtx", "xhs", "reddit", "yt", "mark", "xhsmark"],
+  "zh-CN": ["xnews", "xsex", "x", "xtx", "xhs", "reddit", "yt", "hn", "mark", "xhsmark"],
+  ja: ["xnews", "xsex", "x", "xtx", "xhs", "reddit", "yt", "hn", "mark", "xhsmark"],
 };
 // what the website marks on the "before" shot: [text, kind] — spam / filler / abuse / sexual for cleaning; target / same for marking
 const SITE_MARKS = {
-  x: (loc) => { const C = XC[loc]; return [...[C.spamVar[0], C.spam, C.spamVar[1], C.m1].map((t) => [t, "spam"]), ...C.fill.map((t) => [t, "filler"]), [C.abuse, "abuse"]]; },
+  x: (loc) => { const C = XC[loc]; return [...[C.spamVar[0], C.spam, C.spamVar[1], C.m1].map((t) => [t, "spam"]), ...C.fill.map((t) => [t, "filler"]), [C.abuse, "abuse"], [C.sexual[2], "sexual"]]; },
+  xtx: () => [],
   xnews: (loc) => XN[loc === "en" ? "ja" : "en"].rows.filter((r) => r[3]).map(([, , t, sc]) => [t, sc.sexual ? "sexual" : sc.filler ? "filler" : "spam"]),
   xsex: (loc) => (XS[loc] || XS.en).rows.filter((r) => r[3]).map(([, , t, sc]) => [t, sc.sexual ? "sexual" : sc.filler ? "filler" : "spam"]),
   xhs: () => XHS.comments.filter((c) => c[4]).map(([, t, , , sc]) => [t, sc.filler ? "filler" : "spam"]),
@@ -727,7 +778,7 @@ const SITE_MARKS = {
   xhsmark: () => [[XHM.comments[1][1], "target"], [XHM.comments[3][1], "same"], [XHM.comments[5][1], "same"]],
 };
 // the element around one comment, and the part of it that is that comment (not its replies), for the case crops
-const SITE_ITEM = { x: "article", xnews: "article", xsex: "article", xhs: ".comment-item", xhsmark: ".comment-item", reddit: "shreddit-comment", mark: "shreddit-comment", yt: "ytd-comment-view-model", hn: "tr.athing.comtr" };
+const SITE_ITEM = { x: "article", xtx: "article", xnews: "article", xsex: "article", xhs: ".comment-item", xhsmark: ".comment-item", reddit: "shreddit-comment", mark: "shreddit-comment", yt: "ytd-comment-view-model", hn: "tr.athing.comtr" };
 const SITE_OWN = { reddit: ":scope > details > summary, :scope > details > .rgrid > .min-w-0", mark: ":scope > details > summary, :scope > details > .rgrid > .min-w-0", xhs: ":scope > .comment-inner-container", xhsmark: ":scope > .comment-inner-container", yt: ":scope > #body" };
 const SITE_WIDTH = { reddit: 640, yt: 680, mark: 640 };
 // marking: hover the comment, click its funnel; afterwards hover another comment so its funnel shows
@@ -737,7 +788,7 @@ const SITE_MARK_UI = {
 };
 export function sitePages(locale) {
   const loc = SITE_ORDER[locale] ? locale : "en";
-  const all = { x: xPage, xnews: xNewsPage, xsex: xSexPage, xhs: xhsPage, reddit: redditPage, yt: ytPage, hn: hnPage, mark: markPage, xhsmark: xhsMarkPage };
+  const all = { x: xPage, xtx: xTxPage, xnews: xNewsPage, xsex: xSexPage, xhs: xhsPage, reddit: redditPage, yt: ytPage, hn: hnPage, mark: markPage, xhsmark: xhsMarkPage };
   return SITE_ORDER[loc].map((k) => {
     const p = all[k](loc);
     const marks = SITE_MARKS[k](loc), marked = new Set(marks.map((m) => m[0]));

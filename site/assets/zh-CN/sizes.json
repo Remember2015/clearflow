@@ -47,6 +47,46 @@
   600,
   118
  ],
+ "case-xnews-0-mobile-after.webp": [
+  338,
+  48
+ ],
+ "case-xnews-0-mobile-b0.webp": [
+  360,
+  183
+ ],
+ "case-xnews-1-mobile-after.webp": [
+  338,
+  48
+ ],
+ "case-xnews-1-mobile-b0.webp": [
+  360,
+  162
+ ],
+ "case-xnews-1-mobile-b1.webp": [
+  360,
+  140
+ ],
+ "case-xnews-1-mobile-b2.webp": [
+  360,
+  140
+ ],
+ "case-xnews-2-mobile-after.webp": [
+  302,
+  42
+ ],
+ "case-xnews-2-mobile-b0.webp": [
+  360,
+  118
+ ],
+ "case-xnews-2-mobile-b1.webp": [
+  360,
+  118
+ ],
+ "case-xnews-2-mobile-b2.webp": [
+  360,
+  118
+ ],
  "xsex-after.webp": [
   600,
   605
@@ -85,6 +125,38 @@
  ],
  "case-xsex-2-b0.webp": [
   600,
+  118
+ ],
+ "case-xsex-0-mobile-after.webp": [
+  338,
+  48
+ ],
+ "case-xsex-0-mobile-b0.webp": [
+  360,
+  140
+ ],
+ "case-xsex-0-mobile-b1.webp": [
+  360,
+  118
+ ],
+ "case-xsex-0-mobile-b2.webp": [
+  360,
+  140
+ ],
+ "case-xsex-1-mobile-after.webp": [
+  338,
+  48
+ ],
+ "case-xsex-1-mobile-b0.webp": [
+  360,
+  118
+ ],
+ "case-xsex-2-mobile-after.webp": [
+  300,
+  42
+ ],
+ "case-xsex-2-mobile-b0.webp": [
+  360,
   118
  ],
  "x-after.webp": [
@@ -131,6 +203,10 @@
   600,
   118
  ],
+ "case-x-2-b1.webp": [
+  600,
+  118
+ ],
  "case-x-3-b0.webp": [
   600,
   118
@@ -142,6 +218,98 @@
  "case-x-3-b2.webp": [
   600,
   118
+ ],
+ "case-x-0-mobile-after.webp": [
+  338,
+  48
+ ],
+ "case-x-0-mobile-b0.webp": [
+  360,
+  140
+ ],
+ "case-x-0-mobile-b1.webp": [
+  360,
+  140
+ ],
+ "case-x-0-mobile-b2.webp": [
+  360,
+  140
+ ],
+ "case-x-1-mobile-after.webp": [
+  338,
+  48
+ ],
+ "case-x-1-mobile-b0.webp": [
+  360,
+  118
+ ],
+ "case-x-2-mobile-after.webp": [
+  338,
+  48
+ ],
+ "case-x-2-mobile-b0.webp": [
+  360,
+  118
+ ],
+ "case-x-2-mobile-b1.webp": [
+  360,
+  140
+ ],
+ "case-x-3-mobile-after.webp": [
+  302,
+  42
+ ],
+ "case-x-3-mobile-b0.webp": [
+  360,
+  118
+ ],
+ "case-x-3-mobile-b1.webp": [
+  360,
+  118
+ ],
+ "case-x-3-mobile-b2.webp": [
+  360,
+  118
+ ],
+ "xtx-after.webp": [
+  600,
+  318
+ ],
+ "case-xtx-0-after.webp": [
+  600,
+  166
+ ],
+ "case-xtx-1-after.webp": [
+  600,
+  166
+ ],
+ "xtx-before.webp": [
+  600,
+  318
+ ],
+ "case-xtx-0-b0.webp": [
+  600,
+  148
+ ],
+ "case-xtx-1-b0.webp": [
+  600,
+  148
+ ],
+ "case-xtx-0-mobile-after.webp": [
+  360,
+  190
+ ],
+ "case-xtx-0-mobile-b0.webp": [
+  360,
+  171
+ ],
+ "case-xtx-1-mobile-after.webp": [
+  360,
+  166
+ ],
+ "case-xtx-1-mobile-b0.webp": [
+  360,
+  171
  ],
  "xhs-after.webp": [
   700,
@@ -211,6 +379,66 @@
   458,
   79
  ],
+ "case-xhs-0-mobile-after.webp": [
+  336,
+  93
+ ],
+ "case-xhs-0-mobile-b0.webp": [
+  336,
+  103
+ ],
+ "case-xhs-1-mobile-after.webp": [
+  340,
+  48
+ ],
+ "case-xhs-1-mobile-b0.webp": [
+  336,
+  103
+ ],
+ "case-xhs-1-mobile-b1.webp": [
+  336,
+  103
+ ],
+ "case-xhs-2-mobile-after.webp": [
+  340,
+  48
+ ],
+ "case-xhs-2-mobile-b0.webp": [
+  336,
+  103
+ ],
+ "case-xhs-2-mobile-b1.webp": [
+  336,
+  103
+ ],
+ "case-xhs-3-mobile-after.webp": [
+  302,
+  42
+ ],
+ "case-xhs-3-mobile-b0.webp": [
+  336,
+  79
+ ],
+ "case-xhs-3-mobile-b1.webp": [
+  336,
+  79
+ ],
+ "case-xhs-4-mobile-after.webp": [
+  336,
+  82
+ ],
+ "case-xhs-4-mobile-b0.webp": [
+  336,
+  103
+ ],
+ "case-xhs-5-mobile-after.webp": [
+  336,
+  82
+ ],
+ "case-xhs-5-mobile-b0.webp": [
+  336,
+  103
+ ],
  "reddit-after.webp": [
   640,
   838
@@ -274,6 +502,62 @@
  "case-reddit-6-b0.webp": [
   596,
   77
+ ],
+ "case-reddit-0-mobile-after.webp": [
+  316,
+  70
+ ],
+ "case-reddit-0-mobile-b0.webp": [
+  316,
+  98
+ ],
+ "case-reddit-1-mobile-after.webp": [
+  300,
+  42
+ ],
+ "case-reddit-1-mobile-b0.webp": [
+  316,
+  77
+ ],
+ "case-reddit-2-mobile-after.webp": [
+  316,
+  93
+ ],
+ "case-reddit-2-mobile-b0.webp": [
+  316,
+  98
+ ],
+ "case-reddit-3-mobile-after.webp": [
+  284,
+  93
+ ],
+ "case-reddit-3-mobile-b0.webp": [
+  284,
+  98
+ ],
+ "case-reddit-4-mobile-after.webp": [
+  316,
+  93
+ ],
+ "case-reddit-4-mobile-b0.webp": [
+  316,
+  98
+ ],
+ "case-reddit-5-mobile-after.webp": [
+  316,
+  93
+ ],
+ "case-reddit-5-mobile-b0.webp": [
+  316,
+  98
+ ],
+ "case-reddit-6-mobile-after.webp": [
+  316,
+  93
+ ],
+ "case-reddit-6-mobile-b0.webp": [
+  316,
+  98
  ],
  "yt-after.webp": [
   680,
@@ -347,6 +631,70 @@
   640,
   74
  ],
+ "case-yt-0-mobile-after.webp": [
+  320,
+  76
+ ],
+ "case-yt-0-mobile-b0.webp": [
+  320,
+  114
+ ],
+ "case-yt-1-mobile-after.webp": [
+  270,
+  76
+ ],
+ "case-yt-1-mobile-b0.webp": [
+  270,
+  94
+ ],
+ "case-yt-2-mobile-after.webp": [
+  300,
+  42
+ ],
+ "case-yt-2-mobile-b0.webp": [
+  320,
+  74
+ ],
+ "case-yt-3-mobile-after.webp": [
+  320,
+  114
+ ],
+ "case-yt-3-mobile-b0.webp": [
+  320,
+  94
+ ],
+ "case-yt-4-mobile-after.webp": [
+  320,
+  114
+ ],
+ "case-yt-4-mobile-b0.webp": [
+  320,
+  94
+ ],
+ "case-yt-5-mobile-after.webp": [
+  270,
+  172
+ ],
+ "case-yt-5-mobile-b0.webp": [
+  270,
+  74
+ ],
+ "case-yt-6-mobile-after.webp": [
+  320,
+  163
+ ],
+ "case-yt-6-mobile-b0.webp": [
+  320,
+  74
+ ],
+ "case-yt-7-mobile-after.webp": [
+  320,
+  105
+ ],
+ "case-yt-7-mobile-b0.webp": [
+  320,
+  94
+ ],
  "hn-after.webp": [
   640,
   900
@@ -395,6 +743,46 @@
   640,
   118
  ],
+ "case-hn-0-mobile-after.webp": [
+  360,
+  142
+ ],
+ "case-hn-0-mobile-b0.webp": [
+  360,
+  137
+ ],
+ "case-hn-1-mobile-after.webp": [
+  360,
+  194
+ ],
+ "case-hn-1-mobile-b0.webp": [
+  360,
+  188
+ ],
+ "case-hn-2-mobile-after.webp": [
+  360,
+  213
+ ],
+ "case-hn-2-mobile-b0.webp": [
+  360,
+  208
+ ],
+ "case-hn-3-mobile-after.webp": [
+  360,
+  142
+ ],
+ "case-hn-3-mobile-b0.webp": [
+  360,
+  118
+ ],
+ "case-hn-4-mobile-after.webp": [
+  360,
+  124
+ ],
+ "case-hn-4-mobile-b0.webp": [
+  360,
+  118
+ ],
  "mark-before.webp": [
   640,
   812
@@ -418,5 +806,37 @@
  "settings.webp": [
   600,
   650
+ ],
+ "learn-mark-b0.webp": [
+  640,
+  506
+ ],
+ "learn-mark-after.webp": [
+  640,
+  460
+ ],
+ "learn-mark-mobile-b0.webp": [
+  360,
+  596
+ ],
+ "learn-mark-mobile-after.webp": [
+  360,
+  482
+ ],
+ "learn-xhsmark-b0.webp": [
+  700,
+  479
+ ],
+ "learn-xhsmark-after.webp": [
+  700,
+  631
+ ],
+ "learn-xhsmark-mobile-b0.webp": [
+  360,
+  525
+ ],
+ "learn-xhsmark-mobile-after.webp": [
+  360,
+  630
  ]
 }

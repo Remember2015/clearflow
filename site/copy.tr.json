@@ -41,6 +41,7 @@
   "demo": {
     "enlarge": "Büyük görüntüle",
     "label": "ClearFlow öncesi ve sonrası",
+    "full": "Tam sayfa karşılaştırmayı görüntüle",
     "before": "Önce",
     "after": "Sonra",
     "tabs": {
@@ -50,14 +51,17 @@
       "reddit": "Reddit",
       "yt": "YouTube",
       "mark": "Reddit",
-      "xhsmark": "RedNote"
+      "xhsmark": "RedNote",
+      "xtx": "X"
     },
     "sum": {
       "clean": "{n} yorum ayıklandı",
       "filler": "{n} yorum daraltıldı",
       "tx": "{n} öğe çevrildi"
     },
-    "note": "Demo sayfaları ve yorumlar kurgusaldır. ClearFlow'un ayıklama ve çeviri arayüzünü gösterir."
+    "note": "Demo sayfaları ve yorumlar kurgusaldır. ClearFlow'un ayıklama ve çeviri arayüzünü gösterir.",
+    "gloss": "Anlamı:",
+    "close": "Kapat"
   },
   "eyebrow": {
     "clean": "Yorum temizliği",
@@ -145,6 +149,7 @@
       ]
     ],
     "scenes": [
+      "xtx",
       "reddit",
       "yt",
       "xhs"
@@ -152,7 +157,8 @@
     "captions": {
       "reddit": "Farklı dillerdeki bisiklet tavsiyelerini Türkçe okuyun.",
       "yt": "Dünyanın dört bir yanından video başlıklarını ve yorumları Türkçe okuyun.",
-      "xhs": "RedNote gönderisini ve yorumlarını Türkçe okuyun."
+      "xhs": "RedNote gönderisini ve yorumlarını Türkçe okuyun.",
+      "xtx": "X'in kendi çevirisi tuhaf kaçtığında yerine daha doğal bir çeviri gelir. İstediğiniz an Grok'un çevirisine dönebilirsiniz."
     }
   },
   "control": {
