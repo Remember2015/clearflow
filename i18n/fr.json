@@ -471,5 +471,11 @@
  "acct.refundLine": "Remboursement effectué. Il apparaîtra sur votre compte sous 3–10 jours ouvrés",
  "acct.err.cannot_resume": "Cet abonnement ne peut pas être réactivé. Vous pouvez vous réabonner",
  "acct.err.resume_first": "Réactivez d’abord le renouvellement automatique, puis changez de forfait",
- "acct.err.past_due": "Le paiement de votre renouvellement a échoué. Mettez d’abord à jour votre moyen de paiement"
+ "acct.err.past_due": "Le paiement de votre renouvellement a échoué. Mettez d’abord à jour votre moyen de paiement",
+ "cs.stop.day": "Le quota du jour est épuisé. Le filtrage par IA reprendra demain ; les règles locales restent actives",
+ "cs.stop.month": "Le quota du mois est épuisé. Le filtrage par IA reprendra le mois prochain ; les règles locales restent actives",
+ "cs.stop.ended": "Votre abonnement ou votre période d’essai a pris fin. Le filtrage par IA est suspendu ; les règles locales restent actives",
+ "cs.stop.signedOut": "Vous êtes déconnecté de ClearFlow Membership. Le filtrage par IA est suspendu ; les règles locales restent actives",
+ "cs.stop.paused": "Le filtrage par IA est momentanément suspendu ; les règles locales restent actives",
+ "err.cf_stop": "ClearFlow Membership est momentanément indisponible ; les règles locales restent actives"
 }

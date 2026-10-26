@@ -54,7 +54,7 @@
     // rec：帖子页"这个帖子是不是在请大家推荐"（jev.js 的 POST_QUESTIONS）的分；undefined 还没问，null 正在问
     rec: undefined,
     participants: new Set(), items: new Map(), order: [], queue: [], inflight: 0,
-    notice: null, jevNotice: null, bannerCounted: false, epoch: 0, settingsLoading: false, settingsError: null,
+    notice: null, jevNotice: null, cfStop: false, bannerCounted: false, epoch: 0, settingsLoading: false, settingsError: null,
     slogans: [], markedIds: new Set(), markedPrep: [], markedRev: 0, markedPage: null, sloganVersion: 0, dupOff: new Set(), near: R.nearState(), // 你标记的垃圾：一字不差地认的那几句、标的是哪几条
     showFill: false, // 「赞」「mark」这类（清理得多的页面连被清理的一起）：点了"查看"，这一页的全部显示出来
     heavy: false, // 这一页清理条超过 B.HEAVY_UNITS：被清理的整条藏起来（0.27，见 foldbar.js）
@@ -117,15 +117,18 @@
   function resetRequests() {
     S.epoch++;
     S.queue = [];
-    S.jevNotice = null;
+    S.jevNotice = null; S.cfStop = false;
     for (const it of S.items.values()) { it.queued = false; it.jevSkipped = false; it.attempts = 0; }
   }
+  // 清流会员停了的原因（后台 cloudFailure 的 reason）→ 评论区最上面那一行说什么
+  const CF_STOP_TEXT = { quota_daily: "cs.stop.day", quota_monthly: "cs.stop.month", subscription_required: "cs.stop.ended", signed_out: "cs.stop.signedOut",
+    trial_paused: "cs.stop.paused", paused: "cs.stop.paused" };
   function retryFailed() {
     for (const it of S.items.values()) {
       it.jevSkipped = false; it.attempts = 0;
       if (!it.overrideReady) { it.overrideLoading = false; it.overrideFails = 0; it.overrideRetryAt = 0; }
     }
-    S.notice = null; S.jevNotice = null;
+    S.notice = null; S.jevNotice = null; S.cfStop = false;
     scheduleScan(0);
   }
   // 读不到纠错记录时这些回复先不判（人工纠错优先于自动规则）；自动重试两次，还不行再提示、等你点"重试"
@@ -405,6 +408,8 @@
           if (postId !== S.postId || epoch !== S.epoch) return;
           if (r.error === "badkey" || r.code === "badkey") S.jevNotice = t("cs.badkey");
           else if (r.code === "or_badkey") S.jevNotice = t("cs.orBadkey"); // 0.29.11 起判断默认走 OpenRouter：说的是 OpenRouter 的密钥
+          // 清流会员停了（0.34.1，用户 10-26：以前写"部分回复尚未完成模型判断：quota_daily"，看不懂、点重试也没用）：说人话，不给重试
+          else if (r.code === "cf_stop") { S.cfStop = true; S.jevNotice = t(CF_STOP_TEXT[r.reason] || "cs.stop.paused"); }
           else if (r.error) S.jevNotice = t("cs.partial", { error: errText(r).slice(0, 80) });
           for (const it of batch) {
             it.queued = false;
@@ -421,7 +426,7 @@
               }
             }
           }
-          if (!r.error && ![...S.items.values()].some((it) => it.jevSkipped)) S.jevNotice = null;
+          if (!r.error && ![...S.items.values()].some((it) => it.jevSkipped)) { S.jevNotice = null; S.cfStop = false; }
           scheduleScan(0);
         })
         .finally(() => { S.inflight--; if (S.queue.length) flush(); });
@@ -696,7 +701,7 @@
       // 不跟着滚动挪来挪去（会让列表跳），等主帖挂回来再挪回主帖下面
       if (focal) { if (banner.previousElementSibling !== focal.article) focal.article.after(banner); }
       else if (!banner.isConnected) anchor.before(banner);
-      const retry = [...S.items.values()].some((it) => it.jevSkipped || !it.overrideReady);
+      const retry = !S.cfStop && [...S.items.values()].some((it) => it.jevSkipped || !it.overrideReady); // 会员停了（额度用完这类）重试也没用
       const key = `${msg}|${retry}`;
       if (banner.dataset.key !== key) {
         banner.dataset.key = key;

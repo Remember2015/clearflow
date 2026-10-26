@@ -471,5 +471,11 @@
  "acct.refundLine": "Reembolso realizado. El importe llegará a tu cuenta en 3–10 días hábiles",
  "acct.err.cannot_resume": "No se puede reactivar esta suscripción. Puedes volver a suscribirte",
  "acct.err.resume_first": "Reactiva primero la renovación automática y luego cambia de plan",
- "acct.err.past_due": "No se pudo realizar el pago de la renovación. Actualiza primero tu método de pago"
+ "acct.err.past_due": "No se pudo realizar el pago de la renovación. Actualiza primero tu método de pago",
+ "cs.stop.day": "Se agotó el límite de hoy. El filtrado con IA se reanuda mañana; las reglas locales siguen funcionando",
+ "cs.stop.month": "Se agotó el límite de este mes. El filtrado con IA se reanuda el próximo mes; las reglas locales siguen funcionando",
+ "cs.stop.ended": "Tu suscripción o periodo de prueba terminó. El filtrado con IA está en pausa; las reglas locales siguen funcionando",
+ "cs.stop.signedOut": "Se cerró tu sesión de ClearFlow Membership. El filtrado con IA está en pausa; las reglas locales siguen funcionando",
+ "cs.stop.paused": "El filtrado con IA está en pausa por ahora; las reglas locales siguen funcionando",
+ "err.cf_stop": "ClearFlow Membership no está disponible en este momento; las reglas locales siguen funcionando"
 }

@@ -471,5 +471,11 @@
  "acct.refundLine": "已退款，款項將於 3–10 個工作天內退回原付款帳戶",
  "acct.err.cannot_resume": "無法恢復這筆訂閱，可以重新訂閱",
  "acct.err.resume_first": "請先重新開啟自動續訂，再切換方案",
- "acct.err.past_due": "續訂付款失敗，請先更新付款方式"
+ "acct.err.past_due": "續訂付款失敗，請先更新付款方式",
+ "cs.stop.day": "今日額度已用完。AI 篩選明天恢復；本機規則仍會生效",
+ "cs.stop.month": "本月額度已用完。AI 篩選下個月恢復；本機規則仍會生效",
+ "cs.stop.ended": "會員資格或試用已結束。AI 篩選已暫停；本機規則仍會生效",
+ "cs.stop.signedOut": "已登出 ClearFlow 會員。AI 篩選已暫停；本機規則仍會生效",
+ "cs.stop.paused": "AI 篩選目前已暫停；本機規則仍會生效",
+ "err.cf_stop": "ClearFlow 會員目前無法使用；本機規則仍會生效"
 }

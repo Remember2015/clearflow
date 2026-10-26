@@ -471,5 +471,11 @@
  "acct.refundLine": "Ücret iade edildi. Tutar 3–10 iş günü içinde hesabınıza yatırılır",
  "acct.err.cannot_resume": "Bu abonelik yeniden etkinleştirilemiyor. Yeniden abone olabilirsiniz",
  "acct.err.resume_first": "Önce otomatik yenilemeyi yeniden açın, ardından planı değiştirin",
- "acct.err.past_due": "Yenileme ödemeniz alınamadı. Önce ödeme yönteminizi güncelleyin"
+ "acct.err.past_due": "Yenileme ödemeniz alınamadı. Önce ödeme yönteminizi güncelleyin",
+ "cs.stop.day": "Bugünkü kullanım hakkınız doldu. AI filtreleme yarın yeniden başlar; yerel kurallar çalışmaya devam eder",
+ "cs.stop.month": "Bu ayki kullanım hakkınız doldu. AI filtreleme gelecek ay yeniden başlar; yerel kurallar çalışmaya devam eder",
+ "cs.stop.ended": "Üyeliğiniz veya deneme süreniz sona erdi. AI filtreleme duraklatıldı; yerel kurallar çalışmaya devam eder",
+ "cs.stop.signedOut": "ClearFlow Membership oturumunuz kapandı. AI filtreleme duraklatıldı; yerel kurallar çalışmaya devam eder",
+ "cs.stop.paused": "AI filtreleme şimdilik duraklatıldı; yerel kurallar çalışmaya devam eder",
+ "err.cf_stop": "ClearFlow Membership şu anda kullanılamıyor; yerel kurallar çalışmaya devam eder"
 }

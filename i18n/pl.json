@@ -471,5 +471,11 @@
  "acct.refundLine": "Zwrot zlecony. Środki pojawią się na koncie w ciągu 3–10 dni roboczych",
  "acct.err.cannot_resume": "Nie można wznowić tej subskrypcji. Możesz wykupić ją ponownie",
  "acct.err.resume_first": "Najpierw włącz ponownie automatyczne odnawianie, a potem zmień plan",
- "acct.err.past_due": "Płatność za odnowienie nie powiodła się. Najpierw zaktualizuj metodę płatności"
+ "acct.err.past_due": "Płatność za odnowienie nie powiodła się. Najpierw zaktualizuj metodę płatności",
+ "cs.stop.day": "Wykorzystano dzisiejszy limit. Filtrowanie AI wznowi się jutro; reguły lokalne nadal działają",
+ "cs.stop.month": "Wykorzystano limit na ten miesiąc. Filtrowanie AI wznowi się w przyszłym miesiącu; reguły lokalne nadal działają",
+ "cs.stop.ended": "Członkostwo lub okres próbny dobiegły końca. Filtrowanie AI jest wstrzymane; reguły lokalne nadal działają",
+ "cs.stop.signedOut": "Wylogowano z ClearFlow Membership. Filtrowanie AI jest wstrzymane; reguły lokalne nadal działają",
+ "cs.stop.paused": "Filtrowanie AI jest tymczasowo wstrzymane; reguły lokalne nadal działają",
+ "err.cf_stop": "ClearFlow Membership jest teraz niedostępne; reguły lokalne nadal działają"
 }

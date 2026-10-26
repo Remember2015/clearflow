@@ -471,5 +471,11 @@
  "acct.refundLine": "Dana telah dikembalikan. Dana akan masuk ke akun Anda dalam 3–10 hari kerja",
  "acct.err.cannot_resume": "Langganan ini tidak dapat dipulihkan. Anda dapat berlangganan lagi",
  "acct.err.resume_first": "Aktifkan kembali perpanjangan otomatis terlebih dahulu, lalu ganti paket",
- "acct.err.past_due": "Pembayaran perpanjangan gagal. Perbarui metode pembayaran terlebih dahulu"
+ "acct.err.past_due": "Pembayaran perpanjangan gagal. Perbarui metode pembayaran terlebih dahulu",
+ "cs.stop.day": "Kuota hari ini habis. Penyaringan AI dilanjutkan besok; aturan lokal tetap berfungsi",
+ "cs.stop.month": "Kuota bulan ini habis. Penyaringan AI dilanjutkan bulan depan; aturan lokal tetap berfungsi",
+ "cs.stop.ended": "Keanggotaan atau uji coba berakhir. Penyaringan AI dijeda; aturan lokal tetap berfungsi",
+ "cs.stop.signedOut": "Anda telah keluar dari Keanggotaan ClearFlow. Penyaringan AI dijeda; aturan lokal tetap berfungsi",
+ "cs.stop.paused": "Penyaringan AI sedang dijeda; aturan lokal tetap berfungsi",
+ "err.cf_stop": "Keanggotaan ClearFlow sedang tidak tersedia; aturan lokal tetap berfungsi"
 }

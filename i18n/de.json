@@ -471,5 +471,11 @@
  "acct.refundLine": "Erstattet. Der Betrag wird innerhalb von 3–10 Werktagen zurückgebucht",
  "acct.err.cannot_resume": "Dieses Abo kann nicht wieder aktiviert werden. Du kannst es erneut abschließen",
  "acct.err.resume_first": "Aktiviere zuerst die automatische Verlängerung und wechsle dann den Tarif",
- "acct.err.past_due": "Die Zahlung für deine Verlängerung ist fehlgeschlagen. Aktualisiere zuerst deine Zahlungsmethode"
+ "acct.err.past_due": "Die Zahlung für deine Verlängerung ist fehlgeschlagen. Aktualisiere zuerst deine Zahlungsmethode",
+ "cs.stop.day": "Das Tageslimit ist aufgebraucht. Die KI-Filterung wird morgen fortgesetzt; lokale Regeln funktionieren weiterhin",
+ "cs.stop.month": "Das Monatslimit ist aufgebraucht. Die KI-Filterung wird nächsten Monat fortgesetzt; lokale Regeln funktionieren weiterhin",
+ "cs.stop.ended": "Deine Mitgliedschaft oder Testphase ist abgelaufen. Die KI-Filterung ist pausiert; lokale Regeln funktionieren weiterhin",
+ "cs.stop.signedOut": "Du bist bei ClearFlow Membership abgemeldet. Die KI-Filterung ist pausiert; lokale Regeln funktionieren weiterhin",
+ "cs.stop.paused": "Die KI-Filterung ist vorübergehend pausiert; lokale Regeln funktionieren weiterhin",
+ "err.cf_stop": "ClearFlow Membership ist gerade nicht verfügbar; lokale Regeln funktionieren weiterhin"
 }

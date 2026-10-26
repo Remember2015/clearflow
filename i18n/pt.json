@@ -471,5 +471,11 @@
  "acct.refundLine": "Reembolso emitido. O valor será devolvido à sua conta em 3–10 dias úteis",
  "acct.err.cannot_resume": "Não foi possível reativar esta assinatura. Você pode assinar novamente",
  "acct.err.resume_first": "Reative a renovação automática antes de mudar de plano",
- "acct.err.past_due": "O pagamento da renovação falhou. Atualize sua forma de pagamento primeiro"
+ "acct.err.past_due": "O pagamento da renovação falhou. Atualize sua forma de pagamento primeiro",
+ "cs.stop.day": "Você atingiu o limite de hoje. A filtragem por IA volta amanhã; as regras locais continuam funcionando",
+ "cs.stop.month": "Você atingiu o limite deste mês. A filtragem por IA volta no próximo mês; as regras locais continuam funcionando",
+ "cs.stop.ended": "Sua assinatura ou seu período de teste acabou. A filtragem por IA está pausada; as regras locais continuam funcionando",
+ "cs.stop.signedOut": "Você saiu da sua conta do ClearFlow Membership. A filtragem por IA está pausada; as regras locais continuam funcionando",
+ "cs.stop.paused": "A filtragem por IA está pausada por enquanto; as regras locais continuam funcionando",
+ "err.cf_stop": "O ClearFlow Membership está indisponível no momento; as regras locais continuam funcionando"
 }

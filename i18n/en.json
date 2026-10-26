@@ -471,5 +471,11 @@
  "acct.refundLine": "Refunded. It reaches your account in 3–10 business days",
  "acct.err.cannot_resume": "This subscription can't be restored. You can subscribe again",
  "acct.err.resume_first": "Turn auto-renew back on first, then switch plans",
- "acct.err.past_due": "Your renewal payment failed. Update your payment method first"
+ "acct.err.past_due": "Your renewal payment failed. Update your payment method first",
+ "cs.stop.day": "Today's allowance is used up. AI filtering resumes tomorrow; local rules still work",
+ "cs.stop.month": "This month's allowance is used up. AI filtering resumes next month; local rules still work",
+ "cs.stop.ended": "Your membership or trial has ended. AI filtering is paused; local rules still work",
+ "cs.stop.signedOut": "You're signed out of ClearFlow Membership. AI filtering is paused; local rules still work",
+ "cs.stop.paused": "AI filtering is paused for now; local rules still work",
+ "err.cf_stop": "ClearFlow Membership isn't available right now; local rules still work"
 }

@@ -471,5 +471,11 @@
  "acct.refundLine": "Rimborso effettuato. L’importo sarà riaccreditato sul tuo account entro 3–10 giorni lavorativi",
  "acct.err.cannot_resume": "Non è possibile ripristinare questo abbonamento. Puoi abbonarti di nuovo",
  "acct.err.resume_first": "Riattiva prima il rinnovo automatico, poi cambia piano",
- "acct.err.past_due": "Il pagamento del rinnovo non è riuscito. Aggiorna prima il metodo di pagamento"
+ "acct.err.past_due": "Il pagamento del rinnovo non è riuscito. Aggiorna prima il metodo di pagamento",
+ "cs.stop.day": "Hai esaurito il limite di oggi. Il filtro IA riprenderà domani; le regole locali continuano a funzionare",
+ "cs.stop.month": "Hai esaurito il limite di questo mese. Il filtro IA riprenderà il mese prossimo; le regole locali continuano a funzionare",
+ "cs.stop.ended": "L’abbonamento o il periodo di prova è terminato. Il filtro IA è in pausa; le regole locali continuano a funzionare",
+ "cs.stop.signedOut": "Hai effettuato la disconnessione da ClearFlow Membership. Il filtro IA è in pausa; le regole locali continuano a funzionare",
+ "cs.stop.paused": "Il filtro IA è temporaneamente in pausa; le regole locali continuano a funzionare",
+ "err.cf_stop": "ClearFlow Membership non è al momento disponibile; le regole locali continuano a funzionare"
 }

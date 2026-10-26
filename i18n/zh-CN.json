@@ -471,5 +471,11 @@
  "acct.refundLine": "已退款，3–10 个工作日原路退回",
  "acct.err.cannot_resume": "这个订阅没法恢复，可以重新开通",
  "acct.err.resume_first": "先恢复自动续费，再换套餐",
- "acct.err.past_due": "续费没扣成，先更新付款方式"
+ "acct.err.past_due": "续费没扣成，先更新付款方式",
+ "cs.stop.day": "今天的额度用完了，AI 判断明天恢复，本地规则照常",
+ "cs.stop.month": "本月额度用完了，AI 判断下个月恢复，本地规则照常",
+ "cs.stop.ended": "会员或试用已结束，AI 判断已暂停，本地规则照常",
+ "cs.stop.signedOut": "清流会员登录已失效，AI 判断已暂停，本地规则照常",
+ "cs.stop.paused": "AI 判断暂时停用，本地规则照常",
+ "err.cf_stop": "清流会员暂时用不了，本地规则照常"
 }

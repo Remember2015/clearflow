@@ -100,6 +100,9 @@ stub = r'''
                     ...(v && typeof v === "object" ? Object.fromEntries(Object.entries(v).filter(([k]) => ["benefit", "disguised", "promo_mention", "abuse", "sexual", ...(msg.extra || []), ...(x.ask || []), ...(marked() && !window.__ffNoMarkedInJev ? ["marked"] : [])].includes(k))) : {}) }; // __ffNoMarkedInJev：当作五问从缓存拿的、没有 marked
       }
       r = { scores: s };
+      // ?jevErr={...}（0.34.1）：判断回一个错误（比如清流会员额度用完 {"error":"quota_daily","code":"cf_stop","reason":"quota_daily","retryable":false}）
+      const jerr = new URLSearchParams(location.search).get("jevErr");
+      if (jerr) { try { r = { ...JSON.parse(jerr), scores: {} }; } catch (e) {} }
     }
     // 帖子本身那一问（求推荐帖 rec）：网址加 ?rec=0.95 指定分，不加就是 0.02（普通帖子）；?recDelay=毫秒 让它晚点回来
     // YouTube 字幕（0.29.0）：判 YouTube 的自动翻译——?capjudge=0.9 指定最低分（不给是 0.4，翻得不好）；重翻——每行前面加"【替身字幕】"。

@@ -471,5 +471,11 @@
  "acct.refundLine": "Terugbetaald. Het bedrag staat binnen 3–10 werkdagen weer op je rekening",
  "acct.err.cannot_resume": "Dit abonnement kan niet worden hervat. Je kunt je opnieuw abonneren",
  "acct.err.resume_first": "Hervat eerst automatisch verlengen en wijzig daarna je abonnement",
- "acct.err.past_due": "De betaling voor je verlenging is mislukt. Werk eerst je betaalmethode bij"
+ "acct.err.past_due": "De betaling voor je verlenging is mislukt. Werk eerst je betaalmethode bij",
+ "cs.stop.day": "De daglimiet is bereikt. AI-filtering wordt morgen hervat; lokale regels blijven werken",
+ "cs.stop.month": "De maandlimiet is bereikt. AI-filtering wordt volgende maand hervat; lokale regels blijven werken",
+ "cs.stop.ended": "Je lidmaatschap of proefperiode is afgelopen. AI-filtering is gepauzeerd; lokale regels blijven werken",
+ "cs.stop.signedOut": "Je bent afgemeld bij ClearFlow Membership. AI-filtering is gepauzeerd; lokale regels blijven werken",
+ "cs.stop.paused": "AI-filtering is tijdelijk gepauzeerd; lokale regels blijven werken",
+ "err.cf_stop": "ClearFlow Membership is momenteel niet beschikbaar; lokale regels blijven werken"
 }

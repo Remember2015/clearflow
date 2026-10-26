@@ -471,5 +471,11 @@
  "acct.refundLine": "Đã hoàn tiền. Tiền sẽ về tài khoản trong 3–10 ngày làm việc",
  "acct.err.cannot_resume": "Không thể khôi phục gói đăng ký này. Bạn có thể đăng ký lại",
  "acct.err.resume_first": "Hãy bật lại tự động gia hạn trước, rồi chuyển gói",
- "acct.err.past_due": "Thanh toán gia hạn không thành công. Hãy cập nhật phương thức thanh toán trước"
+ "acct.err.past_due": "Thanh toán gia hạn không thành công. Hãy cập nhật phương thức thanh toán trước",
+ "cs.stop.day": "Hôm nay bạn đã dùng hết hạn mức. Bộ lọc AI sẽ hoạt động lại vào ngày mai; bộ lọc cục bộ vẫn hoạt động",
+ "cs.stop.month": "Bạn đã dùng hết hạn mức tháng này. Bộ lọc AI sẽ hoạt động lại vào tháng sau; bộ lọc cục bộ vẫn hoạt động",
+ "cs.stop.ended": "Gói thành viên hoặc thời gian dùng thử đã kết thúc. Bộ lọc AI đã tạm dừng; bộ lọc cục bộ vẫn hoạt động",
+ "cs.stop.signedOut": "Bạn đã đăng xuất khỏi ClearFlow Membership. Bộ lọc AI đã tạm dừng; bộ lọc cục bộ vẫn hoạt động",
+ "cs.stop.paused": "Bộ lọc AI hiện đang tạm dừng; bộ lọc cục bộ vẫn hoạt động",
+ "err.cf_stop": "ClearFlow Membership hiện không khả dụng; bộ lọc cục bộ vẫn hoạt động"
 }
