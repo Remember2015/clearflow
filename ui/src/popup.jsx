@@ -179,8 +179,9 @@ function Unsupported() {
       </Item>
       <footer className="flex justify-end">
         <span className="flex items-center gap-3">
-          {/* 建议与反馈（0.23）：打开设置页、停在那张卡片（邮箱写在那里、能复制；直接点 mailto 在没配邮件程序的电脑上没反应） */}
-          <a href="#" id="feedback" className="text-sm text-muted-foreground no-underline hover:text-foreground"
+          {/* 建议与反馈（0.23）：打开设置页、停在那张卡片（邮箱写在那里、能复制；直接点 mailto 在没配邮件程序的电脑上没反应）。
+              不折行（0.34.2：泰语没有空格，Linux 上空间一紧就按音节断成两行） */}
+          <a href="#" id="feedback" className="shrink-0 text-sm whitespace-nowrap text-muted-foreground no-underline hover:text-foreground"
             onClick={(e) => { e.preventDefault(); chrome.tabs.create({ url: chrome.runtime.getURL("options.html#feedback") }); window.close(); }}>{t("pop.feedback")}</a>
           <Button id="openOpts" variant="outline" size="sm" className="btn" onClick={() => chrome.runtime.openOptionsPage()}>{t("pop.settings")}</Button>
         </span>
@@ -235,8 +236,9 @@ function Popup() {
         {member ? <span id="cost" className="min-w-0 truncate text-sm text-muted-foreground">{popupLine(d.ff_account)}</span>
           : <span id="cost" className="text-sm whitespace-nowrap text-muted-foreground" title={c.title}>{c.text}</span>}
         <span className="ms-auto flex items-center gap-3">
-          {/* 建议与反馈（0.23）：打开设置页、停在那张卡片（邮箱写在那里、能复制；直接点 mailto 在没配邮件程序的电脑上没反应） */}
-          <a href="#" id="feedback" className="text-sm text-muted-foreground no-underline hover:text-foreground"
+          {/* 建议与反馈（0.23）：打开设置页、停在那张卡片（邮箱写在那里、能复制；直接点 mailto 在没配邮件程序的电脑上没反应）。
+              不折行（0.34.2：泰语没有空格，Linux 上空间一紧就按音节断成两行） */}
+          <a href="#" id="feedback" className="shrink-0 text-sm whitespace-nowrap text-muted-foreground no-underline hover:text-foreground"
             onClick={(e) => { e.preventDefault(); chrome.tabs.create({ url: chrome.runtime.getURL("options.html#feedback") }); window.close(); }}>{t("pop.feedback")}</a>
           <Button id="openOpts" variant="outline" size="sm" className="btn" onClick={() => chrome.runtime.openOptionsPage()}>{t("pop.settings")}</Button>
         </span>

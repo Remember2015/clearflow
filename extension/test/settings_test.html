@@ -86,9 +86,10 @@ ok("X 页上 M1 的说明（点问号也能打开）里写着现在的长度上�
 document.querySelector("#row-m1 .help").click(); await wait(200);
 location.hash = "";
 await until(() => $("fold"));
-ok("key 的状态：Jev 用不了、OpenRouter 没填（没填的直接给输入框）", $("jevState").textContent === "用不了" && $("orState").textContent === "没填" && !!$("orKey") && !$("key"),
-  [$("jevState").textContent, $("orState").textContent].join("/"));
-ok("本月花费：Jev 按 token 算、翻译按实际", /Jev \$0\.042/.test($("costLine").textContent) && /翻译 \$0\.01/.test($("costLine").textContent), $("costLine").textContent);
+// 0.29.11 起只要 OpenRouter 的密钥，TypeSafe 的挪进"高级"（默认收起）：主页面上只有 OpenRouter 那一行
+ok("key 的状态：OpenRouter 没填（没填的直接给输入框）；TypeSafe 那一行不在主页面上（在高级里）", $("orState")?.textContent === "没填" && !!$("orKey") && !$("jevState") && !$("key"),
+  [$("orState")?.textContent, !!$("jevState")].join("/"));
+ok("本月花费：清理（Jev）按 token 算、翻译按实际", /清理 \$0\.042/.test($("costLine").textContent) && /翻译 \$0\.010?/.test($("costLine").textContent), $("costLine").textContent);
 ok("你标记的垃圾：旁边写着几条", /1 条/.test($("sloganCount").textContent), $("sloganCount").textContent);
 $("sloganToggle").click();
 await until(() => $("slogans"));
