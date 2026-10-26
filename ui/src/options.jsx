@@ -83,8 +83,8 @@ function Section({ id, title, sub, help, children, label }) {
   );
 }
 const P = ({ k, vars }) => <p>{t(k, vars)}</p>;
-// 展开收起的面板：高度动画（Base UI 量好的 --collapsible-panel-height）；左右下留 1px，里面卡片的描边不被裁掉
-const PANEL = "panel h-(--collapsible-panel-height) overflow-hidden px-px pb-px transition-[height] duration-150 ease-out data-ending-style:h-0 data-starting-style:h-0";
+// 展开收起的面板：高度动画（Base UI 量好的 --collapsible-panel-height），要求减少动态效果时直接到位；左右下留 1px，里面卡片的描边不被裁掉
+const PANEL = "panel h-(--collapsible-panel-height) overflow-hidden px-px pb-px motion-safe:transition-[height] motion-safe:duration-150 motion-safe:ease-out data-ending-style:h-0 data-starting-style:h-0";
 
 // ---------- 清理什么 ----------
 // 网站页上的一行和默认不一样时：小字写"单独设置（默认：标准）· 恢复默认"（base：默认的那一份，keys：这一行管的几项里改过的）
@@ -157,9 +157,29 @@ function ImagesRow({ s, raw, put = save, site, siteId }) {
     </Row>
   );
 }
-// 你标记的垃圾（0.26 起；以前叫"你记住的句子"）：原文、在哪个网站标的，能逐条删、全部删。新的在上面
+function ConfirmDialog({ open, onOpenChange, title, description, confirmLabel, confirmId, onConfirm, children }) {
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      {children}
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="[overflow-wrap:anywhere]">{title}</AlertDialogTitle>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{t("c.cancel")}</AlertDialogCancel>
+          <Button variant="destructive" id={confirmId} onClick={async () => { onOpenChange(false); await onConfirm(); }}>{confirmLabel}</Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+// 你标记的垃圾（0.26 起；以前叫"你记住的句子"）：原文、在哪个网站标的，能逐条删、全部删。新的在上面。
+// 单条一点就删（再标一次就回来了）；全部删掉先确认一下，说清楚删几条、删了以后同类的可能不再清理
 function Slogans() {
   const [list, setList] = React.useState(null);
+  const [confirming, setConfirming] = React.useState(false);
   const load = React.useCallback(async () => {
     try {
       const { slogans } = await send({ type: "sloganList" });
@@ -176,36 +196,40 @@ function Slogans() {
   const act = (msg, done) => async () => { try { await send(msg); await load(); toast(done); } catch (e) { toast(failText(e), "err"); } };
   const n = list ? list.length : 0;
   return (
-    <Collapsible className={cn(ROW, "row-col flex flex-col")} id="row-slogans">
-      <div className="row-top flex flex-wrap items-center gap-x-3 gap-y-2">
-        <div className={MAIN}>
-          <span className={NAME}>{t("opt.slogans")}</span>
-          <Help label={t("c.helpFor", { name: t("opt.slogans") })}><P k="opt.sloganHint" /></Help>
-          <span className="ms-1.5 text-sm text-muted-foreground tabular-nums" id="sloganCount">{t("opt.sloganN", { n })}</span>
-        </div>
-        {n > 0 && (
-          <div className={CTRL}>
-            <CollapsibleTrigger id="sloganToggle" render={<Button variant="ghost" size="sm" className="btn group" />}>{t("opt.manage")} <IconChevron /></CollapsibleTrigger>
+    <ConfirmDialog open={confirming} onOpenChange={setConfirming}
+      title={t("opt.confirmForgetAllTitle", { n })} description={t("opt.confirmForgetAllText", { n })}
+      confirmLabel={t("opt.clearSlogans")} confirmId="sloganConfirm" onConfirm={act({ type: "sloganClear" }, t("c.cleared"))}>
+      <Collapsible className={cn(ROW, "row-col flex flex-col")} id="row-slogans">
+        <div className="row-top flex flex-wrap items-center gap-x-3 gap-y-2">
+          <div className={MAIN}>
+            <span className={NAME}>{t("opt.slogans")}</span>
+            <Help label={t("c.helpFor", { name: t("opt.slogans") })}><P k="opt.sloganHint" /></Help>
+            <span className="ms-1.5 text-sm text-muted-foreground tabular-nums" id="sloganCount">{t("opt.sloganN", { n })}</span>
           </div>
-        )}
-      </div>
-      <CollapsibleContent className={PANEL}>
-        <ul className="mt-2 flex flex-col" id="slogans">
-          {[...(list || [])].reverse().map((x, i) => (
-            <li key={`${x.source?.id || ""}|${x.text}|${i}`} className="flex items-center gap-2 border-t py-1.5">
-              <span className="min-w-0 flex-1 text-sm [overflow-wrap:anywhere]">
-                {x.raw || x.text}
-                {x.site ? <span className="ms-1.5 text-xs text-muted-foreground">{siteName(x.site)}</span> : null}
-              </span>
-              <Button variant="ghost" size="sm" className="btn" onClick={act({ type: "sloganRemove", text: x.text, id: x.source?.id || null }, t("opt.forgotOne"))}>{t("opt.forgetOne")}</Button>
-            </li>
-          ))}
-        </ul>
-        <div className="flex justify-end border-t pt-1.5">
-          <Button id="clearSlogans" variant="ghost" size="sm" className="btn text-destructive hover:text-destructive" onClick={act({ type: "sloganClear" }, t("c.cleared"))}>{t("opt.clearSlogans")}</Button>
+          {n > 0 && (
+            <div className={CTRL}>
+              <CollapsibleTrigger id="sloganToggle" render={<Button variant="ghost" size="sm" className="btn group" />}>{t("opt.manage")} <IconChevron /></CollapsibleTrigger>
+            </div>
+          )}
         </div>
-      </CollapsibleContent>
-    </Collapsible>
+        <CollapsibleContent className={PANEL}>
+          <ul className="mt-2 flex flex-col" id="slogans">
+            {[...(list || [])].reverse().map((x, i) => (
+              <li key={`${x.source?.id || ""}|${x.text}|${i}`} className="flex items-center gap-2 border-t py-1.5">
+                <span className="min-w-0 flex-1 text-sm [overflow-wrap:anywhere]">
+                  {x.raw || x.text}
+                  {x.site ? <span className="ms-1.5 text-xs text-muted-foreground">{siteName(x.site)}</span> : null}
+                </span>
+                <Button variant="ghost" size="sm" className="btn" onClick={act({ type: "sloganRemove", text: x.text, id: x.source?.id || null }, t("opt.forgotOne"))}>{t("opt.forgetOne")}</Button>
+              </li>
+            ))}
+          </ul>
+          <div className="flex justify-end border-t pt-1.5">
+            <AlertDialogTrigger id="clearSlogans" render={<Button variant="ghost" size="sm" className="btn text-destructive-text hover:text-destructive-text" />}>{t("opt.clearSlogans")}</AlertDialogTrigger>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    </ConfirmDialog>
   );
 }
 // 清理规则（所有网站的默认）：三类、「赞」「mark」这类（0.22）、看图片、刷同一句话、记住的句子，一张卡片
@@ -262,11 +286,11 @@ function SitePage({ id, d }) {
       {/* 返回：左上角一个圆形的箭头按钮，和网站的 logo、名字一行（0.21，照 Chrome 设置的子页；用户：以前那个"‹ 设置"太糙） */}
       <div className="flex items-center gap-2.5 px-1">
         <a href="#" id="back" aria-label={t("opt.backTo")} title={t("opt.backTo")}
-          className="back -ms-2 inline-flex size-9 shrink-0 items-center justify-center rounded-full text-foreground no-underline outline-none transition-[background-color,scale] duration-150 ease-out hover:bg-foreground/[0.06] focus-visible:ring-[3px] focus-visible:ring-ring/50 active:scale-[0.96]">
+          className="back -ms-2 inline-flex size-9 shrink-0 items-center justify-center rounded-full text-foreground no-underline outline-none motion-safe:transition-[background-color,scale] motion-safe:duration-150 motion-safe:ease-out hover:bg-foreground/[0.06] focus-visible:ring-[3px] focus-visible:ring-ring/50 motion-safe:active:scale-[0.96]">
           <IconArrowLeft />
         </a>
         <SiteLogo id={id} size={26} />
-        <h1 className="text-xl font-semibold" id="siteTitle">{siteName(id)}</h1>
+        <h1 className="text-xl font-semibold" id="siteTitle" tabIndex={-1}>{siteName(id)}</h1>
       </div>
       {/* 总开关在最上面（和弹窗第一行一样），下面两项这个网站关着时灰掉 */}
       <Section id="siteMain" label={siteName(id)}>
@@ -343,11 +367,11 @@ function KeyRow({ id, name, hint, has, code, placeholder, test, link, note }) {
     setMsg([t("c.testing"), ""]);
     try { setMsg([await test(open ? value.trim() : ""), "ok"]); } catch (e) { setMsg([failText(e), "err"]); } // 空的：后台测存着的那个
   };
-  const msgTone = msg && (msg[1] === "err" ? "text-destructive" : msg[1] === "ok" ? "text-green-700 dark:text-green-400" : "text-muted-foreground");
+  const msgTone = msg && (msg[1] === "err" ? "text-destructive-text" : msg[1] === "ok" ? "text-green-700 dark:text-green-400" : "text-muted-foreground");
   return (
     <div className={cn(ROW, "row-col flex flex-col")} id={`row-${id}`}>
       <div className="row-top flex flex-wrap items-center gap-x-3 gap-y-2">
-        <div className={MAIN}>
+        <div className={cn(MAIN, "flex-wrap")}>
           {/* 能用的在最左边打一个勾（0.19.3，用户：不要圈、放最左边）；别的状态这一格空着、两行的名字对齐（像苹果设置里已连接的那一项） */}
           <span className={cn("me-1 inline-flex size-4 shrink-0 text-green-700 dark:text-green-400", usable && "state")}
             {...(usable ? { id: `${id}State`, title: t(stateKey) } : { "aria-hidden": true })}>
@@ -356,7 +380,7 @@ function KeyRow({ id, name, hint, has, code, placeholder, test, link, note }) {
           <span className={NAME}>{name}</span>
           {!note && <Help label={t("c.helpFor", { name })}><P k={hint} /></Help>}
           {!usable && <Badge id={`${id}State`} className={cn("state ms-1.5", tone)}>{t(stateKey)}</Badge>}
-          {link && <a href={link} target="_blank" rel="noopener noreferrer" id={`${id}Get`} className="key-get ms-2 text-sm text-primary no-underline hover:underline">{t("welcome.getKey")} ↗</a>}
+          {link && <a href={link} target="_blank" rel="noopener noreferrer" id={`${id}Get`} className="key-get ms-2 shrink-0 text-sm whitespace-nowrap text-primary no-underline hover:underline">{t("welcome.getKey")} ↗</a>}
         </div>
         <div className={cn(CTRL, "gap-2")}>
           {!open && <Button variant="outline" size="sm" className="btn" id={`${id}Change`} onClick={() => { setEditing(true); setMsg(null); }}>{t("opt.change")}</Button>}
@@ -395,21 +419,21 @@ function WelcomeKey({ id, name, has, code, placeholder, test, link, note }) {
       try { await test(v); setMsg([t("welcome.keyOk"), "ok"]); } catch (e) { setEditing(true); setMsg([/badkey$/.test(e?.code || "") ? t("welcome.keyBad") : failText(e), "err"]); }
     } catch (e) { setMsg([failText(e), "err"]); }
   };
-  const msgTone = msg && (msg[1] === "err" ? "text-destructive" : msg[1] === "ok" ? "text-green-700 dark:text-green-400" : "text-muted-foreground");
+  const msgTone = msg && (msg[1] === "err" ? "text-destructive-text" : msg[1] === "ok" ? "text-green-700 dark:text-green-400" : "text-muted-foreground");
   return (
     <div className={cn(ROW, "row-col flex flex-col gap-2")} id={`row-${id}`}>
-      <div className="flex min-h-8 items-center gap-2">
+      <div className="flex min-h-8 flex-wrap items-center gap-2">
         <span className={cn(NAME, "font-medium")}>{name}</span>
         {has && usable && <span className="state inline-flex text-green-700 dark:text-green-400" id={`${id}State`} title={t(stateKey)}><IconCheck className="size-4" /><span className="sr-only">{t(stateKey)}</span></span>}
         {has && !usable && !msg && <Badge id={`${id}State`} className={cn("state", tone)}>{t(stateKey)}</Badge>}
         <span className="ms-auto">
-          {open ? <a href={link} target="_blank" rel="noopener noreferrer" id={`${id}Get`} className="key-get text-sm text-primary no-underline hover:underline">{t("welcome.getKey")} ↗</a>
+          {open ? <a href={link} target="_blank" rel="noopener noreferrer" id={`${id}Get`} className="key-get shrink-0 text-sm whitespace-nowrap text-primary no-underline hover:underline">{t("welcome.getKey")} ↗</a>
             : <Button variant="outline" size="sm" className="btn" id={`${id}Change`} onClick={() => { setEditing(true); setMsg(null); }}>{t("opt.change")}</Button>}
         </span>
       </div>
       {open && (
-        <div className="flex gap-2">
-          <Input type="password" id={id === "jev" ? "key" : "orKey"} className="h-8 min-w-0 flex-1 text-sm md:text-sm" autoComplete="off" spellCheck={false} placeholder={placeholder}
+        <div className="flex flex-wrap gap-2">
+          <Input type="password" id={id === "jev" ? "key" : "orKey"} className="h-8 min-w-0 flex-[1_1_12rem] text-sm md:text-sm" autoComplete="off" spellCheck={false} placeholder={placeholder}
             aria-label={`${name} API key`} value={value} onKeyDown={(e) => { if (e.key === "Enter") doSave(); }}
             onChange={(e) => { setValue(e.target.value); if (msg && msg[1] === "err") setMsg(null); }} />{/* 重新输入时收起上一次的报错 */}
           <Button size="sm" className="btn" id={id === "jev" ? "saveKey" : "saveOrKey"} onClick={doSave}>{t("c.save")}</Button>
@@ -502,20 +526,10 @@ function Data({ d }) {
               <DropdownMenuItem className="menu-item" id="clearTxCache" onClick={run({ type: "txCacheClear" }, t("opt.txCacheCleared"), loadCache)}>{t("opt.clearTxCache")}</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <AlertDialog open={confirm} onOpenChange={setConfirm}>
-            <AlertDialogTrigger id="clear" render={<Button variant="ghost" size="sm" className="btn ms-auto text-destructive hover:text-destructive" />}>{t("opt.clear")}</AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>{t("opt.clear")}</AlertDialogTitle>
-                <AlertDialogDescription>{t("opt.confirmClear")}</AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>{t("c.cancel")}</AlertDialogCancel>
-                <Button variant="destructive" id="clearConfirm"
-                  onClick={async () => { setConfirm(false); await run({ type: "clearLog" }, t("c.cleared"))(); }}>{t("opt.clearNow")}</Button>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <ConfirmDialog open={confirm} onOpenChange={setConfirm} title={t("opt.clear")} description={t("opt.confirmClear")}
+            confirmLabel={t("opt.clearNow")} confirmId="clearConfirm" onConfirm={run({ type: "clearLog" }, t("c.cleared"))}>
+            <AlertDialogTrigger id="clear" render={<Button variant="ghost" size="sm" className="btn ms-auto text-destructive-text hover:text-destructive-text" />}>{t("opt.clear")}</AlertDialogTrigger>
+          </ConfirmDialog>
         </div>
         <p className="row-note mt-2 text-xs text-muted-foreground" id="cacheStats">{cache}</p>
       </div>
@@ -648,7 +662,7 @@ function Welcome({ d }) {
     <>
       <div className="flex flex-col gap-1 px-1">
         <p className="text-sm text-muted-foreground" id="welcomeStep">{t("welcome.step", { n: step, m: 3 })}</p>
-        <h1 className="text-xl font-semibold" id="welcomeTitle">{t(step === 1 ? "welcome.sitesTitle" : step === 2 ? "welcome.modeTitle" : "welcome.doneTitle")}</h1>
+        <h1 className="text-xl font-semibold" id="welcomeTitle" tabIndex={-1}>{t(step === 1 ? "welcome.sitesTitle" : step === 2 ? "welcome.modeTitle" : "welcome.doneTitle")}</h1>
       </div>
       {step === 1 && (
         <Section id="welcomeSites" label={t("welcome.sitesTitle")}>
@@ -751,28 +765,47 @@ const routeOf = () => {
   const m = /^#site=(\w+)$/.exec(location.hash);
   return m && SETTINGS.SITES.some((x) => x.id === m[1]) ? m[1] : null;
 };
-// #feedback、#conn、#plans（弹窗、网页提示上的"开通会员""登录""改用自己的密钥"）：主页、停在那张卡片
-const toFeedback = () => { const id = { "#feedback": "feedback", "#conn": "conn", "#plans": "plans", "#renew": "conn" }[location.hash]; if (id) requestAnimationFrame(() => (document.getElementById(id) || document.getElementById("conn"))?.scrollIntoView({ block: "start" })); };
+// #feedback、#conn、#plans（弹窗、网页提示上的"开通会员""登录""改用自己的密钥"）：主页、停在那张卡片；#renew（菜单里的续费）直接停在套餐上。
+// 真的换了一页（#site=…、#welcome、回主页）把焦点交给新页的标题：键盘和读屏知道换了页；锚点不抢焦点
+const anchorOf = () => ({ "#feedback": "feedback", "#conn": "conn", "#plans": "plans", "#renew": "plans" }[location.hash] || null);
+const toFeedback = () => {
+  const id = anchorOf();
+  if (id) requestAnimationFrame(() => requestAnimationFrame(() => (document.getElementById(id) || document.getElementById("conn"))?.scrollIntoView({ block: "start" })));
+};
 function Options() {
   const [d] = useStorage(KEYS);
   const [route, setRoute] = React.useState(routeOf);
+  const [navigation, setNavigation] = React.useState(0);
+  const focusRoute = React.useRef(false);
   React.useEffect(() => {
-    const f = () => { setRoute(routeOf()); window.scrollTo(0, 0); toFeedback(); };
+    const f = () => {
+      focusRoute.current = !anchorOf();
+      setRoute(routeOf());
+      setNavigation((v) => v + 1);
+      if (anchorOf()) toFeedback(); else window.scrollTo(0, 0);
+    };
     window.addEventListener("hashchange", f);
     return () => window.removeEventListener("hashchange", f);
   }, []);
-  React.useEffect(() => { if (d) toFeedback(); }, [!!d]);
+  React.useEffect(() => {
+    if (!d) return;
+    toFeedback();
+    if (focusRoute.current) {
+      focusRoute.current = false;
+      requestAnimationFrame(() => document.querySelector("main h1")?.focus({ preventScroll: true }));
+    }
+  }, [route, navigation, !!d]);
   React.useEffect(() => {
     document.title = route === "welcome" ? t("welcome.title") : route ? `${siteName(route)} · ${t("opt.title")}` : t("opt.title");
   }, [route]);
   if (!d) return null;
   const s = SETTINGS.normalize(d.ff_settings);
   return (
-    <main className="mx-auto flex max-w-[640px] flex-col gap-5 px-5 pt-7 pb-20">
+    <main className="mx-auto flex max-w-[640px] flex-col gap-5 px-4 pt-7 pb-20 sm:px-5">
       {route === "welcome" ? <Welcome d={d} /> : route ? <SitePage id={route} d={d} /> : <>
         {/* 登录态放在最上面（0.32.0，用户 10-25）：登录了右上角是头像 + 邮箱（会员带星），点开是菜单；选了清流会员、没登录是"登录" */}
         <div className="flex min-h-9 items-center justify-between gap-3 px-1" id="pageHead">
-          <h1 className="text-xl font-semibold">{t("opt.h1")}</h1>
+          <h1 className="text-xl font-semibold" tabIndex={-1}>{t("opt.h1")}</h1>
           {signedIn(d.ff_account) ? <AccountMenu a={d.ff_account} /> : (s.account || loginPending(d.ff_account)) && <WebLogin a={d.ff_account} id="headLogin" />}
         </div>
         <SiteList raw={d.ff_settings} />

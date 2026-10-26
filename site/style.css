@@ -316,6 +316,8 @@ body:has(> .top.light) > main { flex: 1; }
 .plan-note { margin-top: 6px; font-size: 14px; color: var(--ink-2); text-wrap: pretty; }
 .plan-points { list-style: none; margin: 20px 0 0; padding: 0; display: grid; gap: 10px; font-size: 15px; }
 .plan-points li { display: flex; gap: 10px; }
+/* 价格页：推荐的那一档（年付）一圈主色，按钮是实心的；别的两档按钮是描边的，一眼看出推荐哪个 */
+.plan.recommended { box-shadow: inset 0 0 0 1.5px var(--brand), var(--shadow); }
 .plan-cta { margin-top: auto; padding-top: 24px; display: flex; align-items: center; flex-wrap: wrap; gap: 12px 20px; }
 .plan-cta .link { margin-top: 0; }
 .plan-trial { margin-top: 16px; font-size: 14px; color: var(--ink-2); }
@@ -551,24 +553,25 @@ html:lang(ko) { --font: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo"
 /* plans */
 .acct-benefits { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 14px; color: var(--ink-2); margin-top: -4px; }
 .acct-benefits span::before { content: "✓ "; color: var(--good); font-weight: 600; }
-/* 四行列表（用户 10-25 选的 2B，和插件一样）：年付、月付、1 年、30 天；一次性的两行带微信支付标记 */
-.plan-list { display: grid; gap: 10px; margin-top: 8px; }
-.plan-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border: 0; border-radius: 14px; background: var(--card); color: var(--ink); font: inherit; text-align: start; cursor: pointer;
+/* 四行列表（用户 10-25 选的 2B，和插件一样）：年付、月付、1 年、30 天；一次性的两行带微信支付标记。
+   都限定在 .acct 里：价格页也有 .plan-name / .plan-price / .plan-note，不限定的话排在后面的这几条会把价格页的字号盖掉 */
+.acct .plan-list { display: grid; gap: 10px; margin-top: 8px; }
+.acct .plan-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border: 0; border-radius: 14px; background: var(--card); color: var(--ink); font: inherit; text-align: start; cursor: pointer;
   box-shadow: inset 0 0 0 1px var(--line-strong); }
-.plan-row[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--brand); }
-.plan-row:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
-.plan-main { display: grid; gap: 2px; min-width: 0; }
-.plan-row .plan-name { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
-.plan-row .plan-note { margin-top: 0; }
-.plan-row .plan-price { margin-top: 0; gap: 4px; flex-shrink: 0; font-size: 20px; }
-.plan-row .plan-price small { font-size: 13px; }
-.plan-tag { font-size: 12px; font-weight: 500; padding: 1px 8px; border-radius: 999px; background: var(--brand); color: var(--on-brand); }
-.wxpay { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 400; padding: 1px 8px 1px 6px; border-radius: 999px; background: #e6f4ea; color: #188038; white-space: nowrap; }
+.acct .plan-row[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--brand); }
+.acct .plan-row:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.acct .plan-main { display: grid; gap: 2px; min-width: 0; }
+.acct .plan-row .plan-name { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.acct .plan-row .plan-note { margin-top: 0; }
+.acct .plan-row .plan-price { margin-top: 0; gap: 4px; flex-shrink: 0; font-size: 20px; }
+.acct .plan-row .plan-price small { font-size: 13px; }
+.acct .plan-tag { font-size: 12px; font-weight: 500; padding: 1px 8px; border-radius: 999px; background: var(--brand); color: var(--on-brand); }
+.wxpay { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 400; padding: 1px 8px 1px 6px; border-radius: 999px; background: #e6f4ea; color: #17763a; white-space: nowrap; }
 .wxpay img { display: block; }
-.plan-name { font-size: 15px; font-weight: 500; }
-.plan-price { font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.plan-price small { font-size: 14px; font-weight: 400; color: var(--ink-3); }
-.plan-note { font-size: 13px; color: var(--ink-3); }
+.acct .plan-name { font-size: 15px; font-weight: 500; }
+.acct .plan-price { font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.acct .plan-price small { font-size: 14px; font-weight: 400; color: var(--ink-3); }
+.acct .plan-note { font-size: 13px; color: var(--ink-3); }
 @media (max-width: 520px) { .auth-card { padding: 24px 20px; } }
 .paid-head { padding-bottom: 72px; }
 .paid-head .ctas { margin-top: 24px; }

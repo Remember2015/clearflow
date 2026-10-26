@@ -80,6 +80,15 @@ export const EXTRA_QUESTIONS = {
   own_work:
     "Is the author of this item sharing or announcing their own work, project, product, content or event (possibly with a link to it), " +
     "rather than steering readers to someone else's account or business, to a DM, contact or group, or to a giveaway, investment or money-making scheme?",
+  // name_ad（0.35，用户 10-26 截图「40%OKX合约返佣 @BossLady_Promo」：回复正文正常，广告在昵称里）：只问 X 帖子页上昵称长的回复
+  // （≥ 4 个汉字当量，按 rules.js 的 units；本地 X 数据里 18% 的回复，绝大多数是"尼克胡｜投资与生活"这种自我介绍）。上面几问只看正文，这种抓不到。
+  // 本地 100 条（昵称是广告 11、不是 82）：AUC 0.994，0.7 抓到 6/11、误伤 0/82；现有三问最高的那个 AUC 0.850
+  // （jev_eval/code/xr_general/name_promo.mjs，样本只在本机）。没抓到的：邮箱当昵称、邀请码、"会算命！"
+  name_ad:
+    "is the author's display name (`author_name`) or handle itself an advertisement - promoting a product, service, platform, " +
+    "referral or rebate offer, giveaway, channel, group, or a way to contact them (such as an email address or 'DM me') - so that " +
+    "the reply mainly serves to show that advertisement to readers, rather than being a personal name, nickname, or a description " +
+    "of who the author is or what they do?",
 };
 // 问帖子本身的（0.15.3 起）：rec——帖子是不是在请大家推荐东西。是的话回复里报名字是在回答，不算拉人，
 // 垃圾回复的门槛换成"求推荐类帖子的阈值"（默认 0.9）。以前靠只认中文的正则（推荐 / 服务商 / 有没有…靠谱），帖子译成别的语言就认不出：

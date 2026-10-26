@@ -1,13 +1,15 @@
 # Changelog
 
-## 0.34.2 — 2026-10-26
+## 0.35.0 — 2026-10-27
 
+- On X post pages, a reply whose display name is itself an ad (a rebate or referral offer, a promo channel, a way to contact them) is hidden even when the text of the reply looks normal; the bar says “The display name is an ad”.
 - New: **ClearFlow Membership**, an alternative to using your own key. Sign in with your email and the AI features work without an API key. New accounts get a 7-day free trial without a card; then $2.90 a month or $24 a year, or a one-time 30-day ($3.90) or 1-year ($39) pass. WeChat Pay works for the one-time passes (mainland China and Hong Kong). Payments are handled by Waffo. Choose it in first-time setup or in Settings → Connections and cost; your own key keeps working as before.
 - Signing in happens on clearflow.ohmyai.app, in a tab the extension opens. If you're already signed in there it takes one step, and the extension and the website keep each other signed in.
 - Settings shows your account at the top right (members get a small gold star). Usage, devices (up to 3), renewing, switching from monthly to yearly, cancelling and refunds (full refund within 7 days of your first purchase) are in Connections and cost and on the website's account page.
 - With membership, the content to judge or translate goes through ClearFlow's server instead of straight to OpenRouter. The [privacy policy](PRIVACY.md) (effective October 26, 2026) and [terms of service](TERMS.md) describe what the server keeps; with your own key nothing changes.
 - When membership can't be used right now (today's or this month's allowance is used up, the membership or trial has ended, or you're signed out), the line above the comments says so in plain words, instead of an error code with a retry link that couldn't help.
 - Popup: the Feedback link no longer breaks onto two lines in Thai.
+- Settings: error messages stay until you close them; “Remove all” for the spam you marked asks first; if image access is refused, the message says how to turn it on again; the key rows fit narrow windows; red text is easier to read; with Windows high contrast, cards keep their outlines; sliding and zooming animations follow the system's reduce-motion setting.
 
 ## 0.29.11 — 2026-10-23
 

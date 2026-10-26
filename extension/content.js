@@ -32,7 +32,7 @@
   // 这一问在 0.6–0.7 之间折的在 X 的数据上几乎全是错的（多语言热帖上日文玩笑、葡文记者介绍、法文时评带民调链接，中文热帖上荐书）。
   // 高 0.1 以后折错：多语言热帖 10 → 7、中文热帖 3 → 2、译文 3 → 1；折对的只少了译文里一条（印尼文短链）。
   // "只贴自己的帖子"那种引流有结构规则（selfQuote）兜着，不靠这一问
-  const OVER = { setup: 0.1, disguised: 0.1 };
+  const OVER = { setup: 0.1, disguised: 0.1, name_ad: 0.1 }; // name_ad：标准档 0.6 + 0.1 = 0.7（宽松 0.8、严格 0.6）
   // 主页、搜索结果里的是一条条帖子，不是别人帖子下面的回复："在 @ 别人做推广""伪装成普通评论的广告"这两问是冲着
   // 回复问的（蹭别人的评论区），拿去问帖子会把"感谢合作者""提到 @SpaceX"当成推广——2026-10-13 用户的记录里，
   // 主页上折的 18 条全是主人自己的帖子、16 条是这一问，没一条真是垃圾。这里只看"引流"那一问（辱骂、色情照旧）
@@ -327,7 +327,12 @@
   // （用户 10-24：作者推自己做的免费工具"看起来不算拉人吧，而且是自己给自己"）。主人推"加我微信领资料"这种照样清理（以前用户定的）
   const ownAsk = (it) => timeline() && !it.userLabel && !isSelf(it);
   const ownWork = (it) => ownAsk(it) && !!it.scores && typeof it.scores.own_work === "number" && it.scores.own_work >= globalThis.FFSettings.OWN_WORK_THRESHOLD;
-  const asks = (it) => [...(fillerAsk(it) ? ["filler"] : []), ...(opAsk(it) ? ["op_topic"] : []), ...(ownAsk(it) ? ["own_work"] : [])];
+  // 昵称在打广告（0.35，用户 10-26：「40%OKX合约返佣 @BossLady_Promo」回复正文正常）：帖子页上昵称 ≥ 4 个汉字当量（rules.js 的 units，
+  // 字母、数字按 0.25 算）的回复多问一句。本地 X 数据里这样的回复 18%，评测里 11 个打广告的昵称都在里面
+  // （jev.js 的 name_ad），楼主、你自己不问。过了门槛按垃圾回复清理，理由"昵称在打广告"；不受短回复豁免（广告不在正文里）
+  const NAME_AD_UNITS = 4;
+  const nameAsk = (it) => S.mode === "status" && !it.userLabel && !isSelf(it) && !isOp(it) && R.units(it.name || "") >= NAME_AD_UNITS;
+  const asks = (it) => [...(fillerAsk(it) ? ["filler"] : []), ...(opAsk(it) ? ["op_topic"] : []), ...(ownAsk(it) ? ["own_work"] : []), ...(nameAsk(it) ? ["name_ad"] : [])];
   function decide(it) {
     if (!it.overrideReady) return { fold: false, kind: "pending" };
     if (it.userLabel === "missed") return { fold: true, kind: "user", reason: KIND("user") };
@@ -364,6 +369,8 @@
       // 该标辱骂。辱骂、色情不用短文本豁免（"SB" 就两个字母）
       const cands = [];
       if (best && (withImg(it) || !R.shortExempt(it.text)) && !onTopic(it) && !ownWork(it)) cands.push({ kind: "jev", score: best.v, reason: `${REASON(best.k)} ${best.v.toFixed(2)}` });
+      const na = it.scores.name_ad;
+      if (nameAsk(it) && typeof na === "number" && na >= th + OVER.name_ad) cands.push({ kind: "jev", score: na, reason: `${REASON("name_ad")} ${na.toFixed(2)}` });
       // 和你标记过的垃圾是同一类（0.26，Jev 的 marked 那一问）：你自己标的，不用短文本豁免
       const mk = it.scores.marked;
       if (typeof mk === "number" && mk >= globalThis.FFSettings.MARKED_THRESHOLD) cands.push({ kind: "marked", score: mk, reason: KIND("marked") });
@@ -383,7 +390,7 @@
 
   function needJev(it) {
     // 已经有分、但这条该多问的 filler 没问过（刚打开这个开关）：重问一次
-    const missing = !it.scores || (fillerAsk(it) && typeof it.scores.filler !== "number") || (opAsk(it) && typeof it.scores.op_topic !== "number") ||
+    const missing = !it.scores || (fillerAsk(it) && typeof it.scores.filler !== "number") || (opAsk(it) && typeof it.scores.op_topic !== "number") || (nameAsk(it) && typeof it.scores.name_ad !== "number" && !it.nameAsked) ||
       (ownAsk(it) && typeof it.scores.own_work !== "number");
     if (!(S.enabled && !S.settingsLoading && it.overrideReady && !it.userLabel && S.settings.useJev && S.hasKey && missing && !it.queued && !it.jevSkipped && (it.text.trim() || withImg(it)))) return false;
     if (it.translated && it.origState !== "done") return false; // 原文还没拿到
@@ -396,6 +403,8 @@
   async function flush() {
     while (S.enabled && !S.settingsLoading && S.settings.useJev && S.hasKey && S.queue.length && S.inflight < 2) {
       const batch = S.queue.splice(0, 10);
+      // 昵称那一问每条只问一次：回来的分里没有（会员模式下服务端还是旧版、不认这一问）就算了，不然每次扫描都会重问
+      for (const it of batch) if (nameAsk(it)) it.nameAsked = true;
       const postId = S.postId;
       const epoch = S.epoch;
       S.inflight++;

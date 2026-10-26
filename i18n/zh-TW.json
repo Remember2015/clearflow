@@ -111,6 +111,8 @@
  "opt.sloganCount": "已標記：{n} 則。",
  "opt.forgetOne": "移除",
  "opt.forgotOne": "已移除。",
+ "opt.confirmForgetAllTitle": "要移除全部 {n} 則你標記的垃圾回覆嗎？",
+ "opt.confirmForgetAllText": "移除後無法復原，類似的回覆之後可能不會再被隱藏",
  "opt.threshold": "垃圾留言清理門檻",
  "opt.abuse": "辱罵與人身攻擊",
  "opt.abuseThreshold": "辱罵清理門檻",
@@ -120,7 +122,7 @@
  "opt.sexualHint": "露骨描述、色情俚語、色情網站連結和約砲邀約都算；含蓄談論感情、性健康資訊，以及用來加強語氣的髒話則不算。中文暗語（例如「字母圈」、「原味」）不一定都能辨識。",
  "opt.images": "檢查回覆中的圖片",
  "opt.imagesHint": "將 X、Reddit、小紅書的回覆圖片傳送給 Jev，辨識廣告、QR code 和色情內容，也會檢查只有圖片的回覆。圖片先縮小至 768 像素，每張約增加 1–2 千個 token。圖片辨識仍在實驗階段，準確度低於文字辨識。啟用時，瀏覽器會要求授予這些網站的圖片存取權限。",
- "opt.imagesDenied": "未取得圖片存取權限，圖片檢查未啟用。",
+ "opt.imagesDenied": "未取得圖片存取權限，圖片檢查未開啟。請再次開啟「檢查回覆中的圖片」，並在瀏覽器提示中選擇「允許」。",
  "opt.imagesNeedTs": "請先在「進階」中新增 TypeSafe 金鑰（OpenRouter 目前不會轉送圖片）。",
  "opt.recThreshold": "徵求推薦類貼文的門檻",
  "opt.bannerRatio": "第一批回覆中的垃圾回覆比例超過多少時，顯示「回覆多為機器人」提示",
@@ -477,5 +479,6 @@
  "cs.stop.ended": "會員資格或試用已結束。AI 篩選已暫停；本機規則仍會生效",
  "cs.stop.signedOut": "已登出 ClearFlow 會員。AI 篩選已暫停；本機規則仍會生效",
  "cs.stop.paused": "AI 篩選目前已暫停；本機規則仍會生效",
- "err.cf_stop": "ClearFlow 會員目前無法使用；本機規則仍會生效"
+ "err.cf_stop": "ClearFlow 會員目前無法使用；本機規則仍會生效",
+ "reason.name_ad": "顯示名稱是廣告"
 }

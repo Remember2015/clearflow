@@ -34,7 +34,9 @@
       if (!a || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       e.preventDefault();
       shot.src = a.href;
-      shot.alt = a.getAttribute("aria-label") || "";
+      // 大图的替代文字：原图的说明加上这个场景的一句话（"X · 使用后 · 3 个账号发了同一句话"），读屏不只念"使用后"
+      const src = a.closest(".side")?.querySelector(".shot-wrap img"), scene = src && document.getElementById(src.getAttribute("aria-describedby") || "");
+      shot.alt = [src?.getAttribute("alt") || a.getAttribute("aria-label") || "", scene ? scene.textContent.trim() : ""].filter(Boolean).join(" · ");
       if (cap) cap.textContent = a.dataset.label || ""; // "Before" / "After"
       box.showModal();
       box.scrollTop = 0;

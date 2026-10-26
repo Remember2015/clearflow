@@ -55,6 +55,8 @@ const STUB = () => {
     await wait(300);
     const errBody = await page.evaluate(() => document.body.innerText);
     ok("登录出错：认不出的错误统一说出错了，稍后再试（不露 token_revoked）", /出错了，稍后再试/.test(errBody) && !/token_revoked/.test(errBody), "");
+    await page.click(".toast-close");
+    await wait(150);
     // 点登录：后台开官网确认页（这里只看发了 loginStart），等确认时右上角和连接里都是"在打开的网页上完成登录"和取消
     await page.evaluate((now) => {
       window.__acct.length = 0;
@@ -138,7 +140,7 @@ const STUB = () => {
     await page.evaluate(() => { const r = window.__acctReply; window.__acctReply = (m) => (m.op === "checkout" ? new Promise((res) => setTimeout(() => res(r(m)), 600)) : r(m)); });
     await page.click("#plansPay");
     await wait(150);
-    const busy = await page.$eval("#plansPay", (b) => ({ text: b.textContent, disabled: b.disabled, spin: !!b.querySelector("svg.animate-spin") }));
+    const busy = await page.$eval("#plansPay", (b) => ({ text: b.textContent, disabled: b.disabled, spin: !!b.querySelector("svg") && getComputedStyle(b.querySelector("svg")).animationName === "spin" }));
     ok("选月付按钮跟着变；点了去付款：转圈、正在打开…、不能再点", /去付款 · \$2\.90 \/ 月/.test(payMonthly) && busy.text === "正在打开…" && busy.disabled && busy.spin, JSON.stringify({ payMonthly, busy }));
     await wait(700);
     await wait(400);

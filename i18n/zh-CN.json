@@ -111,6 +111,8 @@
  "opt.sloganCount": "已标记 {n} 条。",
  "opt.forgetOne": "删掉",
  "opt.forgotOne": "已删掉。",
+ "opt.confirmForgetAllTitle": "删掉全部 {n} 条你标记的垃圾？",
+ "opt.confirmForgetAllText": "删掉后不能恢复，同类的回复以后可能不再被清理",
  "opt.threshold": "垃圾回复的清理阈值",
  "opt.abuse": "辱骂、人身攻击",
  "opt.abuseThreshold": "辱骂的清理阈值",
@@ -120,7 +122,7 @@
  "opt.sexualHint": "露骨的描写、黄色字眼、黄网链接、约炮都算；含蓄地聊感情、性健康科普、当语气词的脏话不算。中文黑话（“字母圈”“原味”之类）认不全。",
  "opt.images": "检查回复中的图片",
  "opt.imagesHint": "检查 X、Reddit、小红书回复中的广告、二维码和色情图片，包括只有图片的回复。图片缩至 768 像素后发送给 Jev，每张额外消耗约 1–2 千个 token。图片识别仍在试验中，准确率低于文字识别。开启时需授权插件访问这些网站的图片。",
- "opt.imagesDenied": "未获得图片访问权限，图片检查未开启。",
+ "opt.imagesDenied": "未获得图片访问权限，图片检查未开启。请再次打开“检查回复中的图片”，并在浏览器提示中选择“允许”。",
  "opt.imagesNeedTs": "要先在「高级」里填 TypeSafe 密钥（OpenRouter 暂时不转发图片）。",
  "opt.recThreshold": "“求推荐”类帖子里的阈值",
  "opt.bannerRatio": "首屏垃圾回复占比超过多少时提示“评论区多是机器人”",
@@ -477,5 +479,6 @@
  "cs.stop.ended": "会员或试用已结束，AI 判断已暂停，本地规则照常",
  "cs.stop.signedOut": "清流会员登录已失效，AI 判断已暂停，本地规则照常",
  "cs.stop.paused": "AI 判断暂时停用，本地规则照常",
- "err.cf_stop": "清流会员暂时用不了，本地规则照常"
+ "err.cf_stop": "清流会员暂时用不了，本地规则照常",
+ "reason.name_ad": "昵称在打广告"
 }

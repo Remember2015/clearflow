@@ -233,8 +233,8 @@ function Popup() {
       </div>
       {/* 花费那一句不折行（0.24：加了"反馈"以后英文、德文等 10 种语言把"约 $0.05"折到第二行）；放不下时右边两个控件整体换到下一行、靠右 */}
       <footer className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-t pt-2.5">
-        {member ? <span id="cost" className="min-w-0 truncate text-sm text-muted-foreground">{popupLine(d.ff_account)}</span>
-          : <span id="cost" className="text-sm whitespace-nowrap text-muted-foreground" title={c.title}>{c.text}</span>}
+        {member ? <span id="cost" className="min-w-0 truncate text-sm text-muted-foreground tabular-nums">{popupLine(d.ff_account)}</span>
+          : <span id="cost" className="text-sm whitespace-nowrap text-muted-foreground tabular-nums" title={c.title}>{c.text}</span>}
         <span className="ms-auto flex items-center gap-3">
           {/* 建议与反馈（0.23）：打开设置页、停在那张卡片（邮箱写在那里、能复制；直接点 mailto 在没配邮件程序的电脑上没反应）。
               不折行（0.34.2：泰语没有空格，Linux 上空间一紧就按音节断成两行） */}
@@ -243,7 +243,7 @@ function Popup() {
           <Button id="openOpts" variant="outline" size="sm" className="btn" onClick={() => chrome.runtime.openOptionsPage()}>{t("pop.settings")}</Button>
         </span>
       </footer>
-      {status && <p id="status" className="text-xs text-destructive" role="status">{status}</p>}
+      {status && <p id="status" className="text-xs text-destructive-text" role="status">{status}</p>}
     </div>
   );
 }

@@ -43,6 +43,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
       local: document.getElementById("welcomeKeysLocal")?.textContent || null, lock: !!document.querySelector("#welcomeKeysLocal svg"),
     }));
     let s = await step();
+    ok("刚打开：焦点不跳到标题上", (await page.evaluate(() => document.activeElement !== document.getElementById("welcomeTitle"))));
     ok("第 1 步：标题、第几步，五个网站都开着，各有清理、翻译两个勾（HN 的叫清理辱骂和色情评论）", s.step === "第 1 步，共 3 步" && s.title === "在哪些网站上用" && s.doc === "开始使用清流" &&
       JSON.stringify(s.sites.map((x) => x.id)) === JSON.stringify(["x", "reddit", "yt", "xhs", "hn"]) &&
       s.sites.every((x) => x.checks.length === 2 && x.checks.every((c) => c.endsWith("✓"))) && s.sites[4].checks[0] === "清理辱骂和色情评论✓", JSON.stringify(s));
@@ -61,6 +62,15 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
       JSON.stringify(s.keys) === JSON.stringify(["清理和翻译 · OpenRouter"]) && JSON.stringify(s.links) === JSON.stringify(["https://openrouter.ai/keys"]) &&
       s.notes.length === 1 && s.extras === 0 && s.next === "稍后再填", JSON.stringify(s));
     ok("第 2 步：填之前就告诉 key 只存在本地（带锁）、只发给 OpenRouter、不发给开发者", s.lock && /只保存在这个浏览器里/.test(s.local || "") && /只发给 OpenRouter/.test(s.local) && /不会发给开发者/.test(s.local), JSON.stringify(s.local));
+    await page.setViewport({ width: 320, height: 1100, deviceScaleFactor: 2 }); await wait(250);
+    const welcomeFit = await page.evaluate(() => {
+      const link = document.getElementById("orGet"), r = link.getBoundingClientRect(), c = getComputedStyle(link), card = getComputedStyle(document.getElementById("welcomeOwn"));
+      return { whiteSpace: c.whiteSpace, height: r.height, line: parseFloat(c.lineHeight), over: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        corner: card.getPropertyValue("corner-top-left-shape") };
+    });
+    ok("320px 宽：「获取密钥」不折行、页面不横向滚动，选择卡还是连续圆角", welcomeFit.whiteSpace === "nowrap" && welcomeFit.height <= welcomeFit.line + 2 && welcomeFit.over === 0 &&
+      /squircle|superellipse/.test(welcomeFit.corner), JSON.stringify(welcomeFit));
+    await page.setViewport({ width: 760, height: 1100, deviceScaleFactor: 2 }); await wait(250);
     if (SHOT) await page.screenshot({ path: path.join(SHOT, "welcome-2.png"), fullPage: true });
     // 一个网站都不翻译时不问 OpenRouter
     await page.evaluate(() => chrome.storage.local.get("ff_settings").then(({ ff_settings }) => {
@@ -83,6 +93,8 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     swc.on("Fetch.requestPaused", (e) => { asked.push(e.request.url); swc.send("Fetch.fulfillRequest", { requestId: e.requestId, responseCode: 401,
       responseHeaders: [{ name: "content-type", value: "application/json" }], body: Buffer.from('{"error":"invalid api key"}').toString("base64") }).catch(() => {}); });
     await swc.send("Fetch.enable", { patterns: [{ urlPattern: "https://openrouter.ai/*" }] });
+    await page.click("#saveOrKey"); await wait(250);
+    ok("空着点保存：说没填密钥，不去测", /没有填/.test(await page.$eval("#orKeyMsg", (e) => e.textContent)) && asked.length === 0, await page.$eval("#orKeyMsg", (e) => e.textContent));
     await page.type("#orKey", "fake-or-key-for-test"); await page.click("#saveOrKey"); await wait(1500);
     st = await stored();
     s = await step();
@@ -111,12 +123,12 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
       const card = document.getElementById("feedback"), r = card?.getBoundingClientRect();
       const a = document.getElementById("fbWrite");
       return { title: card?.querySelector("h2")?.textContent, inView: !!r && r.top >= 0 && r.top < innerHeight, mail: document.getElementById("fbMail")?.textContent,
-        href: a?.getAttribute("href") || "", last: card && card.parentElement.lastElementChild === card,
+        href: a?.getAttribute("href") || "", last: card && card.parentElement.lastElementChild === card, notH1: document.activeElement !== document.querySelector("main h1"),
         keyLinks: [...document.querySelectorAll("#conn .key-get")].map((x) => x.getAttribute("href")) };
     });
     const v = await page.evaluate(() => chrome.runtime.getManifest().version);
     const q = new URL(fb.href.replace(/^mailto:/, "http://x/"));
-    ok("#feedback：设置页最下面的建议与反馈卡片，打开就停在这里", fb.title === "建议与反馈" && fb.inView && fb.last && fb.mail === "developer@ohmyai.app", JSON.stringify(fb));
+    ok("#feedback：设置页最下面的建议与反馈卡片，打开就停在这里，焦点不跳到标题", fb.title === "建议与反馈" && fb.inView && fb.last && fb.mail === "developer@ohmyai.app" && fb.notH1, JSON.stringify(fb));
     ok("写邮件：mailto 带主题（版本）和正文里的版本、浏览器、界面语言", fb.href.startsWith("mailto:developer@ohmyai.app?") && q.searchParams.get("subject") === `清流反馈（${v}）` &&
       new RegExp(`清流 ${v.replace(/\./g, "\\.")} · .+ · zh-CN`).test(q.searchParams.get("body") || ""), fb.href);
     ok("设置页：连接和费用里只有 OpenRouter，带获取密钥（TypeSafe 的在高级里，0.29.11）", JSON.stringify(fb.keyLinks) === JSON.stringify(["https://openrouter.ai/keys"]), JSON.stringify(fb.keyLinks));
@@ -124,7 +136,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     await page.click("#advTrigger"); await wait(400);
     ok("高级里有再走一遍首次设置", (await page.evaluate(() => document.getElementById("rerunWelcome")?.getAttribute("href"))) === "#welcome");
     await page.click("#rerunWelcome"); await wait(500);
-    ok("点再走一遍：回到第 1 步", (await page.evaluate(() => document.getElementById("welcomeTitle")?.textContent)) === "在哪些网站上用");
+    ok("点再走一遍：回到第 1 步，焦点在标题上", (await page.evaluate(() => document.getElementById("welcomeTitle")?.textContent === "在哪些网站上用" && document.activeElement === document.getElementById("welcomeTitle"))));
 
     // ---------- 弹窗最下面的"反馈" ----------
     const pop = await browser.newPage();

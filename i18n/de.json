@@ -111,6 +111,8 @@
  "opt.sloganCount": "Markiert: {n}.",
  "opt.forgetOne": "Entfernen",
  "opt.forgotOne": "Entfernt.",
+ "opt.confirmForgetAllTitle": "Alle {n} markierten Antworten entfernen?",
+ "opt.confirmForgetAllText": "Das lässt sich nicht rückgängig machen. Ähnliche Antworten werden möglicherweise nicht mehr ausgeblendet",
  "opt.threshold": "Spam-Schwelle",
  "opt.abuse": "Beleidigungen und persönliche Angriffe",
  "opt.abuseThreshold": "Schwelle für Beleidigungen",
@@ -120,7 +122,7 @@
  "opt.sexualHint": "Dazu zählen explizite Beschreibungen, sexuelle Umgangssprache, Pornolinks und Angebote für unverbindlichen Sex. Zurückhaltende Gespräche über Beziehungen, Informationen zur sexuellen Gesundheit und Flüche als bloße Verstärkung zählen nicht dazu. Verschleierte Ausdrücke werden nicht immer erkannt.",
  "opt.images": "Bilder in Antworten prüfen",
  "opt.imagesHint": "Bilder in Antworten auf X, Reddit und RedNote werden an Jev gesendet, um Werbung, QR-Codes und sexuelle Inhalte zu erkennen. Auch reine Bildantworten werden geprüft. Jedes Bild wird auf 768 Pixel verkleinert und benötigt etwa 1.000–2.000 zusätzliche Tokens. Die Bildprüfung ist experimentell und weniger genau als die Textprüfung. Beim Aktivieren fragt der Browser nach der Erlaubnis, auf Bilder dieser Websites zuzugreifen.",
- "opt.imagesDenied": "Der Zugriff auf Bilder wurde nicht erlaubt. Die Bildprüfung bleibt deaktiviert.",
+ "opt.imagesDenied": "Der Bildzugriff wurde nicht erlaubt, daher bleibt die Bildprüfung deaktiviert. Aktiviere sie erneut und wähle im Browser-Hinweis „Zulassen“.",
  "opt.imagesNeedTs": "Füge zuerst unter „Erweitert“ einen TypeSafe-Schlüssel hinzu (OpenRouter leitet Bilder derzeit nicht weiter).",
  "opt.recThreshold": "Schwellenwert für Posts mit Empfehlungen",
  "opt.bannerRatio": "Hinweis „Die meisten Antworten sind Bots“ anzeigen, wenn der Spam-Anteil unter den ersten Antworten höher ist als",
@@ -477,5 +479,6 @@
  "cs.stop.ended": "Deine Mitgliedschaft oder Testphase ist abgelaufen. Die KI-Filterung ist pausiert; lokale Regeln funktionieren weiterhin",
  "cs.stop.signedOut": "Du bist bei ClearFlow Membership abgemeldet. Die KI-Filterung ist pausiert; lokale Regeln funktionieren weiterhin",
  "cs.stop.paused": "Die KI-Filterung ist vorübergehend pausiert; lokale Regeln funktionieren weiterhin",
- "err.cf_stop": "ClearFlow Membership ist gerade nicht verfügbar; lokale Regeln funktionieren weiterhin"
+ "err.cf_stop": "ClearFlow Membership ist gerade nicht verfügbar; lokale Regeln funktionieren weiterhin",
+ "reason.name_ad": "Der Anzeigename ist Werbung"
 }

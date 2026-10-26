@@ -111,6 +111,8 @@
  "opt.sloganCount": "Đã đánh dấu: {n}.",
  "opt.forgetOne": "Xóa",
  "opt.forgotOne": "Đã xóa.",
+ "opt.confirmForgetAllTitle": "Xóa tất cả {n} câu trả lời đã đánh dấu?",
+ "opt.confirmForgetAllText": "Không thể hoàn tác. Các câu trả lời tương tự có thể không còn bị ẩn nữa",
  "opt.threshold": "Ngưỡng ẩn spam",
  "opt.abuse": "Lăng mạ và công kích cá nhân",
  "opt.abuseThreshold": "Ngưỡng ẩn lời lăng mạ",
@@ -120,7 +122,7 @@
  "opt.sexualHint": "Bao gồm mô tả lộ liễu, tiếng lóng tình dục, liên kết khiêu dâm và lời mời quan hệ tình dục; không bao gồm trò chuyện kín đáo về tình cảm, thông tin sức khỏe tình dục hay lời chửi thề dùng để nhấn mạnh. Tiếng lóng mã hóa không phải lúc nào cũng được nhận diện.",
  "opt.images": "Kiểm tra hình ảnh trong câu trả lời",
  "opt.imagesHint": "Câu trả lời có hình ảnh trên X, Reddit và RedNote được gửi đến TypeSafe để phát hiện quảng cáo, mã QR và nội dung khiêu dâm, kể cả câu trả lời không có văn bản. Mỗi ảnh được thu nhỏ còn 768 px và dùng thêm khoảng 1.000–2.000 token. Tính năng này đang thử nghiệm và kém chính xác hơn kiểm tra văn bản. Trình duyệt sẽ yêu cầu quyền truy cập hình ảnh từ các trang này.",
- "opt.imagesDenied": "Chưa được cấp quyền truy cập hình ảnh nên tính năng kiểm tra hình ảnh chưa được bật.",
+ "opt.imagesDenied": "Quyền truy cập hình ảnh chưa được cấp, nên tính năng kiểm tra hình ảnh vẫn tắt. Bật lại và chọn “Cho phép” trong cửa sổ trình duyệt.",
  "opt.imagesNeedTs": "Trước tiên, hãy thêm khóa TypeSafe trong mục Nâng cao (OpenRouter hiện chưa chuyển tiếp hình ảnh).",
  "opt.recThreshold": "Ngưỡng trong các bài đăng xin gợi ý",
  "opt.bannerRatio": "Hiện thông báo “Phần lớn câu trả lời là bot” khi tỷ lệ câu trả lời spam trong số các câu trả lời đầu tiên vượt quá",
@@ -477,5 +479,6 @@
  "cs.stop.ended": "Gói thành viên hoặc thời gian dùng thử đã kết thúc. Bộ lọc AI đã tạm dừng; bộ lọc cục bộ vẫn hoạt động",
  "cs.stop.signedOut": "Bạn đã đăng xuất khỏi ClearFlow Membership. Bộ lọc AI đã tạm dừng; bộ lọc cục bộ vẫn hoạt động",
  "cs.stop.paused": "Bộ lọc AI hiện đang tạm dừng; bộ lọc cục bộ vẫn hoạt động",
- "err.cf_stop": "ClearFlow Membership hiện không khả dụng; bộ lọc cục bộ vẫn hoạt động"
+ "err.cf_stop": "ClearFlow Membership hiện không khả dụng; bộ lọc cục bộ vẫn hoạt động",
+ "reason.name_ad": "Tên hiển thị là quảng cáo"
 }

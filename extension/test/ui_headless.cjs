@@ -30,6 +30,10 @@ const SEED = {
     fold(4, "sexual", "合成的色情回复四"), fold(5, "jev", "合成的拉人回复五：私信我带你上车")],
   ff_log: [...Array(16)].map((_, i) => ({ ts: new Date(now - 864e5).toISOString(), label: "confirm", kind: "jev", id: String(1900000000000000000n + BigInt(i)) }))
     .concat([0, 1].map((i) => ({ ts: new Date(now - 864e5).toISOString(), label: "fp", kind: "jev", id: String(1900000000000000100n + BigInt(i)) }))),
+  ff_confirmed_slogans: [
+    { text: "合成的第一条垃圾标记", raw: "合成的第一条垃圾标记", site: "x", at: now - 1000 },
+    { text: "合成的第二条垃圾标记", raw: "合成的第二条垃圾标记", site: "reddit", at: now - 2000 },
+  ],
 };
 // 第 3 条（最新的倒数第三）你已经核对过：不该再列出来
 SEED["ff_reply_override:" + SEED.ff_recent_folds[2].id] = { label: "missed", updatedAt: now };
@@ -230,17 +234,61 @@ SEED["ff_reply_override:" + SEED.ff_recent_folds[2].id] = { label: "missed", upd
     ok("分隔线 0.5px、每张卡片第一行上面没有线、卡片和描边按钮都是 0.5px、没有看得见的 1px 边框",
       lines.first === "none" && /inset 0px 0\.5px 0px 0px|0px 0\.5px 0px 0px .*inset/.test(lines.second) && /0\.5px/.test(lines.orLine) && lines.secondColor === "rgba(0, 0, 0, 0)" &&
       /0px 0px 0px 0\.5px/.test(lines.ring) && /0\.5px/.test(lines.changeBtn) && lines.visible.length === 0, JSON.stringify(lines));
-    // 悬停在问号上：说明弹出来（Popover，openOnHover）；移开就收起
+    // 强制颜色模式（Windows 高对比度）：阴影画的线没了，卡片补一圈系统色的实线
+    const media = await page.target().createCDPSession();
+    await media.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "light" }, { name: "forced-colors", value: "active" }] });
+    const forced = await page.evaluate(() => { const c = getComputedStyle(document.getElementById("fold")); return { width: c.borderTopWidth, style: c.borderTopStyle, color: c.borderTopColor, shadow: c.boxShadow }; });
+    ok("forced-colors：卡片有一圈系统色的实线", forced.width === "1px" && forced.style === "solid" && forced.color !== "rgba(0, 0, 0, 0)" && forced.shadow === "none", JSON.stringify(forced));
+    await media.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "light" }, { name: "forced-colors", value: "none" }] });
+    await media.detach();
+    const motion = await page.evaluate(() => { const sw = document.querySelector('#fold [data-switch="filler"]'), th = sw.querySelector('[data-slot="switch-thumb"]');
+      return { thumbProperty: getComputedStyle(th).transitionProperty, thumbDuration: getComputedStyle(th).transitionDuration, trackProperty: getComputedStyle(sw).transitionProperty }; });
+    // 开关：正常是圆钮 150ms 滑过去、槽只过渡颜色；要求减少动态效果时直接到位
+    ok("开关：圆钮 150ms 位移，槽只过渡列出来的属性", motion.thumbProperty.includes("transform") && motion.thumbDuration.includes("0.15s") && motion.trackProperty.includes("background-color") && motion.trackProperty !== "all", JSON.stringify(motion));
+    await page.emulateMediaFeatures([{ name: "prefers-color-scheme", value: "light" }, { name: "prefers-reduced-motion", value: "reduce" }]);
+    const reduced = await page.evaluate(() => { const th = document.querySelector('#fold [data-switch="filler"] [data-slot="switch-thumb"]'); const c = getComputedStyle(th); return { property: c.transitionProperty, duration: c.transitionDuration }; });
+    ok("减少动态效果：圆钮直接到位", reduced.duration === "0s" || !reduced.duration.includes("0.15s"), JSON.stringify(reduced));
+    await page.emulateMediaFeatures([{ name: "prefers-color-scheme", value: "light" }, { name: "prefers-reduced-motion", value: "no-preference" }]);
+    const readContrast = () => page.evaluate(() => {
+      const raster = (colors) => {
+        const canvas = document.createElement("canvas"); canvas.width = canvas.height = 1;
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        for (const color of colors) {
+          ctx.fillStyle = "#010203"; ctx.fillStyle = color;
+          if (ctx.fillStyle === "#010203" && color !== "#010203") throw new Error(`无法读取颜色 ${color}`);
+          ctx.fillRect(0, 0, 1, 1);
+        }
+        return [...ctx.getImageData(0, 0, 1, 1).data].slice(0, 3);
+      };
+      const luminance = (rgb) => rgb.map((v) => { const s = v / 255; return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; }).reduce((n, v, i) => n + v * [0.2126, 0.7152, 0.0722][i], 0);
+      const ratio = (fg, bg) => { const a = luminance(fg), b = luminance(bg); return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05); };
+      const measure = (el) => {
+        const layers = [];
+        for (let node = el; node; node = node.parentElement) { const bg = getComputedStyle(node).backgroundColor; if (bg && bg !== "transparent" && bg !== "rgba(0, 0, 0, 0)") layers.unshift(bg); }
+        return ratio(raster([getComputedStyle(el).color]), raster(layers));
+      };
+      return { muted: measure(document.querySelector(".site-state")), destructive: measure(document.getElementById("orState")) };
+    });
+    const lightContrast = await readContrast();
+    ok("浅色：灰字、红字和底色的对比度都够 4.5", lightContrast.muted >= 4.5 && lightContrast.destructive >= 4.5, JSON.stringify(lightContrast));
+    await page.emulateMediaFeatures([{ name: "prefers-color-scheme", value: "dark" }]); await wait(400);
+    const darkContrast = await readContrast();
+    ok("深色：灰字、红字和底色的对比度都够 4.5", darkContrast.muted >= 4.5 && darkContrast.destructive >= 4.5, JSON.stringify(darkContrast));
+    await page.emulateMediaFeatures([{ name: "prefers-color-scheme", value: "light" }]); await wait(400);
+    // 悬停在问号上：说明弹出来（Popover，openOnHover）；弹层和问号用同一个名字（读屏念得出是哪一项的说明）；移开就收起
+    let helpName = null;
     const helpText = async (sel) => {
       await page.hover(sel);
       await page.waitForSelector(".help-pop", { timeout: 2000 }).catch(() => {});
       const txt = await page.$$eval(".help-pop p", (ps) => ps.map((p) => p.textContent));
+      helpName = await page.evaluate(() => ({ trigger: document.querySelector("#row-threshold .help")?.getAttribute("aria-label"), content: document.querySelector(".help-pop")?.getAttribute("aria-label") }));
       await page.mouse.move(2, 2);
       await wait(400);
       return txt;
     };
     let tip = await helpText("#row-threshold .help");
     ok("悬停\"垃圾回复和推广\"的问号：说明弹出来", /机器人刷屏/.test(tip[0] || "") && /误伤正常回复/.test(tip[0] || ""), JSON.stringify(tip));
+    ok("说明弹层和问号同名", !!helpName.trigger && helpName.content === helpName.trigger && /垃圾回复和推广/.test(helpName.trigger), JSON.stringify(helpName));
     ok("移开就收起", (await page.$$(".help-pop")).length === 0);
     // 看回复里的图片（0.18）：默认关；打开先要图片网站的权限（chrome.permissions.request 换成假的），给了才存；不给就提示、不打开；关掉把权限还回去
     const imgOn = () => page.evaluate(async () => !!(await chrome.storage.local.get("ff_settings")).ff_settings?.images);
@@ -249,13 +297,19 @@ SEED["ff_reply_override:" + SEED.ff_recent_folds[2].id] = { label: "missed", upd
       chrome.permissions.remove = async (p) => { window.__permDrop.push(p); return true; }; });
     await page.click('[data-switch="images"]');
     await wait(500);
-    const denied = await page.evaluate(() => ({ ask: window.__permAsk, toast: document.querySelector(".toast:not([data-limited]) .toast-title")?.textContent || "" }));
-    ok("不给权限：不打开、提示", !(await imgOn()) && denied.ask.length === 1 && JSON.stringify(denied.ask[0].origins) === JSON.stringify(["https://pbs.twimg.com/*", "https://i.redd.it/*", "https://preview.redd.it/*", "*://*.xhscdn.com/*"]) &&
-      /权限/.test(denied.toast), JSON.stringify(denied));
+    const denied = await page.evaluate(() => ({ ask: window.__permAsk, toast: document.querySelector(".toast:not([data-limited]) .toast-title")?.textContent || "", close: !!document.querySelector(".toast-close") }));
+    ok("不给权限：不打开，提示里说怎么重新打开、选允许", !(await imgOn()) && denied.ask.length === 1 && JSON.stringify(denied.ask[0].origins) === JSON.stringify(["https://pbs.twimg.com/*", "https://i.redd.it/*", "https://preview.redd.it/*", "*://*.xhscdn.com/*"]) &&
+      /再次打开/.test(denied.toast) && /允许/.test(denied.toast) && denied.close, JSON.stringify(denied));
+    await wait(3000);
+    ok("出错的提示不自己消失，带关闭按钮", (await page.$eval(".toast:not([data-limited]) .toast-title", (e) => e.textContent)) === denied.toast && !!(await page.$(".toast-close")));
+    await page.click(".toast-close"); await wait(300);
+    ok("点 × 关掉出错的提示", !(await page.$(".toast:not([data-limited])")));
     await page.evaluate(() => { chrome.permissions.request = async (p) => { window.__permAsk.push(p); return true; }; });
     await page.click('[data-switch="images"]');
     await wait(500);
     ok("给了权限：打开、存下", (await imgOn()) && (await page.$eval('[data-switch="images"]', (e) => e.getAttribute("aria-checked"))) === "true");
+    await wait(3200);
+    ok("普通提示自己消失，没有关闭按钮", !(await page.$(".toast:not([data-limited])")) && !(await page.$(".toast-close")));
     await page.click('[data-switch="images"]');
     await wait(500);
     ok("关掉：存下、权限还回去", !(await imgOn()) && (await page.evaluate(() => window.__permDrop.length)) === 1);
@@ -281,6 +335,13 @@ SEED["ff_reply_override:" + SEED.ff_recent_folds[2].id] = { label: "missed", upd
     await wait(300);
     ok("空着点保存：说没填密钥，存着的密钥不动", (await txt("#keyMsg")) === "没有填密钥" && (await page.evaluate(async () => (await chrome.storage.local.get("ff_keys")).ff_keys?.jev)) === true,
       await txt("#keyMsg"));
+    await page.setViewport({ width: 320, height: 1100, deviceScaleFactor: 2 }); await wait(250);
+    const narrowKey = await page.evaluate(() => {
+      const main = document.querySelector("#row-jev .row-main"), link = document.getElementById("jevGet"), r = link.getBoundingClientRect(), c = getComputedStyle(link);
+      return { wrap: getComputedStyle(main).flexWrap, whiteSpace: c.whiteSpace, height: r.height, line: parseFloat(c.lineHeight), over: document.documentElement.scrollWidth - document.documentElement.clientWidth };
+    });
+    ok("320px 宽：密钥那行能折行，「获取密钥」不竖着一个字一行、页面不横向滚动", narrowKey.wrap === "wrap" && narrowKey.whiteSpace === "nowrap" && narrowKey.height <= narrowKey.line + 2 && narrowKey.over === 0, JSON.stringify(narrowKey));
+    await page.setViewport({ width: 720, height: 1400, deviceScaleFactor: 2 }); await wait(250);
     // 0.28.8：每月估计按 7 天平均（7 天里只用了一天的，以前把那一天乘 30）
     const keepStats = await page.evaluate(async () => (await chrome.storage.local.get("ff_stats")).ff_stats);
     await page.evaluate((d0, d20) => chrome.storage.local.set({ ff_stats: { [d20]: { tx_usd: 0.1 }, [d0]: { tx_usd: 0.7 } } }), day(0), day(20));
@@ -303,16 +364,32 @@ SEED["ff_reply_override:" + SEED.ff_recent_folds[2].id] = { label: "missed", upd
     await page.evaluate(() => chrome.storage.local.set({ ff_key: "fake-jev-key" }));
     await wait(600);
 
+    // 你标记的垃圾：单条「删掉」一点就删；「全部删掉」先弹确认，说删几条，取消不删、确认才删
+    const sloganCount = () => page.evaluate(async () => ((await chrome.storage.local.get("ff_confirmed_slogans")).ff_confirmed_slogans || []).length);
+    ok("标记的测试数据在", (await sloganCount()) === 2, String(await sloganCount()));
+    await page.click("#sloganToggle"); await wait(300);
+    await page.click("#slogans li:first-child button"); await wait(600);
+    ok("单条删掉：不问，直接删", (await sloganCount()) === 1 && !(await page.$('[data-slot="alert-dialog-content"]')), String(await sloganCount()));
+    await page.click("#clearSlogans"); await wait(250);
+    const confirmTitle = await page.$eval('[data-slot="alert-dialog-title"]', (e) => e.textContent);
+    ok("全部删掉：先确认，标题里有条数，还没删", /全部 1 条/.test(confirmTitle) && (await sloganCount()) === 1, confirmTitle);
+    await page.click('[data-slot="alert-dialog-cancel"]'); await wait(250);
+    ok("取消：不删", (await sloganCount()) === 1);
+    await page.click("#clearSlogans"); await wait(250);
+    await page.click("#sloganConfirm"); await wait(600);
+    ok("确认：全删了", (await sloganCount()) === 0, String(await sloganCount()));
+
     // ---------- 网站页（0.20） ----------
     const go = async (hash) => { await page.evaluate((h) => { location.hash = h; }, hash); await wait(500); };
     const segOf = (row) => page.$eval(`${row} .seg`, (s) => [...s.querySelectorAll(".seg-item")].map((b) => (b.getAttribute("aria-checked") === "true" ? `[${b.textContent}]` : b.textContent)).join(" "));
     await page.click("#site-reddit");
     await wait(500);
     let pg = await page.evaluate(() => ({ title: document.getElementById("siteTitle")?.textContent, back: document.getElementById("back")?.getAttribute("aria-label"), backIcon: !!document.querySelector("#back svg"), h2: [...document.querySelectorAll("main h2")].map((h) => h.textContent),
-      rows: [...document.querySelectorAll("#siteFold .row-name")].map((e) => e.textContent), doc: document.title }));
+      rows: [...document.querySelectorAll("#siteFold .row-name")].map((e) => e.textContent), doc: document.title, focus: document.activeElement?.id }));
     ok("点 Reddit 进去：左上角圆形的返回箭头（0.21）、logo 和标题 Reddit；总开关、清理、翻译三个开关；清理什么：三类、看图片、刷同一句话；评测记录收在高级里", pg.title === "Reddit" &&
       pg.back === "返回设置" && pg.backIcon && JSON.stringify(pg.h2) === JSON.stringify(["清理什么"]) && !!(await page.$('#siteMain [data-switch="on"]')) && JSON.stringify(pg.rows) === JSON.stringify(["垃圾回复和推广", "辱骂、人身攻击", "色情", "「赞」「mark」这类回复", "检查回复中的图片", "几个账号刷同一句话"]) &&
       !!(await page.$('#siteMain [data-switch="fold"]')) && !!(await page.$('#siteMain [data-switch="translate"]')) && /^Reddit · /.test(pg.doc), JSON.stringify(pg));
+    ok("进到网站页：焦点在新页的标题上", pg.focus === "siteTitle", pg.focus || "(无焦点)");
     // 单独改：垃圾选"严格" → 存进 sites.reddit，标出来；默认的那一份不动
     await page.click('#row-threshold .seg-item:nth-of-type(3)');
     await wait(500);
@@ -392,7 +469,17 @@ SEED["ff_reply_override:" + SEED.ff_recent_folds[2].id] = { label: "missed", upd
     ok("关掉（哪个网站都不看图了）：存下、权限还回去", !(await stored()).sites?.xhs && (await page.evaluate(() => window.__permDrop.length)) === drops + 1, JSON.stringify((await stored()).sites));
     await page.click("#back");
     await wait(500);
-    ok("点\"‹ 设置\"回首页", !!(await page.$("#sites")) && !(await page.$("#siteTitle")));
+    ok("点\"‹ 设置\"回首页，焦点在设置的标题上", !!(await page.$("#sites")) && !(await page.$("#siteTitle")) && (await page.evaluate(() => document.activeElement === document.querySelector("main h1"))));
+    for (const hash of ["#feedback", "#conn", "#plans", "#renew"]) {
+      const before = await page.evaluate(() => document.activeElement?.id || "");
+      await go(hash);
+      const anchored = await page.evaluate((h) => {
+        const expected = h === "#feedback" ? "feedback" : "conn", el = document.getElementById(expected) || document.getElementById("conn"), r = el?.getBoundingClientRect();
+        return { inView: !!r && r.top >= 0 && r.top < innerHeight, focus: document.activeElement?.id || "" };
+      }, hash);
+      ok(`${hash}：停在那张卡片，不抢焦点`, anchored.inView && anchored.focus === before, JSON.stringify({ before, ...anchored }));
+    }
+    await go("");
   } catch (e) {
     out.push(`FAIL 运行出错 ${e.stack}`);
   } finally {

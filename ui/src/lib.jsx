@@ -107,7 +107,7 @@ const svg = (children, props = {}) => (
 export const IconHelp = (props) => svg(<><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></>, props);
 // 展开 / 收起的箭头：放在 class 带 group 的触发按钮里，按钮上有 data-panel-open 时转 90°（从右往左的语言箭头朝左、往回转）
 export const IconChevron = () => svg(<path d="m9 18 6-6-6-6" />, {
-  className: "size-3.5 transition-[rotate] duration-150 ease-out rtl:-scale-x-100 group-data-panel-open:rotate-90 rtl:group-data-panel-open:-rotate-90",
+  className: "size-3.5 motion-safe:transition-[rotate] motion-safe:duration-150 motion-safe:ease-out rtl:-scale-x-100 group-data-panel-open:rotate-90 rtl:group-data-panel-open:-rotate-90",
 });
 export const IconCaret = () => svg(<path d="m6 9 6 6 6-6" />);
 // 返回：箭头朝左（从右往左的语言朝右），设置页网站页左上角的圆形按钮里（0.21，照 Chrome 设置的子页）
@@ -117,13 +117,14 @@ export const IconLock = (props) => svg(<><rect width="18" height="11" x="3" y="1
 
 // ---------- 问号说明：悬停就打开（Base UI 建议这类"看说明"的图标用 Popover + openOnHover，点一下、触屏、读屏也能打开） ----------
 export function Help({ children, label }) {
+  const name = label || t("c.help");
   return (
     <Popover>
-      <PopoverTrigger openOnHover delay={120} closeDelay={120} aria-label={label || t("c.help")}
+      <PopoverTrigger openOnHover delay={120} closeDelay={120} aria-label={name}
         render={<Button variant="ghost" size="icon-xs" className="help cursor-help text-muted-foreground hover:text-foreground data-popup-open:bg-muted data-popup-open:text-foreground" />}>
         <IconHelp className="size-3.5" />
       </PopoverTrigger>
-      <PopoverContent side="bottom" sideOffset={6} collisionPadding={12}
+      <PopoverContent side="bottom" sideOffset={6} collisionPadding={12} aria-label={name}
         className="help-pop max-w-[calc(100vw-1.5rem)] gap-2 p-3.5 text-[13px] leading-relaxed text-pretty">
         {children}
       </PopoverContent>
@@ -159,25 +160,44 @@ export function Levels({ value, levels, onChange, label, disabled }) {
   );
 }
 
-export const TipProvider = ({ children }) => <TooltipProvider delay={300}>{children}</TooltipProvider>;
+// 换深浅色那一下先关掉所有过渡（maia 的组件带颜色过渡，不关的话切过去会先闪一下中间色），两帧后恢复
+function ThemeTransitionControl() {
+  React.useEffect(() => {
+    const query = globalThis.matchMedia("(prefers-color-scheme: dark)"), style = document.createElement("style");
+    style.textContent = "*,*::before,*::after{transition:none!important}";
+    const suppress = () => {
+      document.head.append(style);
+      void document.body.offsetHeight;
+      requestAnimationFrame(() => requestAnimationFrame(() => style.remove()));
+    };
+    query.addEventListener("change", suppress);
+    return () => { query.removeEventListener("change", suppress); style.remove(); };
+  }, []);
+  return null;
+}
+export const TipProvider = ({ children }) => <TooltipProvider delay={300}><ThemeTransitionControl />{children}</TooltipProvider>;
 
 // ---------- 页面底部的一行提示（已保存、出错了），一次只留一条：被新的顶掉的（data-limited）立刻不显示 ----------
+// 普通的 2.8 秒后自己消失；出错的留着、带一个关闭的 ×（错误多是要照着做的话，读完再关）
 export const toastManager = Toast.createToastManager();
-export const toast = (title, type = "ok") => toastManager.add({ title, type });
+export const toast = (title, type = "ok") => toastManager.add({ title, type, timeout: type === "err" ? 0 : 2800 });
 function ToastList() {
   const { toasts } = Toast.useToastManager();
   return toasts.map((x) => (
     <Toast.Root key={x.id} toast={x}
-      className={cn("toast pointer-events-auto max-w-[min(30rem,calc(100vw-2rem))] rounded-2xl px-4 py-2.5 text-sm shadow-lg transition-[opacity,translate] duration-150 ease-out",
-        "data-limited:hidden data-starting-style:translate-y-1.5 data-starting-style:opacity-0 data-ending-style:translate-y-1.5 data-ending-style:opacity-0",
+      className={cn("toast pointer-events-auto max-w-[min(30rem,calc(100vw-2rem))] rounded-2xl px-4 py-2.5 text-sm shadow-lg transition-[opacity,translate] duration-150 data-ending-style:duration-100 ease-out",
+        "data-limited:hidden motion-safe:data-starting-style:translate-y-1.5 data-starting-style:opacity-0 motion-safe:data-ending-style:translate-y-1.5 data-ending-style:opacity-0",
         x.type === "err" ? "bg-destructive text-white" : "bg-foreground text-background")}>
-      <Toast.Content><Toast.Title className="toast-title" /></Toast.Content>
+      <Toast.Content className="flex items-center gap-2">
+        <Toast.Title className="toast-title min-w-0 flex-1" />
+        {x.type === "err" && <Toast.Close aria-label={t("notice.close")} className="toast-close ms-1 inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full text-lg leading-none transition-[background-color,opacity] duration-150 hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-white/70"><span aria-hidden="true">×</span></Toast.Close>}
+      </Toast.Content>
     </Toast.Root>
   ));
 }
 export function Toasts({ children }) {
   return (
-    <Toast.Provider toastManager={toastManager} timeout={2200} limit={1}>
+    <Toast.Provider toastManager={toastManager} timeout={2800} limit={1}>
       {children}
       <Toast.Portal>
         <Toast.Viewport className="toasts pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-center"><ToastList /></Toast.Viewport>
@@ -187,7 +207,8 @@ export function Toasts({ children }) {
 }
 
 // ---------- 小标签的颜色：清理的三类（和页面上提示条的标签同一个色系）、连接出问题、提醒 ----------
-// 深色下（0.20.1，用户：看着不舒服）：以前是很深的红、棕、紫实底，发闷；换成苹果深色系统色的淡底（半透明）、亮一点的字
+// 深色下（0.20.1，用户：看着不舒服）：以前是很深的红、棕、紫实底，发闷；换成苹果深色系统色的淡底（半透明）、亮一点的字。
+// 浅红底上的字用 destructive-text（比填色的红深一档，对比度够）
 export const CAT_TONE = {
   spam: "bg-red-100 text-red-800 dark:bg-[rgb(255_69_58/0.16)] dark:text-[#ff9a90]",
   abuse: "bg-amber-100 text-amber-800 dark:bg-[rgb(255_159_10/0.16)] dark:text-[#ffc46b]",
@@ -196,5 +217,5 @@ export const CAT_TONE = {
   filler: "bg-zinc-200 text-zinc-800 dark:bg-white/[0.12] dark:text-zinc-200",
 };
 export const WARN_TONE = "bg-amber-100 text-amber-900 dark:bg-[rgb(255_159_10/0.16)] dark:text-[#ffc46b]";
-export const BAD_TONE = "bg-destructive/10 text-destructive dark:bg-destructive/20";
+export const BAD_TONE = "bg-destructive/10 text-destructive-text dark:bg-destructive/20";
 export const MUTED_TONE = "bg-muted text-muted-foreground";

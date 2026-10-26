@@ -77,6 +77,13 @@ for (const lang of Object.keys(LANGS)) {
     for (const price of ["$2.90", "$24"]) assert.ok(pricing.includes(price));
     assert.ok(!/class="soon"/.test(pricing), "membership is live: no coming-soon badge"); // 10-26
     assert.equal((pricing.match(/class="plan-cta"/g) || []).length, 3, "free and both paid plans have the install button");
+    // one recommended plan (yearly): outlined in brand color with the solid button; the other two get outline buttons
+    const planCards = pricing.match(/<section class="card plan[\s\S]*?<\/section>/g) || [];
+    assert.equal(planCards.length, 3);
+    const recommended = planCards.filter((card) => card.includes('class="card plan member recommended"'));
+    assert.equal(recommended.length, 1, "the yearly plan is the single recommendation");
+    assert.ok(recommended[0].includes('class="btn primary"') && recommended[0].includes("$24"));
+    for (const card of planCards.filter((card) => card !== recommended[0])) assert.ok(card.includes('class="btn ghost"') && !card.includes('class="btn primary"'));
     assert.ok(pricing.includes(`href="/${lang}/terms/"`) && pricing.includes(`href="/${lang}/privacy/"`));
     assert.ok(terms.includes("developer@ohmyai.app") && /7/.test(terms));
     // every site language has its own pricing, terms, privacy, account and payment pages now (10-24): no English fallback blocks
@@ -95,10 +102,10 @@ for (const lang of Object.keys(LANGS)) {
 
 // account and payment result pages (account-page.js does the work): not indexed, data for the script parses, the API is allowed by the CSP
 for (const lang of Object.keys(LANGS)) {
-  test(`${lang}: account and payment result pages`, () => {
-    for (const [page, slug] of [["account", "account"], ["paid", "paid"]]) {
-      const html = read(lang, slug, "index.html");
-      assert.ok(html.includes('<meta name="robots" content="noindex">'), slug);
+  test(`${lang}: account, activation and payment result pages`, () => {
+    for (const page of ["account", "activate", "paid"]) {
+      const html = read(lang, page, "index.html");
+      assert.ok(html.includes('<meta name="robots" content="noindex">'), page);
       const data = JSON.parse(html.match(/<script type="application\/json" id="ffData">([^<]*)<\/script>/)[1]);
       assert.equal(data.page, page);
       assert.equal(data.api, API);

@@ -97,6 +97,7 @@ ok("点\"管理\"看得到原文和在哪个网站标的", $("slogans").textCont
 failures.set("sloganRemove", { error: "模拟忘掉失败" });
 $("slogans").querySelector("button").click(); await wait(200);
 ok("忘掉失败：列表留着、提示错误", slogans.length === 1 && /模拟忘掉失败/.test(toastText()), toastText());
+document.querySelector(".toast-close")?.click(); await wait(100);
 $("slogans").querySelector("button").click(); await wait(250);
 ok("再点一次删掉成功；没有了\"管理\"藏起来", slogans.length === 0 && !$("sloganToggle") && /0 条/.test($("sloganCount").textContent), $("sloganCount").textContent);
 failures.set("cacheClear", { ok: false });

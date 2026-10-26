@@ -72,7 +72,7 @@ export function accountAlert(a) {
 }
 // 会等的按钮（用户 10-25）：点了转圈、换成进行中的字、不能再点；做完恢复。onClick 抛错由调用方处理（这里只管样子）
 export function Spinner({ className }) {
-  return <svg className={cn("size-4 shrink-0 animate-spin", className)} viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" strokeOpacity=".25" /><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" /></svg>;
+  return <svg className={cn("size-4 shrink-0 motion-safe:animate-spin", className)} viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" strokeOpacity=".25" /><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" /></svg>;
 }
 export function BusyButton({ onClick, busyLabel, children, disabled, ...props }) {
   const [busy, setBusy] = React.useState(false);
@@ -182,7 +182,7 @@ export function AccountMenu({ a }) {
 
 // ---------- 账号和开通，一张（草图 A–C）：上面状态，中间开通（没在自动续费时），下面设备和管理 ----------
 const Divider = () => <div className="-mx-5 border-t" aria-hidden="true" />;
-const BADGE = { accent: "bg-primary/10 text-primary", good: "bg-success-bg text-success", bad: "bg-destructive/10 text-destructive", muted: "bg-muted text-muted-foreground" };
+const BADGE = { accent: "bg-primary/10 text-primary", good: "bg-success-bg text-success", bad: "bg-destructive/10 text-destructive-text", muted: "bg-muted text-muted-foreground" };
 function status(a) {
   const on = usable(a), trial = a.plan === "trial", days = on ? daysLeft(a.periodEnd) : 0;
   const [badge, tone] = !on ? [t("acct.line.none"), "muted"] : trial ? [t("acct.badge.trial"), "accent"] : a.status === "past_due" ? [t("acct.badge.pastDue"), "bad"]
@@ -318,7 +318,7 @@ function Waiting({ c }) {
         <BusyButton size="sm" variant="outline" className="btn" busyLabel="acct.busy.opening" onClick={() => run("checkout", { product: c.product }).catch((e) => setMsg(errText(e)))}>{t("acct.plans.reopen")}</BusyButton>
         <Button size="sm" variant="ghost" className="btn" onClick={() => run("checkoutClear").catch(() => {})}>{t("c.cancel")}</Button>
       </div>
-      {msg && <p className="text-xs text-destructive" role="status">{msg}</p>}
+      {msg && <p className="text-xs text-destructive-text" role="status">{msg}</p>}
     </div>
   );
 }
@@ -367,7 +367,7 @@ function Plans({ a = {}, onPay, onTrial, title = true }) {
       <BusyButton className="btn h-10 w-full text-sm" id="plansPay" busyLabel="acct.busy.opening" onClick={pay}>{t("acct.plans.payWith", { price })}</BusyButton>
       {onTrial && <Button variant="outline" className="btn -mt-1 h-10 w-full text-sm" id="plansTrial" onClick={onTrial}>{t("acct.trialCta")}</Button>}
       <p className="-mt-1 text-center text-xs text-muted-foreground">{t("acct.plans.refund")}</p>
-      {msg && <p className="text-xs text-destructive" role="status" id="plansMsg">{msg}</p>}
+      {msg && <p className="text-xs text-destructive-text" role="status" id="plansMsg">{msg}</p>}
     </div>
   );
 }

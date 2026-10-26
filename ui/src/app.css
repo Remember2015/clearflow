@@ -34,6 +34,7 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-destructive-text: var(--destructive-text);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -76,6 +77,8 @@
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
+  /* 浅红底上的红字（错误提示、「删掉」这类按钮）：比填色用的红深一档，淡底上对比度够 4.5 */
+  --destructive-text: oklch(0.5 0.2 27);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: #0b57d0;
@@ -108,6 +111,7 @@
     --accent: oklch(0.269 0 0);
     --accent-foreground: oklch(0.985 0 0);
     --destructive: oklch(0.704 0.191 22.216);
+    --destructive-text: oklch(0.78 0.13 25);
     --border: oklch(1 0 0 / 10%);
     --input: oklch(1 0 0 / 15%);
     --ring: #a8c7fa;
@@ -166,4 +170,13 @@
   html:has(> body.popup) { font-size: 15px; }
   body.popup { width: 340px; }
   body.options { @apply bg-page; }
+}
+
+/* 强制颜色模式（Windows 高对比度）：阴影画的细线和描边会被去掉，卡片、弹出框、面板补一圈系统色的实线，不然看不出边界 */
+@media (forced-colors: active) {
+  [data-slot="card"], [data-slot="popover-content"], [data-slot="dropdown-menu-content"],
+  [data-slot="alert-dialog-content"], .acct-panel, .plan-row, .choice-card, .toast {
+    border: 1px solid CanvasText;
+    box-shadow: none;
+  }
 }

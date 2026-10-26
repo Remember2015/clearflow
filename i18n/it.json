@@ -111,6 +111,8 @@
  "opt.sloganCount": "Segnalazioni: {n}.",
  "opt.forgetOne": "Rimuovi",
  "opt.forgotOne": "Rimosso.",
+ "opt.confirmForgetAllTitle": "Rimuovere tutte le {n} risposte segnalate?",
+ "opt.confirmForgetAllText": "Non puoi annullare questa azione. Le risposte simili potrebbero non essere più nascoste",
  "opt.threshold": "Soglia spam",
  "opt.abuse": "Insulti e attacchi personali",
  "opt.abuseThreshold": "Soglia abusi",
@@ -120,7 +122,7 @@
  "opt.sexualHint": "Rientrano in questa categoria descrizioni esplicite, espressioni volgari a sfondo sessuale, link pornografici e proposte di incontri occasionali. Non rientrano le conversazioni rispettose sulle relazioni, le informazioni sulla salute sessuale e le parolacce usate per dare enfasi. I termini in codice non vengono sempre riconosciuti.",
  "opt.images": "Controlla le immagini nelle risposte",
  "opt.imagesHint": "Invia a Jev le immagini delle risposte su X, Reddit e RedNote per rilevare pubblicità, codici QR e contenuti sessuali. Controlla anche le risposte composte solo da immagini. Ogni immagine viene ridotta a 768 px e usa circa 1.000–2.000 token aggiuntivi. L’analisi delle immagini è sperimentale e meno precisa di quella del testo. All’attivazione, il browser chiede il permesso di accedere alle immagini di questi siti.",
- "opt.imagesDenied": "L’accesso alle immagini non è stato autorizzato. L’analisi resta disattivata.",
+ "opt.imagesDenied": "L’accesso alle immagini non è stato consentito, quindi il controllo resta disattivato. Riattivalo e scegli “Consenti” nella finestra del browser.",
  "opt.imagesNeedTs": "Aggiungi prima una chiave TypeSafe in Avanzate (OpenRouter per ora non inoltra le immagini).",
  "opt.recThreshold": "Soglia per i post che chiedono consigli",
  "opt.bannerRatio": "Mostra l'avviso «la maggior parte delle risposte è di bot» quando la percentuale di spam tra le prime risposte supera",
@@ -477,5 +479,6 @@
  "cs.stop.ended": "L’abbonamento o il periodo di prova è terminato. Il filtro IA è in pausa; le regole locali continuano a funzionare",
  "cs.stop.signedOut": "Hai effettuato la disconnessione da ClearFlow Membership. Il filtro IA è in pausa; le regole locali continuano a funzionare",
  "cs.stop.paused": "Il filtro IA è temporaneamente in pausa; le regole locali continuano a funzionare",
- "err.cf_stop": "ClearFlow Membership non è al momento disponibile; le regole locali continuano a funzionare"
+ "err.cf_stop": "ClearFlow Membership non è al momento disponibile; le regole locali continuano a funzionare",
+ "reason.name_ad": "Il nome visualizzato è pubblicitario"
 }

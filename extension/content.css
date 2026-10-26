@@ -105,7 +105,7 @@ ytd-watch-metadata .ff-rtx-note.ff-tx-note { margin: 6px 0 2px; }
   transition-timing-function: ease-out;
 }
 .ff-icon:hover { opacity: 1; color: rgb(29, 155, 240); background: rgba(29, 155, 240, 0.1); }
-.ff-icon:active { transform: scale(0.96); }
+.ff-icon:active:not(:disabled) { transform: scale(0.96); }
 .ff-icon:focus-visible { opacity: 1; outline: 2px solid rgb(29, 155, 240); outline-offset: 1px; }
 .ff-icon svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 /* "判对了吗？"：图标前那句话，交代这两个大拇指是在评价插件的判断 */

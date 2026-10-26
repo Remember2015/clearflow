@@ -564,14 +564,14 @@ function pricing(lang) {
       ${price(P.free.price, P.free.per)}
       <p class="plan-note">${esc(P.free.note)}</p>
       <ul class="plan-points">${P.free.points.map(li).join("")}</ul>
-      <div class="plan-cta">${cta(lang, C, "pricing", C.hero.cta)}<a class="link" href="/${lang}/keys/">${esc(P.free.keys)}${icon("arrow", "i")}</a></div>
+      <div class="plan-cta">${cta(lang, C, "pricing", C.hero.cta, "btn ghost")}<a class="link" href="/${lang}/keys/">${esc(P.free.keys)}${icon("arrow", "i")}</a></div>
     </section>`;
-  const plans = P.plans.map((p) => `<section class="card plan member">
+  const plans = P.plans.map((p) => `<section class="card plan member${p.badge ? " recommended" : ""}">
       <div class="plan-head"><h2 class="plan-name">${esc(p.name)}</h2>${p.badge ? `<span class="tag">${esc(p.badge)}</span>` : ""}</div>
       ${price(p.price, p.per)}
       <p class="plan-note">${esc(p.note)}</p>
       <ul class="plan-points">${P.member.map(li).join("")}</ul>
-      <div class="plan-cta">${cta(lang, C, "pricing-member", C.hero.cta)}</div>
+      <div class="plan-cta">${cta(lang, C, "pricing-member", C.hero.cta, p.badge ? "btn primary" : "btn ghost")}</div>
     </section>`).join("\n    ");
   // 一次性的两项带微信支付标记（用户 10-25；微信支付只能一次性付，图标取自微信支付官网 logo，和插件一样；只在中文页显示）
   const wxpay = /^zh/.test(lang) ? `<span class="wxpay"><img src="/assets/logos/wechat-pay.svg" width="14" height="14" alt="">${esc(P.passes.wechat)}</span>` : "";
