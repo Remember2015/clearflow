@@ -14,7 +14,7 @@ export const COPY = {
     brand: "清流",
     languageLabel: "选择语言",
     title: "清流 · 清理垃圾评论，改善外文阅读",
-    description: "清流是开源的 Chrome 扩展，自动清理 X、YouTube、Reddit、小红书和 Hacker News 的垃圾评论，并提供翻译增强：补上没翻译的外文帖子、视频标题和评论，改进平台自带的翻译。每条清理都有原因，可随时查看原文。使用你自己的 API 密钥，不向开发者发送数据。",
+    description: "清流是开源的 Chrome 扩展，自动清理 X、YouTube、Reddit、小红书和 Hacker News 的垃圾评论，并提供翻译增强：补上没翻译的外文帖子、视频标题和评论，改进平台自带的翻译。每条清理都有原因，可随时查看原文。用清流会员登录就能用，也可以用你自己的 API 密钥。",
     nav: {"clean": "清理", "tx": "翻译", "cost": "费用", "privacy": "隐私", "faq": "常见问题"},
     skip: "跳到正文",
     hero: {
@@ -22,7 +22,7 @@ export const COPY = {
       h1: "内容更好懂，阅读更清爽",
       h1Parts: ["内容更好懂，", "阅读更清爽"],
       lede: "清理垃圾评论，翻译增强：没翻译的帮你补上，平台翻得不好的帮你改进。帖子、视频标题和评论，都更容易读懂。",
-      trust: ["开源 · MIT", "不向开发者发送数据", "19 种界面语言", "按量付费，无需订阅"],
+      trust: ["开源 · MIT", "无追踪、无统计", "19 种界面语言", "会员或自带密钥"],
       cta: "添加到 Chrome",
       ctaNote: "免费安装",
     },
@@ -53,8 +53,8 @@ export const COPY = {
       ],
     },
     cost: {
-      h2: "按量付费，无需订阅",
-      body: "使用你自己的 OpenRouter 账号，费用直接支付给服务商。请求不经过清流的服务器。",
+      h2: "会员，或自带密钥按量付费",
+      body: "清流会员登录就能用，免费试用 7 天，之后 $2.90/月起。也可以用你自己的 OpenRouter 账号按量付费，费用直接付给服务商，请求不经过清流的服务器。",
       stat: "≈ $0.10",
       statLabel: "浏览约 5,000 条 X 回复的费用估算，含清理与按需翻译。实际费用因内容和模型而异。",
       points: [
@@ -65,10 +65,10 @@ export const COPY = {
       cta: "获取 API 密钥",
     },
     privacy: {
-      h2: "不向开发者发送数据",
+      h2: "不追踪，不留你的浏览记录",
       items: [
         ["无追踪，无数据上报", "使用和费用统计仅保存在本机，不上传分析数据或崩溃报告，也不含广告代码。"],
-        ["直接连接服务商", "启用 AI 功能后，相关帖子和评论用你的密钥直接发送给 OpenRouter，由它转给 TypeSafe 的 Jev 判断、转给翻译模型翻译。"],
+        ["只发需要处理的内容", "启用 AI 功能后，相关帖子和评论发给 OpenRouter，由它转给 TypeSafe 的 Jev 判断、转给翻译模型翻译。用自己的密钥时直接发送；用清流会员时经清流的服务器转发，服务器只缓存结果。"],
         ["密钥和记录保存在本机", "密钥存于扩展专用数据库，网页无法读取。卸载扩展会删除本地数据。"],
         ["开源，可自行查验", "代码以 MIT 许可公开在 GitHub 上，可查看数据如何处理、向谁发送。"],
       ],
@@ -77,8 +77,8 @@ export const COPY = {
     faq: {
       h2: "常见问题",
       items: [
-        ["为什么需要自己的 API 密钥？", "内容可以直接发送给对应服务，不经过清流的服务器，也无需向清流支付订阅费。初次使用需注册服务商账号并创建密钥。<a href=\"keys/\">API 密钥设置</a>"],
-        ["不填密钥能用吗？", "可以。本地规则可清理推广链接、隐藏的联系方式和重复话术。识别辱骂、色情、无实质内容的短评，以及翻译功能，需要配置 OpenRouter 密钥。"],
+        ["一定要自己的 API 密钥吗？", "不用。清流会员用邮箱登录就能用，不用申请密钥。想按量付费的可以用自己的密钥：内容直接发给服务商，不经过清流的服务器，也不用付订阅费。 <a href=\"keys/\">API 密钥设置</a>"],
+        ["不填密钥能用吗？", "可以。本地规则可清理推广链接、隐藏的联系方式和重复话术。识别辱骂、色情、无实质内容的短评，以及翻译功能，需要清流会员或 OpenRouter 密钥。"],
         ["会误判正常评论吗？", "有可能。每条清理都有原因，点击可查看原文并反馈误判。清理强度针对各网站分别设置，也可以调为“宽松”。"],
         ["支持哪些网站和浏览器？", "X、Reddit、YouTube、小红书、Hacker News。Chrome 120 以上，以及 Edge、Arc、Brave 等 Chromium 浏览器。"],
         ["支持哪些语言？", "界面支持 19 种语言，包括中文。设置页和弹窗跟随浏览器语言；网页提示和翻译目标通常跟随网站界面语言。Hacker News 始终使用浏览器语言，其他网站无法识别界面语言时也使用浏览器语言。"],
@@ -121,14 +121,14 @@ export const COPY = {
     brand: "ClearFlow",
     languageLabel: "Choose language",
     title: "ClearFlow · Less clutter, clearer translations",
-    description: "An open-source Chrome extension that filters junk replies on X, YouTube, Reddit, RedNote and Hacker News and enhances translation: it translates posts, video titles and comments that sites leave untranslated, and improves the sites' own translations. Every hidden reply has an explanation. Uses your own API keys; no data is sent to the developer.",
+    description: "An open-source Chrome extension that filters junk replies on X, YouTube, Reddit, RedNote and Hacker News and enhances translation: it translates posts, video titles and comments that sites leave untranslated, and improves the sites' own translations. Every hidden reply has an explanation. Works with ClearFlow Membership or your own API keys.",
     nav: {"clean": "Filtering", "tx": "Translation", "cost": "Cost", "privacy": "Privacy", "faq": "FAQ"},
     skip: "Skip to content",
     hero: {
       eyebrow: "Open-source Chrome extension",
       h1: "Less clutter. More clarity.",
       h1Parts: ["Less clutter.", "More clarity."],
-      trust: ["Open source · MIT", "No data sent to us", "19 interface languages", "Pay as you go"],
+      trust: ["Open source · MIT", "No tracking or analytics", "19 interface languages", "Membership or your own key"],
       lede: "Filter junk replies and get better translations: what sites leave untranslated gets translated, and their own translations get improved. Read posts, video titles and comments with less effort.",
       cta: "Add to Chrome",
       ctaNote: "Free to install",
@@ -160,8 +160,8 @@ export const COPY = {
       ],
     },
     cost: {
-      h2: "Pay for what you use",
-      body: "Use your own OpenRouter account and pay it directly. Requests never pass through ClearFlow’s servers.",
+      h2: "Membership, or pay as you go with your own key",
+      body: "ClearFlow Membership works as soon as you sign in: a 7-day free trial, then from $2.90 a month. Or use your own OpenRouter account and pay it directly; those requests never pass through ClearFlow’s servers.",
       stat: "≈ $0.10",
       statLabel: "Estimated cost of browsing 5,000 replies on X, including filtering and translation where needed. Actual costs vary with the content and model.",
       points: [
@@ -172,10 +172,10 @@ export const COPY = {
       cta: "Get your API keys",
     },
     privacy: {
-      h2: "No data is sent to the developer",
+      h2: "No tracking, no browsing history kept",
       items: [
         ["No tracking or reporting", "Usage and cost statistics stay on your device. No analytics, crash reports or ad code."],
-        ["Direct connections to your providers", "AI features send relevant posts and comments directly to OpenRouter with your key; it passes them to TypeSafe’s Jev for filtering and to a translation model for translation."],
+        ["Only what needs processing is sent", "AI features send relevant posts and comments to OpenRouter, which passes them to TypeSafe’s Jev for filtering and to a translation model for translation. With your own key they go there directly; with membership they go through ClearFlow’s server, which keeps only a cache of results."],
         ["Keys and history stay on your device", "Keys are stored in the extension’s own database, inaccessible to websites. Uninstalling removes the local data."],
         ["Open for inspection", "The MIT-licensed code is on GitHub. You can check how data is processed and where it goes."],
       ],
@@ -184,8 +184,8 @@ export const COPY = {
     faq: {
       h2: "FAQ",
       items: [
-        ["Why do I need my own API keys?", "Your content goes directly to the service providers, and you do not need a ClearFlow subscription. To get started, create your service accounts and API keys. <a href=\"keys/\">API key setup</a>"],
-        ["Does it work without keys?", "Yes. The local rules still hide replies with referral links or hidden contact details, and the same line posted by several accounts. An OpenRouter key is needed for translation and for detecting abuse, sexual content and replies like “nice”."],
+        ["Do I need my own API keys?", "No. With ClearFlow Membership you sign in with your email and it works, no keys needed. If you’d rather pay as you go, use your own keys: your content goes directly to the service providers, not through ClearFlow, and there’s no subscription. <a href=\"keys/\">API key setup</a>"],
+        ["Does it work without keys?", "Yes. The local rules still hide replies with referral links or hidden contact details, and the same line posted by several accounts. Translation and detecting abuse, sexual content and replies like “nice” need ClearFlow Membership or an OpenRouter key."],
         ["Will it hide good comments?", "Sometimes. Each hidden reply has an explanation. You can open it to read it or mark it as a mistake. Filtering levels are set separately for each site. Choose “Relaxed” in Settings if too many replies are hidden."],
         ["Which sites and browsers?", "X, Reddit, YouTube, Xiaohongshu (RedNote) and Hacker News. Chrome 120 or later, plus Edge, Arc, Brave and other Chromium browsers."],
         ["Which languages are supported?", "The interface supports 19 languages. Settings and the popup follow your browser language. In-page labels and translations usually follow the site’s interface language. Hacker News always uses your browser language, as do other sites when their interface language cannot be detected."],
@@ -228,14 +228,14 @@ export const COPY = {
     brand: "ClearFlow",
     languageLabel: "言語を選択",
     title: "ClearFlow · スパムを減らして、翻訳を読みやすく",
-    description: "X・YouTube・Reddit・小紅書・Hacker News のスパム返信をフィルタリングし、翻訳も強化するオープンソースの Chrome 拡張機能です。サイトが翻訳していない投稿・動画のタイトル・コメントを翻訳し、サイト独自の訳文も改善します。非表示にした返信にはすべて理由が表示されます。ご自身の API キーを使用し、開発者にはデータを送りません。",
+    description: "X・YouTube・Reddit・小紅書・Hacker News のスパム返信をフィルタリングし、翻訳も強化するオープンソースの Chrome 拡張機能です。サイトが翻訳していない投稿・動画のタイトル・コメントを翻訳し、サイト独自の訳文も改善します。非表示にした返信にはすべて理由が表示されます。ClearFlow メンバーシップでログインするか、ご自身の API キーで使えます。",
     nav: {"clean":"フィルタリング","tx":"翻訳","cost":"料金","privacy":"プライバシー","faq":"よくある質問"},
     skip: "本文へスキップ",
     hero: {
       eyebrow: "オープンソースの Chrome 拡張機能",
       h1: "読みたい内容を、もっとわかりやすく",
       h1Parts: ["読みたい内容を、", "もっとわかりやすく"],
-      trust: ["MIT ライセンス", "開発者への送信なし", "19 言語に対応", "従量課金"],
+      trust: ["MIT ライセンス", "トラッキングなし", "19 言語に対応", "メンバーシップか自分のキー"],
       lede: "スパム返信をフィルタリングし、翻訳をもっと読みやすく。サイトが翻訳していない内容は翻訳し、サイト独自の訳文は改善します。投稿も動画のタイトルもコメントも、より少ない負担で読めます。",
       cta: "Chrome に追加",
       ctaNote: "インストール無料",
@@ -267,8 +267,8 @@ export const COPY = {
       ],
     },
     cost: {
-      h2: "使った分だけ、直接お支払い",
-      body: "ご自身の OpenRouter のアカウントを使用し、直接支払います。通信は ClearFlow のサーバーを経由しません。",
+      h2: "メンバーシップか、自分のキーで従量課金",
+      body: "ClearFlow メンバーシップはログインするだけで使えます。7日間の無料トライアルのあと、月額 $2.90 から。自分の OpenRouter アカウントで使った分だけ直接支払うこともでき、その場合リクエストは ClearFlow のサーバーを通りません。",
       stat: "≈ $0.10",
       statLabel: "X で約 5,000 件の返信を読む場合の費用の目安。フィルタリングと必要な翻訳を含みます。実際の費用は内容やモデルによって変わります。",
       points: [
@@ -279,10 +279,10 @@ export const COPY = {
       cta: "API キーを取得",
     },
     privacy: {
-      h2: "開発者にはデータを送りません",
+      h2: "トラッキングなし、閲覧履歴も残しません",
       items: [
         ["追跡も利用状況の送信もなし", "利用件数と費用は端末内に保存。解析データやクラッシュレポートの送信、広告コードはありません。"],
-        ["サービスに直接接続", "AI 機能では、ご自身のキーで投稿やコメントを OpenRouter へ直接送ります。OpenRouter が判定は TypeSafe の Jev へ、翻訳は翻訳モデルへ渡します。"],
+        ["処理に必要な内容だけを送信", "AI 機能を使うと、関係する投稿やコメントが OpenRouter に送られ、TypeSafe の Jev による判定と翻訳モデルによる翻訳に回されます。自分のキーなら直接、メンバーシップなら ClearFlow のサーバーを経由し、サーバーには結果のキャッシュだけが残ります。"],
         ["キーと履歴は端末内に保存", "キーはウェブサイトからアクセスできない拡張機能専用のデータベースに保存。アンインストールでローカルデータも削除されます。"],
         ["コードを公開", "MIT ライセンスで GitHub に公開しています。データの処理方法や送信先を確認できます。"],
       ],
@@ -291,8 +291,8 @@ export const COPY = {
     faq: {
       h2: "よくある質問",
       items: [
-        ["なぜ自分で API キーを用意するのですか？", "内容を各サービスへ直接送り、ClearFlow のサブスクリプションを不要にするためです。初回はサービスへの登録とキーの作成が必要です。<a href=\"keys/\">API キーの設定</a>"],
-        ["キーがなくても使えますか？", "使えます。紹介リンク、隠された連絡先、繰り返しの文面などは、ローカルルールで非表示にします。誹謗中傷・性的な返信・「いいね」だけの返信の判定と、翻訳には OpenRouter のキーが必要です。"],
+        ["自分の API キーは必要ですか？", "必要ありません。ClearFlow メンバーシップならメールでログインするだけで使えます。従量課金にしたい場合は自分のキーを使えます。内容はサービスに直接送られ、ClearFlow を経由せず、サブスクリプションも不要です。 <a href=\"keys/\">API キーの設定</a>"],
+        ["キーがなくても使えますか？", "使えます。ローカルルールで、紹介リンクや隠れた連絡先を含む返信、複数のアカウントによる同じ文言を非表示にします。翻訳や、暴言・性的な内容・「nice」のような中身のない返信の判定には、ClearFlow メンバーシップか OpenRouter のキーが必要です。"],
         ["普通のコメントまで隠れませんか？", "誤って非表示にすることもあります。理由と元の返信を確認し、判定ミスを報告できます。サイトごとに厳しさを調整でき、非表示が多いと感じたら「ゆるめ」を選べます。"],
         ["対応サイトとブラウザは？", "X・Reddit・YouTube・小紅書（RedNote）・Hacker News。Chrome 120 以降と、Edge・Arc・Brave などの Chromium 系ブラウザです。"],
         ["表示言語は？", "表示は 19 言語に対応しています。設定とポップアップはブラウザの言語に従います。ページ内の表示と翻訳先には通常、サイトの表示言語を使います。Hacker News では常にブラウザの言語を使い、ほかのサイトでも表示言語を判別できない場合はブラウザの言語を使います。"],

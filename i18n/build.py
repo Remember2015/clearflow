@@ -17,7 +17,7 @@ if "--ext" in sys.argv:  # 先生成到插件目录的副本里测（用户的�
 LOCALES = ["en", "zh-CN", "zh-TW", "ja", "ko", "es", "pt", "fr", "de", "it", "ru", "ar", "tr", "id", "hi", "th", "vi", "pl", "nl"]
 # Chrome 扩展认的 _locales 目录名（https://developer.chrome.com/docs/extensions/reference/api/i18n#locales）
 CHROME = {"en": ["en"], "zh-CN": ["zh_CN"], "zh-TW": ["zh_TW"], "pt": ["pt_BR", "pt_PT"], "es": ["es", "es_419"]}
-PAGE_PREFIXES = ("tx.", "reason.", "kind.", "cat.", "cs.", "bar.", "banner.", "err.", "c.notDone", "filler.", "group.", "mark.", "heavy.", "app.")  # 内容脚本里 t() 用到的
+PAGE_PREFIXES = ("tx.", "reason.", "kind.", "cat.", "cs.", "bar.", "banner.", "err.", "c.notDone", "filler.", "group.", "mark.", "heavy.", "app.", "notice.")  # 内容脚本里 t() 用到的
 PH = re.compile(r"\{(\w+)\}")
 
 

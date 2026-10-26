@@ -53,7 +53,8 @@ fs.rmSync(out, { force: true });
 const stage = fs.mkdtempSync(path.join(os.tmpdir(), "clearflow-pack-"));
 try {
   for (const f of files) { fs.mkdirSync(path.join(stage, path.dirname(f)), { recursive: true }); fs.copyFileSync(path.join(EXT, f), path.join(stage, f)); }
-  fs.copyFileSync(path.join(ROOT, "LICENSE"), path.join(stage, "LICENSE"));
+  // 开源仓库里 LICENSE 在根目录，这个总仓库里在 public/（和 store-desc.py 找 descriptions 一样）
+  fs.copyFileSync(fs.existsSync(path.join(ROOT, "LICENSE")) ? path.join(ROOT, "LICENSE") : path.join(ROOT, "public/LICENSE"), path.join(stage, "LICENSE"));
   execFileSync("zip", ["-q", "-X", "-r", out, "."], { cwd: stage });
 } finally {
   fs.rmSync(stage, { recursive: true, force: true });

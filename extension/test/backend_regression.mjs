@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
 import { webcrypto } from "node:crypto";
-import { scoreReplies, JevError, validScores, cacheRequests, cleanExtra, keysOf, askOf, ALL_KEYS, markedRequests, askMarked, MARKED_MAX, MARKED_BATCH } from "../jev.js";
+import { scoreReplies, JevError, validScores, cacheRequests, cleanExtra, keysOf, askOf, ALL_KEYS, markedRequests, askMarked, askPost, MARKED_MAX, MARKED_BATCH } from "../jev.js";
 
 globalThis.crypto ||= webcrypto;
 const scores = (v = 0.1) => Object.fromEntries(ALL_KEYS.map((k) => [k, v]));
@@ -14,12 +14,23 @@ const reply = { id: "1", name: "Reader", handle: "@reader", text: "普通回复"
 const msg = (id = "1", post = "原帖") => ({ type: "jev", postId: "P1", post, author: { name: "作者", handle: "@op" }, replies: [{ ...reply, id }] });
 const settle = () => new Promise((r) => setImmediate(r));
 
-function backend({ fetchImpl, failWrite, initial = {} } = {}) {
+// 清流会员（0.30.0）：account.js / cloud.js 的替身。cloudCalls 记下发给服务器的判断；cloudError 让下一次判断抛这个错
+class CloudError extends Error { constructor(status, code) { super(code); this.status = status; this.code = code; } }
+function backend({ fetchImpl, failWrite, initial = {}, signedIn = false, cloudError = null } = {}) {
   // rev 跟着 settings.js 的 DEFAULTS.rev（0.29.8 起 6）：旧的会触发迁移，迁移写回去会盖掉测试随后改的设置
   const store = { ff_key: "fake-key", ff_settings: { rev: 6, enabled: true, useJev: true, cacheMB: 50 }, ...initial };
   const records = new Map(), changes = [], keyMap = new Map();
   const keyStore = { getKey: async (n) => keyMap.get(n) || "", setKey: async (n, v) => { if (v) keyMap.set(n, v); else keyMap.delete(n); } }; // keys.js（IndexedDB）的替身
   let listener, calls = 0, writes = 0;
+  const cloudCalls = [], notices = [];
+  const CLOUD = Object.freeze({ via: "cf" });
+  const account = { STATE: "ff_account", CloudError, signedIn: async () => signedIn, refreshMe: async () => store.ff_account || {} };
+  const cloud = { CLOUD, settingsFor: (st) => st, clearBlock() {},
+    scoreReplies: async (route, post, replies, opts) => {
+      cloudCalls.push({ route, post, ids: replies.map((r) => r.id), postId: opts.postId, keys: opts.keys });
+      if (cloudError) throw cloudError;
+      return { scores: Object.fromEntries(replies.map((r) => [r.id, scores(0.2)])), invalid: [], marked: {}, tokens: 0 };
+    } };
   const chrome = {
     storage: { onChanged: { addListener: (f) => changes.push(f) }, local: {
       get: async (keys) => (keys == null ? structuredClone(store) : Object.fromEntries((Array.isArray(keys) ? keys : [keys]).filter((k) => k in store).map((k) => [k, structuredClone(store[k])]))),
@@ -27,6 +38,7 @@ function backend({ fetchImpl, failWrite, initial = {} } = {}) {
       remove: async (k) => { for (const x of Array.isArray(k) ? k : [k]) delete store[x]; },
     } },
     runtime: { onMessage: { addListener: (f) => { listener = f; } } },
+    tabs: { query: async () => [{ id: 7, url: "https://x.com/a/status/1" }], sendMessage: async (id, m) => { notices.push({ id, ...m }); } },
   };
   const cache = {
     getMany: async (queries) => Object.fromEntries(queries.filter((q) => records.get(q.id)?.fingerprint === q.fingerprint).map((q) => [q.id, records.get(q.id).scores])),
@@ -34,7 +46,7 @@ function backend({ fetchImpl, failWrite, initial = {} } = {}) {
     stats: async () => ({ count: records.size }), clear: async () => records.clear(),
   };
   const context = vm.createContext({
-    chrome, cache, keyStore, validScores, cacheRequests, cleanExtra, keysOf, askOf, JevError, markedRequests, askMarked, MARKED_MAX, MARKED_BATCH, TextEncoder, crypto: webcrypto,
+    chrome, cache, keyStore, account, cloud, askPost, validScores, cacheRequests, cleanExtra, keysOf, askOf, JevError, markedRequests, askMarked, MARKED_MAX, MARKED_BATCH, TextEncoder, crypto: webcrypto,
     AbortController, DOMException, Date, Promise, console, URL, // URL：settings.js 按网址认网站（0.20）
     setTimeout: () => 0, // 0.28.5：后台起来 5 秒后清过期缓存（purgeCaches）；这里不跑
     scoreReplies: (key, post, replies, options) => scoreReplies(key, post, replies, {
@@ -54,7 +66,7 @@ function backend({ fetchImpl, failWrite, initial = {} } = {}) {
   const source = readFileSync(new URL("../background.js", import.meta.url), "utf8").replace(/^import .*;$/mg, "").replaceAll("export async function", "async function");
   vm.runInContext(source, context);
   return {
-    store, records, get calls() { return calls; }, get writes() { return writes; },
+    store, records, cloudCalls, notices, get calls() { return calls; }, get writes() { return writes; },
     call: (message, sender = {}) => new Promise((resolve) => listener(message, sender, resolve)),
     change: (patch) => { const delta = Object.fromEntries(Object.entries(patch).map(([k, v]) => [k, { oldValue: store[k], newValue: v }])); Object.assign(store, structuredClone(patch)); changes.forEach((f) => f(delta, "local")); },
   };
@@ -310,4 +322,55 @@ test("without a TypeSafe key the backend judges through OpenRouter; a 401 there 
   h.store.ff_or_key = ""; // 两个都没了：nokey，不发网络
   const before = h.calls;
   assert.equal((await h.call(msg("3"))).code, "nokey"); assert.equal(h.calls, before);
+});
+
+// ---------- 清流会员（0.30.0） ----------
+test("membership mode, signed in: judging goes to ClearFlow's server (with the post id), not to Jev; results land in the local cache", async () => {
+  const b = backend({ signedIn: true, initial: { ff_key: "", ff_settings: { rev: 6, enabled: true, useJev: true, cacheMB: 50, account: true } } });
+  const r = await b.call(msg("1"), { url: "https://x.com/a/status/1" });
+  assert.deepEqual(r.scores["1"], scores(0.2));
+  assert.equal(b.calls, 0); // 没碰 Jev
+  assert.equal(b.cloudCalls.length, 1);
+  assert.equal(b.cloudCalls[0].postId, "P1");
+  assert.equal(b.cloudCalls[0].route.via, "cf");
+  const again = await b.call(msg("1"), { url: "https://x.com/a/status/1" }); // 本地缓存命中，不再问服务器
+  assert.deepEqual(again.scores["1"], scores(0.2));
+  assert.equal(b.cloudCalls.length, 1);
+  const st = await b.call({ type: "settings" });
+  assert.equal(st.hasKey, true);
+  assert.equal(st.hasOrKey, true);
+});
+
+test("membership mode, signed out: treated like no key (local rules only), even with an own key stored", async () => {
+  const b = backend({ signedIn: false, initial: { ff_settings: { rev: 6, enabled: true, useJev: true, cacheMB: 50, account: true } } });
+  const r = await b.call(msg("1"), { url: "https://x.com/a/status/1" });
+  assert.equal(r.code, "nokey");
+  assert.equal(b.calls, 0);
+  assert.equal(b.cloudCalls.length, 0);
+  assert.equal((await b.call({ type: "settings" })).hasKey, false);
+});
+
+test("membership ended / allowance used up: the page gets cf_stop (not retryable) and the open site tab gets one notice", async () => {
+  const b = backend({ signedIn: true, cloudError: new CloudError(402, "subscription_required"),
+    initial: { ff_key: "", ff_settings: { rev: 6, enabled: true, useJev: true, cacheMB: 50, account: true }, ff_account: { email: "a@example.com", status: "none", lastPlan: "trial" } } });
+  const r = await b.call(msg("1"), { url: "https://x.com/a/status/1" });
+  assert.equal(r.code, "cf_stop");
+  assert.equal(r.reason, "subscription_required");
+  assert.equal(r.retryable, false);
+  for (let i = 0; i < 20 && !b.notices.length; i++) await settle();
+  assert.deepEqual(b.notices.map((n) => [n.id, n.type, n.kind, n.plan]), [[7, "ffNotice", "ended", "trial"]]);
+  await b.call(msg("2"), { url: "https://x.com/a/status/1" });
+  for (let i = 0; i < 20; i++) await settle();
+  assert.equal(b.notices.length, 1); // 同一件事只提示一次
+  const quota = backend({ signedIn: true, cloudError: new CloudError(429, "rate_limited"), initial: { ff_key: "", ff_settings: { rev: 6, enabled: true, useJev: true, cacheMB: 50, account: true } } });
+  const q = await quota.call(msg("1"), { url: "https://x.com/a/status/1" });
+  assert.equal(q.code, "rate_limited");
+  assert.equal(q.retryable, true); // 限流可以重试
+});
+
+test("account messages are only accepted from the extension's own pages", async () => {
+  const b = backend({ signedIn: true });
+  const r = await b.call({ type: "account", op: "logout" }, { url: "https://x.com/home" });
+  assert.equal(r.ok, false);
+  assert.equal(r.error, "invalid_request");
 });

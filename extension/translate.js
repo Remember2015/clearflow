@@ -75,7 +75,7 @@
   const clearErrors = () => { for (const [k, j] of jobs) if (j.state === "error") jobs.delete(k); };
   function stopFor(code) {
     if (code === "or_credit") creditStop = Date.now();
-    if (["disabled", "noorkey", "or_badkey", "or_credit"].includes(code)) { onImprove = false; onFill = false; return true; }
+    if (["disabled", "noorkey", "or_badkey", "or_credit", "cf_stop"].includes(code)) { onImprove = false; onFill = false; return true; } // cf_stop：清流会员没套餐、额度用完（0.30.0）
     if (["nokey", "badkey"].includes(code)) { onImprove = false; return true; }
     return false;
   }

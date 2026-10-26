@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extName__",
-  "version": "0.29.15",
+  "version": "0.34.0",
   "homepage_url": "https://github.com/remember2015/clearflow",
   "minimum_chrome_version": "120",
   "description": "__MSG_extDesc__",
@@ -14,7 +14,7 @@
   "content_scripts": [
     {
       "matches": ["https://x.com/*", "https://twitter.com/*"],
-      "js": ["settings.js", "i18n_page.js", "i18n.js", "xdom.js", "rules.js", "foldbar.js", "content.js", "translate.js", "theme.js"],
+      "js": ["settings.js", "i18n_page.js", "i18n.js", "xdom.js", "rules.js", "foldbar.js", "content.js", "translate.js", "theme.js", "notice.js"],
       "css": ["content.css"],
       "run_at": "document_idle"
     },
@@ -26,13 +26,13 @@
     },
     {
       "matches": ["https://www.reddit.com/*"],
-      "js": ["settings.js", "i18n_page.js", "i18n.js", "rules.js", "foldbar.js", "ffdom.js", "fold_engine.js", "richtext.js", "tx_engine.js", "rdom.js", "reddit.js", "rtranslate.js", "theme.js"],
+      "js": ["settings.js", "i18n_page.js", "i18n.js", "rules.js", "foldbar.js", "ffdom.js", "fold_engine.js", "richtext.js", "tx_engine.js", "rdom.js", "reddit.js", "rtranslate.js", "theme.js", "notice.js"],
       "css": ["content.css"],
       "run_at": "document_idle"
     },
     {
       "matches": ["https://www.youtube.com/*"],
-      "js": ["settings.js", "i18n_page.js", "i18n.js", "rules.js", "foldbar.js", "ffdom.js", "fold_engine.js", "richtext.js", "tx_engine.js", "ytdom.js", "ytrules.js", "yt.js", "yttx.js", "zhconv.js", "ytcaps.js", "theme.js"],
+      "js": ["settings.js", "i18n_page.js", "i18n.js", "rules.js", "foldbar.js", "ffdom.js", "fold_engine.js", "richtext.js", "tx_engine.js", "ytdom.js", "ytrules.js", "yt.js", "yttx.js", "zhconv.js", "ytcaps.js", "theme.js", "notice.js"],
       "css": ["content.css"],
       "run_at": "document_idle"
     },
@@ -44,17 +44,18 @@
     },
     {
       "matches": ["https://www.xiaohongshu.com/*", "https://www.rednote.com/*"],
-      "js": ["settings.js", "i18n_page.js", "i18n.js", "rules.js", "foldbar.js", "ffdom.js", "fold_engine.js", "richtext.js", "tx_engine.js", "xhsdom.js", "xhs.js", "xhstx.js", "theme.js"],
+      "js": ["settings.js", "i18n_page.js", "i18n.js", "rules.js", "foldbar.js", "ffdom.js", "fold_engine.js", "richtext.js", "tx_engine.js", "xhsdom.js", "xhs.js", "xhstx.js", "theme.js", "notice.js"],
       "css": ["content.css"],
       "run_at": "document_idle"
     },
     {
       "matches": ["https://news.ycombinator.com/*"],
-      "js": ["settings.js", "i18n_page.js", "i18n.js", "rules.js", "foldbar.js", "ffdom.js", "fold_engine.js", "richtext.js", "tx_engine.js", "hndom.js", "hn.js", "hntx.js", "theme.js"],
+      "js": ["settings.js", "i18n_page.js", "i18n.js", "rules.js", "foldbar.js", "ffdom.js", "fold_engine.js", "richtext.js", "tx_engine.js", "hndom.js", "hn.js", "hntx.js", "theme.js", "notice.js"],
       "css": ["content.css"],
       "run_at": "document_idle"
     }
   ],
   "action": { "default_popup": "popup.html", "default_title": "__MSG_extTitle__", "default_icon": { "16": "icons/icon-16.png", "32": "icons/icon-32.png" } },
-  "options_page": "options.html"
+  "options_page": "options.html",
+  "externally_connectable": { "matches": ["https://clearflow.ohmyai.app/*"] }
 }

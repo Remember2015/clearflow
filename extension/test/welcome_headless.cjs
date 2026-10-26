@@ -37,6 +37,9 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
       next: document.getElementById("welcomeNext")?.textContent || null, extras: document.querySelectorAll("#welcomeKeys [id$='Test'], #welcomeKeys .state").length,
       msg: document.getElementById("orKeyMsg")?.textContent || null, visit: [...document.querySelectorAll("#welcomeVisit a")].map((a) => [a.textContent, a.getAttribute("href")]),
       noKey: !!document.getElementById("welcomeNoKey"), doc: document.title,
+      // 0.30.0：第 2 步先选清流会员还是自己的密钥（默认自己的密钥，下面照旧是填 OpenRouter 密钥）
+      modes: [...document.querySelectorAll("#welcomeMode button > span:first-child")].map((e) => e.textContent).join("|"),
+      modeOn: document.querySelector('#welcomeMode button[aria-pressed="true"]')?.id || null,
       local: document.getElementById("welcomeKeysLocal")?.textContent || null, lock: !!document.querySelector("#welcomeKeysLocal svg"),
     }));
     let s = await step();
@@ -54,7 +57,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     s = await step();
     // 0.29.10（用户 10-23：字多、按钮链接多）：一行"用途 · 服务名"+ 获取密钥，没有"没填"和"测试连接"；没填时下一步那个按钮写"稍后再填"。
     // 0.29.11 起只要一个 OpenRouter 密钥（判断也通过它调 Jev；TypeSafe 挪进设置的高级里、可选）
-    ok("第 2 步：只有一个 key（清理和翻译 · OpenRouter），带获取密钥、一句说明；没有没填、测试连接；没填时按钮是稍后再填", s.title === "设置 API 密钥" &&
+    ok("第 2 步：只有一个 key（清理和翻译 · OpenRouter），带获取密钥、一句说明；没有没填、测试连接；没填时按钮是稍后再填", s.title === "选一种用法" && s.modes === "清流会员|自己的 OpenRouter 密钥" && s.modeOn === "welcomeOwn" &&
       JSON.stringify(s.keys) === JSON.stringify(["清理和翻译 · OpenRouter"]) && JSON.stringify(s.links) === JSON.stringify(["https://openrouter.ai/keys"]) &&
       s.notes.length === 1 && s.extras === 0 && s.next === "稍后再填", JSON.stringify(s));
     ok("第 2 步：填之前就告诉 key 只存在本地（带锁）、只发给 OpenRouter、不发给开发者", s.lock && /只保存在这个浏览器里/.test(s.local || "") && /只发给 OpenRouter/.test(s.local) && /不会发给开发者/.test(s.local), JSON.stringify(s.local));

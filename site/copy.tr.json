@@ -2,7 +2,7 @@
   "brand": "ClearFlow",
   "languageLabel": "Dil seçin",
   "title": "ClearFlow · Daha temiz yorumlar, daha anlaşılır çeviriler",
-  "description": "X, YouTube, Reddit, Xiaohongshu (RedNote) ve Hacker News'teki gereksiz yorumları ayıklayan açık kaynaklı bir Chrome uzantısı. Çeviriyi de iyileştirir: Sitelerin çevirmediği gönderileri, video başlıklarını ve yorumları çevirir; sitelerin kendi çevirilerini geliştirir. Gizlenen her yorumun gerekçesini görebilirsiniz. Kendi API anahtarlarınızı kullanır; geliştiriciye veri göndermez.",
+  "description": "X, YouTube, Reddit, Xiaohongshu (RedNote) ve Hacker News'teki gereksiz yorumları ayıklayan açık kaynaklı bir Chrome uzantısı. Çeviriyi de iyileştirir: Sitelerin çevirmediği gönderileri, video başlıklarını ve yorumları çevirir; sitelerin kendi çevirilerini geliştirir. Gizlenen her yorumun gerekçesini görebilirsiniz. ClearFlow Üyeliği veya kendi API anahtarlarınızla çalışır.",
   "nav": {
     "clean": "Yorum temizliği",
     "tx": "Çeviri",
@@ -20,9 +20,9 @@
     ],
     "trust": [
       "Açık kaynak · MIT",
-      "Geliştiriciye veri gönderilmez",
+      "İzleme ve analiz yok",
       "19 arayüz dili",
-      "Kullandığınız kadar ödeyin"
+      "Üyelik veya kendi anahtarınız"
     ],
     "lede": "Gereksiz yorumları ayıklayın, daha iyi çevirilerle karşılaşın: Sitelerin çevirmediklerini çevirir, kendi çevirilerini iyileştirir. Gönderileri, video başlıklarını ve yorumları daha rahat okuyun.",
     "cta": "Chrome'a ekle",
@@ -191,8 +191,8 @@
     ]
   },
   "cost": {
-    "h2": "Yalnızca kullandığınız kadar ödeyin",
-    "body": "Kendi OpenRouter hesabınızı kullanır, doğrudan OpenRouter'a ödeme yaparsınız. İstekler ClearFlow sunucularından geçmez.",
+    "h2": "Üyelik ya da kendi anahtarınızla kullandıkça ödeme",
+    "body": "ClearFlow Üyeliği giriş yapar yapmaz çalışır: 7 günlük ücretsiz deneme, ardından ayda $2.90'dan başlayan fiyatlar. Dilerseniz kendi OpenRouter hesabınızı kullanıp doğrudan ona ödeme yapabilirsiniz; bu istekler ClearFlow sunucularından geçmez.",
     "stat": "≈ $0.10",
     "statLabel": "X'te yaklaşık 5.000 yanıtı okumanın tahmini maliyeti; ayıklama ve gerektiğinde çeviri dahildir. Gerçek maliyet, içeriğe ve modele göre değişir.",
     "points": [
@@ -203,15 +203,15 @@
     "cta": "API anahtarlarını alın"
   },
   "privacy": {
-    "h2": "Geliştiriciye veri gönderilmez",
+    "h2": "İzleme yok, gezinme geçmişi tutulmaz",
     "items": [
       [
         "İzleme veya raporlama yok",
         "Kullanım ve maliyet istatistikleri cihazınızda kalır. Analiz veya çökme raporu gönderilmez; reklam kodu yoktur."
       ],
       [
-        "Hizmet sağlayıcılara doğrudan bağlantı",
-        "AI özellikleri, ilgili gönderi ve yorumları anahtarınızla ayıklama için OpenRouter'a doğrudan gönderir; OpenRouter bunları filtreleme için TypeSafe'in Jev modeline, çeviri içinse bir çeviri modeline iletir."
+        "Yalnızca işlenmesi gereken içerik gönderilir",
+        "Yapay zekâ özellikleri ilgili gönderi ve yorumları OpenRouter'a gönderir; o da bunları değerlendirme için TypeSafe'in Jev modeline, çeviri için bir çeviri modeline iletir. Kendi anahtarınızla doğrudan gider; üyelikte ClearFlow sunucusu üzerinden geçer ve sunucu yalnızca sonuçların önbelleğini tutar."
       ],
       [
         "Anahtarlar ve kayıtlar cihazınızda kalır",
@@ -228,12 +228,12 @@
     "h2": "Sık sorulan sorular",
     "items": [
       [
-        "Neden kendi API anahtarlarım gerekiyor?",
-        "İçeriğiniz doğrudan hizmet sağlayıcılara gider ve ClearFlow aboneliği ödemeniz gerekmez. Başlamak için hizmetlerde hesap açıp API anahtarı oluşturun. <a href=\"keys/\">API anahtarı kurulumu</a>"
+        "Kendi API anahtarım gerekli mi?",
+        "Hayır. ClearFlow Üyeliği ile e-postanızla giriş yapmanız yeterli, anahtar gerekmez. Kullandıkça ödemeyi tercih ederseniz kendi anahtarlarınızı kullanın: içeriğiniz doğrudan hizmet sağlayıcılara gider, ClearFlow'dan geçmez ve abonelik gerekmez. <a href=\"keys/\">API anahtarı kurulumu</a>"
       ],
       [
         "Anahtar olmadan çalışır mı?",
-        "Evet. Yerel kurallar, yönlendirme bağlantısı veya gizli iletişim bilgisi içeren yanıtları ve birçok hesabın paylaştığı aynı ifadeleri yine gizler. Çeviri ile hakaret, cinsel içerik ve ‘güzel’ gibi kısa yanıtları belirlemek için OpenRouter anahtarı gerekir."
+        "Evet. Yerel kurallar yine de yönlendirme bağlantısı veya gizli iletişim bilgisi içeren yanıtları ve birkaç hesabın paylaştığı aynı cümleyi gizler. Çeviri ile hakaret, cinsel içerik ve “nice” gibi yanıtların tespiti için ClearFlow Üyeliği veya bir OpenRouter anahtarı gerekir."
       ],
       [
         "Normal yorumları da gizler mi?",

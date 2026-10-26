@@ -2,7 +2,7 @@
   "brand": "ClearFlow",
   "languageLabel": "Choisir la langue",
   "title": "ClearFlow · Moins de bruit, des traductions plus claires",
-  "description": "Extension Chrome open source qui filtre les réponses indésirables sur X, YouTube, Reddit, RedNote et Hacker News, et améliore les traductions : elle traduit les publications, titres de vidéos et commentaires que les sites laissent sans traduction, et améliore leurs propres traductions. Chaque réponse masquée est accompagnée d'une explication. Utilise vos propres clés API et n'envoie aucune donnée au développeur.",
+  "description": "Extension Chrome open source qui filtre les réponses indésirables sur X, YouTube, Reddit, RedNote et Hacker News, et améliore les traductions : elle traduit les publications, titres de vidéos et commentaires que les sites laissent sans traduction, et améliore leurs propres traductions. Chaque réponse masquée est accompagnée d'une explication. Fonctionne avec l’abonnement ClearFlow ou vos propres clés API.",
   "nav": {
     "clean": "Filtrage",
     "tx": "Traduction",
@@ -20,9 +20,9 @@
     ],
     "trust": [
       "Open source · licence MIT",
-      "Aucune donnée envoyée au développeur",
+      "Ni pistage ni statistiques",
       "Interface en 19 langues",
-      "Paiement à l'usage"
+      "Abonnement ou votre propre clé"
     ],
     "lede": "Filtrez les réponses indésirables et profitez de meilleures traductions : ClearFlow traduit ce que les sites laissent sans traduction et améliore leurs propres traductions. Lisez plus facilement les publications, titres de vidéos et commentaires.",
     "cta": "Ajouter à Chrome",
@@ -191,8 +191,8 @@
     ]
   },
   "cost": {
-    "h2": "Payez selon votre usage",
-    "body": "Utilisez votre propre compte OpenRouter et payez directement ce service. Les requêtes ne passent jamais par les serveurs de ClearFlow.",
+    "h2": "L’abonnement, ou le paiement à l’usage avec votre clé",
+    "body": "L’abonnement ClearFlow fonctionne dès la connexion : 7 jours d’essai gratuit, puis à partir de 2,90 $ par mois. Vous pouvez aussi utiliser votre propre compte OpenRouter et le payer directement ; ces requêtes ne passent pas par les serveurs de ClearFlow.",
     "stat": "≈ $0.10",
     "statLabel": "Coût estimé pour parcourir environ 5 000 réponses sur X, avec filtrage et, si nécessaire, traduction. Le coût réel varie selon le contenu et le modèle.",
     "points": [
@@ -203,15 +203,15 @@
     "cta": "Obtenir vos clés API"
   },
   "privacy": {
-    "h2": "Aucune donnée envoyée au développeur",
+    "h2": "Aucun pistage, aucun historique de navigation conservé",
     "items": [
       [
         "Ni suivi ni remontée de données",
         "Les statistiques d'utilisation et de coût restent sur votre appareil. Aucun outil d'analyse, rapport de plantage ou code publicitaire."
       ],
       [
-        "Connexion directe à vos fournisseurs",
-        "Les fonctions d'IA envoient les publications et commentaires concernés directement à OpenRouter avec votre clé ; OpenRouter les transmet au modèle Jev de TypeSafe pour le filtrage et à un modèle de traduction pour la traduction."
+        "Seul le nécessaire est envoyé",
+        "Les fonctions d’IA envoient les publications et commentaires concernés à OpenRouter, qui les transmet au modèle Jev de TypeSafe pour le filtrage et à un modèle de traduction. Avec votre clé, ils y vont directement ; avec l’abonnement, ils passent par le serveur de ClearFlow, qui ne garde qu’un cache des résultats."
       ],
       [
         "Clés et historique sur votre appareil",
@@ -228,12 +228,12 @@
     "h2": "Questions fréquentes",
     "items": [
       [
-        "Pourquoi faut-il mes propres clés API ?",
-        "Votre contenu va directement aux fournisseurs de services et vous n'avez pas besoin d'abonnement ClearFlow. Pour commencer, créez vos comptes et vos clés API. <a href=\"keys/\">Configurer les clés API</a>"
+        "Faut-il ma propre clé d’API ?",
+        "Non. Avec l’abonnement ClearFlow, il suffit de vous connecter avec votre adresse e-mail, sans clé. Si vous préférez payer à l’usage, utilisez vos propres clés : votre contenu va directement aux fournisseurs, sans passer par ClearFlow, et sans abonnement. <a href=\"keys/\">Configurer les clés API</a>"
       ],
       [
         "L'extension fonctionne-t-elle sans clés ?",
-        "Oui. Les règles locales masquent encore les réponses contenant des liens de parrainage ou des coordonnées dissimulées, ainsi que les mêmes messages publiés par plusieurs comptes. Une clé OpenRouter est nécessaire pour la traduction et la détection des insultes, contenus sexuels et réponses comme « sympa »."
+        "Oui. Les règles locales masquent toujours les réponses contenant des liens de parrainage ou des coordonnées cachées, et la même phrase publiée par plusieurs comptes. La traduction et la détection des insultes, du contenu sexuel et des réponses comme « nice » nécessitent l’abonnement ClearFlow ou une clé OpenRouter."
       ],
       [
         "Peut-elle masquer des commentaires utiles ?",

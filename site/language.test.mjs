@@ -22,7 +22,7 @@ for (const [header, expected] of [
 for (const [key, lang] of Object.entries(LANGS)) assert.equal(pick(lang.html), key);
 
 const env = { ASSETS: { fetch: async () => new Response("static page") } };
-for (const [path, expected] of [["/", "/ja/"], ["/keys", "/ja/keys/"], ["/privacy/", "/ja/privacy/"]]) {
+for (const [path, expected] of [["/", "/ja/"], ["/keys", "/ja/keys/"], ["/privacy/", "/ja/privacy/"], ["/pricing", "/ja/pricing/"], ["/terms/", "/ja/terms/"], ["/account", "/ja/account/"], ["/paid/", "/ja/paid/"]]) {
   const response = await worker.fetch(new Request(`https://example.com${path}?ref=test`, { headers: { "Accept-Language": "ja-JP" } }), env);
   assert.equal(response.status, 302);
   assert.equal(response.headers.get("Location"), `https://example.com${expected}?ref=test`);

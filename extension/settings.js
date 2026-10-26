@@ -18,7 +18,8 @@
     captionConvert: true, captionFix: true,
     // filler：清理「赞」「mark」这类回复（0.22 起，默认开）——只有几个字的夸、附和、谢谢、mark，不带图和链接；
     // 整条藏起来，评论区最上面一行"清理了 N 条…· 查看"。门槛每个网站自己定（站点的 fillerThreshold），不给用户调
-    filler: true });
+    filler: true,
+    account: false }); // 用清流会员（登录、不用自己的密钥，0.30.0）还是自带密钥
   // 看图片要读的图片网站（manifest 的 optional_host_permissions 也是这几个）：X 的 pbs.twimg.com、Reddit 用户传的图、
   // 小红书的 *.xhscdn.com（评论配图是 http 的，所以不限协议；海外版 rednote.com 也是这批 CDN）
   const IMAGE_ORIGINS = Object.freeze(["https://pbs.twimg.com/*", "https://i.redd.it/*", "https://preview.redd.it/*", "*://*.xhscdn.com/*"]);

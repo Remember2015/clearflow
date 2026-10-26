@@ -1,5 +1,29 @@
 // Accessible platform tabs and explicit before/after controls.
 (() => {
+  // Header: "Sign in" turns into the account's avatar (first letter of the email) when the account page last saw a session
+  // (account-page.js keeps localStorage ff_acct; the sign-in cookie lives on the API host and can't be read here)
+  const nav = document.querySelector("#navAcct");
+  const navAccount = () => {
+    if (!nav || !nav.dataset) return;
+    let a = null;
+    try { a = JSON.parse(localStorage.getItem("ff_acct") || "null"); } catch { /* 存储不可用：当没登录 */ }
+    if (!nav.dataset.signIn) nav.dataset.signIn = nav.textContent;
+    if (a && a.email) {
+      const label = nav.dataset.account.replace("{email}", a.email);
+      const av = document.createElement("span");
+      av.className = "nav-avatar"; av.textContent = (a.email.trim()[0] || "?").toUpperCase();
+      if (a.member) { // 会员：金色的星（account-page.js 存的 member）
+        const NS = "http://www.w3.org/2000/svg", svg = document.createElementNS(NS, "svg"), c = document.createElementNS(NS, "circle"), p = document.createElementNS(NS, "polygon");
+        svg.setAttribute("viewBox", "0 0 16 16"); svg.setAttribute("class", "member-star"); svg.setAttribute("aria-hidden", "true");
+        c.setAttribute("cx", "8"); c.setAttribute("cy", "8"); c.setAttribute("r", "8"); c.setAttribute("fill", "#F2A60C");
+        p.setAttribute("fill", "#fff"); p.setAttribute("points", "8.00 3.90 9.12 6.76 12.18 6.94 9.81 8.89 10.59 11.86 8.00 10.20 5.41 11.86 6.19 8.89 3.82 6.94 6.88 6.76");
+        svg.append(c, p); av.append(svg);
+      }
+      nav.replaceChildren(av); nav.title = a.email; nav.setAttribute("aria-label", label); nav.classList.add("signed-in");
+    } else { nav.replaceChildren(nav.dataset.signIn); nav.removeAttribute("title"); nav.removeAttribute("aria-label"); nav.classList.remove("signed-in"); }
+  };
+  globalThis.FFNavAccount = navAccount;
+  navAccount();
   // "View full size": the screenshot opens over the page (a dialog: Esc, the close button or a click outside it closes it, focus goes
   // back to the link) instead of leaving the page for the bare image file. Without scripts the link still opens the image.
   const box = document.querySelector("dialog.lightbox");

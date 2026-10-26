@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.34.0 — 2026-10-26
+
+- New: **ClearFlow Membership**, an alternative to using your own key. Sign in with your email and the AI features work without an API key. New accounts get a 7-day free trial without a card; then $2.90 a month or $24 a year, or a one-time 30-day ($3.90) or 1-year ($39) pass. WeChat Pay works for the one-time passes (mainland China and Hong Kong). Payments are handled by Waffo. Choose it in first-time setup or in Settings → Connections and cost; your own key keeps working as before.
+- Signing in happens on clearflow.ohmyai.app, in a tab the extension opens. If you're already signed in there it takes one step, and the extension and the website keep each other signed in.
+- Settings shows your account at the top right (members get a small gold star). Usage, devices (up to 3), renewing, switching from monthly to yearly, cancelling and refunds (full refund within 7 days of your first purchase) are in Connections and cost and on the website's account page.
+- With membership, the content to judge or translate goes through ClearFlow's server instead of straight to OpenRouter. The [privacy policy](PRIVACY.md) (effective October 26, 2026) and [terms of service](TERMS.md) describe what the server keeps; with your own key nothing changes.
+
 ## 0.29.11 — 2026-10-23
 
 - One API key is enough: filtering and translation both go through OpenRouter now. ClearFlow sends the replies it can't decide on its own to TypeSafe's Jev model through OpenRouter, using your OpenRouter key; it's the same model at the same price, about 0.4 seconds slower. Getting a key from TypeSafe directly can involve a waitlist, so it's no longer needed.

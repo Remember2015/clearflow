@@ -9,13 +9,16 @@ import * as feedback from "./feedback.js";
 import * as translator from "./translator.js";
 import { imageAsset, allowedImage } from "./images.js";
 import * as keyStore from "./keys.js";
+import * as account from "./account.js";
+import * as cloud from "./cloud.js";
+const { CLOUD } = cloud;
 
 const { DEFAULTS, forSite, siteOf, SITES, IMAGE_ORIGINS } = globalThis.FFSettings;
 // 只管翻译的设置：改了不打断评论区（不取消评论区的 Jev 请求）
-const TRANSLATE_KEYS = ["translate", "translateFill", "translateThreshold", "translateModel", "translateFallback"];
+const TRANSLATE_KEYS = ["translate", "translateFill", "translateThreshold", "translateModel", "translateFallback", "account"];
 // 评论区进行中的 Jev 请求：只有改了会让请求本身不该发、或者发的内容不一样的设置才打断（关掉清理、不用 Jev、看不看图）。
 // 0.28.7 以前阈值、M1 长度、缓存上限这些改了也打断——Jev 那边已经判完、收过费了，页面再重发一次（review）
-const COMMENT_KEYS = ["enabled", "useJev", "images"];
+const COMMENT_KEYS = ["enabled", "useJev", "images", "account"]; // account：换了用自带密钥还是清流会员（0.30.0）
 // 设置改了：哪个网站上（或者默认的那一份）这几项实际变了没有（0.20 起每个网站可以单独改，要一个个网站比）
 const SITE_IDS = [null, ...SITES.map((x) => x.id)];
 const changedFor = (oldRaw, newRaw, keys) => SITE_IDS.some((id) => {
@@ -116,13 +119,31 @@ const apiKey = () => readKey("jev");
 const orKey = () => readKey("or");
 // 判断（Jev）走哪条路（0.29.11）：填了 TypeSafe 密钥就直连（快约 0.4 秒，也能看图片）；没填就拿 OpenRouter 的密钥走 OpenRouter
 // （同一个模型，见 jev.js OR_API）；两个都没有就是没填。直连给字符串（和以前一样），走 OpenRouter 给 {via: "or", key}
+// 清流会员（0.30.0）：设置里选了会员、又登录着，判断和翻译都走清流的服务器（cloud.js，路由就是 CLOUD）；选了会员但没登录，当没填密钥
+// （只用本地规则）。不看套餐还在不在：服务器说了算，没有了回 402，cloud.js 一段时间内不再发
+async function cloudOn() {
+  const st = await settings();
+  return !!st.account && await account.signedIn();
+}
 async function jevRoute() {
+  const cf = await settings().then((st) => st.account);
+  if (cf) return (await account.signedIn()) ? CLOUD : null;
   const ts = await apiKey();
   if (ts) return ts;
   const or = await orKey();
   return or ? { via: "or", key: or } : null;
 }
-const routeId = (r) => (r && typeof r === "object" ? `or:${r.key}` : r ? `ts:${r}` : "");
+const routeId = (r) => (r === CLOUD ? "cf" : r && typeof r === "object" ? `or:${r.key}` : r ? `ts:${r}` : "");
+// 翻译走哪条：会员模式 CLOUD，否则 OpenRouter 的密钥（没登录的会员模式当没填）
+async function txRoute() {
+  if ((await settings()).account) return (await account.signedIn()) ? CLOUD : "";
+  return orKey();
+}
+// 判断、翻译的实现：会员模式用 cloud.js（同名同参），否则本地的 jev.js / translator.js
+const tx = (key) => (key === CLOUD ? cloud : translator);
+const jv = (key) => (key === CLOUD ? cloud : { scoreReplies, askPost, askMarked });
+// 本地缓存键用的翻译设置：会员模式按服务器的模型算（cloud.settingsFor）
+const txSettings = (st, key) => (key === CLOUD ? cloud.settingsFor(st) : st);
 // 存一个 key（空的就是删掉）：写进库；变了的话更新 ff_keys（{jev, or} 填没填、at 换 key 的时间——内容脚本靠它知道换了 key），
 // 按换 key 处理（作废进行中的请求、清掉旧的"key 无效"）
 async function storeKey(name, value) {
@@ -138,9 +159,9 @@ async function storeKey(name, value) {
 // ff_keys 和库里对不上（第一次装、库被清过）：照库里的重写一遍
 async function syncKeyFlags() {
   await moveKeys().catch(() => {});
-  const flags = { jev: !!(await readKey("jev")), or: !!(await readKey("or")) };
+  const flags = { jev: !!(await readKey("jev")), or: !!(await readKey("or")), cf: await cloudOn() }; // cf：清流会员开着、登录着（0.30.0）
   const { ff_keys } = await chrome.storage.local.get("ff_keys");
-  if (!ff_keys || ff_keys.jev !== flags.jev || ff_keys.or !== flags.or) await chrome.storage.local.set({ ff_keys: { ...flags, at: Date.now() } });
+  if (!ff_keys || ff_keys.jev !== flags.jev || ff_keys.or !== flags.or || ff_keys.cf !== flags.cf) await chrome.storage.local.set({ ff_keys: { ...flags, at: Date.now() } });
 }
 syncKeyFlags().catch(() => {});
 const today = () => new Date().toLocaleDateString("sv-SE"); // YYYY-MM-DD
@@ -238,8 +259,17 @@ function release() {
     waiter.resolve(); // 把当前槽直接交给等待者，避免新请求抢走它。
   } else inflight--;
 }
+// 清流服务器的错（0.30.0）：没有套餐、额度用完、登录失效统一成 cf_stop（这一页不再发；翻译停下），reason 是原因，顺带更新会员状态、
+// 当前网页提示一次（cloudTrouble）；限流、服务器忙可以重试
+const CF_STOP = new Set(["subscription_required", "quota_daily", "quota_monthly", "signed_out", "trial_paused", "paused"]);
+function cloudFailure(e, scores) {
+  if (CF_STOP.has(e.code)) { cloudTrouble(e.code).catch(() => {}); return { error: e.code, code: "cf_stop", reason: e.code, retryable: false, scores }; }
+  if (e.status === 400 || e.status === 413) return { error: e.code, code: "invalid_request", retryable: false, scores };
+  return { error: e.code, code: e.code === "rate_limited" ? "rate_limited" : "network", retryable: true, scores };
+}
 function failure(e, scores = {}) {
   if (e?.name === "AbortError") return { error: "cancelled", code: "cancelled", retryable: true, scores };
+  if (e instanceof account.CloudError) return cloudFailure(e, scores);
   // 走 OpenRouter 的（0.29.11）：401 / 402 说的是 OpenRouter 的密钥和余额
   if (e instanceof JevError && e.status === 401) return e.via === "or" ? { error: "or_badkey", code: "or_badkey", retryable: false, scores } : { error: "badkey", code: "badkey", retryable: false, scores };
   if (e instanceof JevError && e.status === 402) return e.via === "or" ? { error: "or_credit", code: "or_credit", retryable: false, scores } : { error: "credit", code: "credit", retryable: false, scores };
@@ -346,7 +376,7 @@ async function handleJev({ postId, post, author, replies: raw, extra: wanted, ke
     const nImages = Object.keys(assets).length;
     let res;
     try {
-      res = ask.length ? await scoreReplies(access.key, post, ask, { author, extra, keys, assets, examples: examples.length ? examples : null, signal: controller.signal }) : { scores: {}, invalid: [], tokens: 0 };
+      res = ask.length ? await jv(access.key).scoreReplies(access.key, post, ask, { author, extra, keys, assets, examples: examples.length ? examples : null, signal: controller.signal, postId }) : { scores: {}, invalid: [], tokens: 0 };
     } catch (e) {
       // 图有毛病（格式、尺寸、太大）整批被拒：去掉图再问一次，这次的结果不进缓存
       if (!nImages || !(e instanceof JevError) || (e.status !== 400 && e.status !== 413)) throw e;
@@ -410,7 +440,7 @@ async function handleMarked({ postId, post, author, replies }, site = null) {
     try {
       await slot(controller.signal);
       acquired = true;
-      const { scores, tokens } = await askMarked(access.key, post, part, { author, examples, signal: controller.signal });
+      const { scores, tokens } = await jv(access.key).askMarked(access.key, post, part, { author, examples, signal: controller.signal });
       Object.assign(out, scores);
       bump({ jev_calls: 1, jev_replies: part.length, tokens }).catch(() => {});
       await cache.putMany(part.filter((r) => typeof scores[r.id] === "number").map((r) => ({ id: qOf.get(r.id).id, post: postId, fingerprint: qOf.get(r.id).fingerprint, scores: { marked: scores[r.id] } })),
@@ -449,7 +479,7 @@ async function handlePost({ postId, post, author }, site = null) {
     const current = await permission(access.key, site);
     if (current.error) return current;
     controller.signal.throwIfAborted();
-    const { scores, tokens } = await askPost(access.key, post, author, { signal: controller.signal });
+    const { scores, tokens } = await jv(access.key).askPost(access.key, post, author, { signal: controller.signal, postId });
     controller.signal.throwIfAborted();
     bump({ jev_calls: 1, tokens }).catch(() => {});
     health("jev", null).catch(() => {});
@@ -489,7 +519,7 @@ function txRelease() {
 // 排到翻译位置以后再看一眼 key 换没换（0.28.8，review）：读 key 和登记可取消之间换了 key 的，换 key 时取消不到它，
 // 用旧 key 发出去回 401，又把弹窗的"key 无效"记了回去（刚换上的好 key 被说成无效）
 async function sameKeys(or, jev) {
-  if ((await orKey()) !== or || (jev !== undefined && routeId(await jevRoute()) !== routeId(jev))) throw cancelled();
+  if ((await txRoute()) !== or || (jev !== undefined && routeId(await jevRoute()) !== routeId(jev))) throw cancelled();
 }
 // target：X 把帖子翻成的语言（X 的界面语言），比如 zh、en、ja、zh-TW、pt-BR；没给就当简体中文（0.7 的页面脚本）
 const validLang = (l) => l == null || (typeof l === "string" && /^[a-z]{2,3}(-[a-z0-9]{2,8}){0,2}$/i.test(l));
@@ -498,7 +528,7 @@ const validTx = (m) => typeof m.id === "string" && /^\d{1,25}$/.test(m.id) && ty
   (m.srcLang == null || (typeof m.srcLang === "string" && /^[a-z-]{2,8}$/i.test(m.srcLang))) && validLang(m.target);
 async function handleTranslate(msg, site = null) {
   if (!validTx(msg)) return { error: "无效的翻译请求", code: "invalid_request", retryable: false };
-  const [st, jevKey, key] = await Promise.all([settings(site), jevRoute(), orKey()]);
+  const [st, jevKey, key] = await Promise.all([settings(site), jevRoute(), txRoute()]);
   if (!st.translate) return { error: "disabled", code: "disabled", retryable: false };
   if (!jevKey) return { error: "nokey", code: "nokey", retryable: false };
   if (!key) return { error: "noorkey", code: "noorkey", retryable: false };
@@ -509,7 +539,7 @@ async function handleTranslate(msg, site = null) {
     await txSlot(controller.signal);
     acquired = true;
     await sameKeys(key, jevKey);
-    const r = await translator.improve({ jevKey, orKey: key, settings: st, signal: controller.signal, flex: msg.flex === true, // 页面那头说不在屏幕上才走 flex
+    const r = await tx(key).improve({ jevKey, orKey: key, settings: txSettings(st, key), signal: controller.signal, flex: msg.flex === true, // 页面那头说不在屏幕上才走 flex
       item: { id: msg.id, source: msg.source, xText: msg.xText, srcLang: msg.srcLang, target: msg.target || "zh" } });
     if (r.cached) bump({ tx_cached: 1 }).catch(() => {});
     else {
@@ -543,12 +573,13 @@ const fillItem = (msg) => ({ id: msg.id, source: msg.source, srcLang: msg.srcLan
 const fillOff = (st, msg) => !st.translate || (!st.translateFill && /^\d/.test(msg.id));
 async function handleFill(msg, site = null) {
   if (!validFill(msg)) return { error: "无效的翻译请求", code: "invalid_request", retryable: false };
-  const [st, key] = await Promise.all([settings(site), orKey()]);
+  const [st, key] = await Promise.all([settings(site), txRoute()]);
   if (fillOff(st, msg)) return { error: "disabled", code: "disabled", retryable: false };
   if (!key) return { error: "noorkey", code: "noorkey", retryable: false };
   const one = !msg.part ? 1 : 0;
+  const fs = key === CLOUD ? cloud.settingsFor(st) : fillSettings(st, msg); // 会员模式没有"换后备模型重翻"（服务器自己定）
   // 先查缓存：命中的不用排队等那几个翻译位置（以前要排在正在翻的长帖后面）
-  const hit = await translator.fillCached({ settings: fillSettings(st, msg), item: fillItem(msg) });
+  const hit = await translator.fillCached({ settings: fs, item: fillItem(msg) });
   if (hit) { bump({ tx_fill_cached: one }).catch(() => {}); return hit; }
   const controller = new AbortController();
   txControllers.add(controller);
@@ -557,7 +588,7 @@ async function handleFill(msg, site = null) {
     await txSlot(controller.signal);
     acquired = true;
     await sameKeys(key);
-    const r = await translator.fillIn({ orKey: key, settings: fillSettings(st, msg), signal: controller.signal, item: fillItem(msg), flex: msg.flex === true });
+    const r = await tx(key).fillIn({ orKey: key, settings: fs, signal: controller.signal, item: fillItem(msg), flex: msg.flex === true });
     bump(r.cached ? { tx_fill_cached: one } : { tx_fill: one, tx_usd: r.cost || 0 }).catch(() => {});
     if (!r.cached) health("or", null).catch(() => {});
     return r;
@@ -580,7 +611,7 @@ async function capAccess(site, need) {
   if (site !== "yt") return { error: "disabled", code: "disabled", retryable: false };
   const st = await settings(site);
   if (!st.translate || st.captionFix === false) return { error: "disabled", code: "disabled", retryable: false };
-  const key = need === "jev" ? await jevRoute() : await orKey();
+  const key = need === "jev" ? await jevRoute() : await txRoute();
   if (!key) return need === "jev" ? { error: "nokey", code: "nokey", retryable: false } : { error: "noorkey", code: "noorkey", retryable: false };
   return { st, key };
 }
@@ -594,7 +625,7 @@ async function handleCaptionJudge(msg, site) {
   try {
     await txSlot(controller.signal);
     acquired = true;
-    const r = await translator.judgeCaptions({ jevKey: a.key, settings: a.st, signal: controller.signal,
+    const r = await tx(a.key).judgeCaptions({ jevKey: a.key, settings: txSettings(a.st, a.key), signal: controller.signal,
       item: { source: msg.source, translation: msg.translation, srcLang: msg.srcLang, target: msg.target || "zh" } });
     if (!r.cached) { bump({ tx_jev_tokens: r.tokens || 0 }).catch(() => {}); health("jev", null).catch(() => {}); }
     return r;
@@ -618,7 +649,7 @@ async function handleCaptionTranslate(msg, site, sender) {
     acquired = true;
     await sameKeys(a.key);
     const push = partSender(msg, sender);
-    const r = await translator.translateCaptions({ orKey: a.key, settings: a.st, signal: controller.signal, lines: msg.lines, srcLang: msg.srcLang, target: msg.target || "zh", flex: msg.flex === true,
+    const r = await tx(a.key).translateCaptions({ orKey: a.key, settings: txSettings(a.st, a.key), signal: controller.signal, lines: msg.lines, srcLang: msg.srcLang, target: msg.target || "zh", flex: msg.flex === true,
       ...(push ? { onLine: (k, text) => push(k, { text }) } : {}) });
     if (!r.cached) { bump({ tx_captions: 1, tx_usd: r.cost || 0 }).catch(() => {}); health("or", null).catch(() => {}); }
     return r;
@@ -650,8 +681,9 @@ function partSender(msg, sender) {
 }
 async function handleFillBatch(msg, sender, site = null) {
   if (!validFillBatch(msg)) return { error: "无效的翻译请求", code: "invalid_request", retryable: false };
-  const [st, key] = await Promise.all([settings(site), orKey()]);
+  const [raw, key] = await Promise.all([settings(site), txRoute()]);
   if (!key) return { error: "noorkey", code: "noorkey", retryable: false };
+  const st = txSettings(raw, key);
   const results = msg.items.map((m) => (fillOff(st, m) ? { error: "disabled", code: "disabled", retryable: false } : null));
   const want = [];
   await Promise.all(msg.items.map(async (m, k) => {
@@ -673,8 +705,8 @@ async function handleFillBatch(msg, sender, site = null) {
     const items = want.map((k) => fillItem(msg.items[k]));
     const push = items.length > 1 ? partSender(msg, sender) : null;
     const flex = msg.flex === true; // 页面那头说这一批都不在屏幕上（预翻译）：走 flex
-    const got = items.length === 1 ? [await translator.fillIn({ orKey: key, settings: st, signal: controller.signal, item: items[0], flex })]
-      : await translator.fillInBatch({ orKey: key, settings: st, signal: controller.signal, items, flex, onItem: push && ((j, r) => push(want[j], r)) });
+    const got = items.length === 1 ? [await tx(key).fillIn({ orKey: key, settings: st, signal: controller.signal, item: items[0], flex })]
+      : await tx(key).fillInBatch({ orKey: key, settings: st, signal: controller.signal, items, flex, onItem: push && ((j, r) => push(want[j], r)) });
     let fills = 0, usd = 0;
     want.forEach((k, j) => {
       const r = got[j];
@@ -692,6 +724,231 @@ async function handleFillBatch(msg, sender, site = null) {
   }
 }
 
+// ---- 清流会员（0.30.0）：登录、开通付款、出事时网页里提示一次 ----
+const accountState = async () => (await chrome.storage.local.get(account.STATE))[account.STATE] || null;
+async function setAccount(patch) {
+  const a = await accountState();
+  await chrome.storage.local.set({ [account.STATE]: { ...(a || {}), ...patch } });
+}
+// 换了登录状态、付完款：内容脚本重新读设置（ff_keys 变了它们就重读），因为没套餐停下的页面接着来
+async function cloudChanged() {
+  cloud.clearBlock();
+  configRevision++;
+  for (const controller of [...controllers, ...txControllers]) controller.abort(cancelled());
+  const { ff_keys = {} } = await chrome.storage.local.get("ff_keys");
+  await chrome.storage.local.set({ ff_keys: { ...ff_keys, cf: await cloudOn(), at: Date.now() } });
+}
+// 刷新会员状态：force 以外隔一分钟最多一次
+let meAt = 0;
+async function refreshAccount(force = false) {
+  if (!force && Date.now() - meAt < 60e3) return accountState();
+  meAt = Date.now();
+  try { return await account.refreshMe(); } catch (e) { return { ...(await accountState()), error: e?.code || "network" }; }
+}
+// 网页里提示（草图 5）：发给当前窗口里正在看的那个支持的网站（notice.js 显示）。ended / signed_out 同一件事只提示一次（又能用了才清掉，
+// 见 account.refreshMe），当天额度一天一次、当月额度一个月一次
+const sameWindow = (kind, t) => kind === "quota_daily" ? new Date(t).toDateString() === new Date().toDateString()
+  : kind === "quota_monthly" ? new Date(t).getMonth() === new Date().getMonth() : true;
+async function showNotice(kind, a) {
+  const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true }).catch(() => []);
+  if (!tab?.id || !siteOf(tab.url)) return;
+  Promise.resolve(chrome.tabs.sendMessage(tab.id, { type: "ffNotice", kind, plan: a?.lastPlan || null })).catch(() => {});
+}
+async function noticeOnce(kind) {
+  const a = await accountState();
+  if (!a) return;
+  const last = a.notice?.[kind];
+  if (last && sameWindow(kind, last)) return;
+  await setAccount({ notice: { ...(a.notice || {}), [kind]: Date.now() } });
+  await showNotice(kind, a);
+}
+const TROUBLE = { subscription_required: "ended", quota_daily: "quota_daily", quota_monthly: "quota_monthly", signed_out: "signed_out" };
+async function cloudTrouble(code) {
+  await refreshAccount();
+  if (TROUBLE[code]) await noticeOnce(TROUBLE[code]);
+}
+
+// 登录（0.32.0，用户 10-25：登录不放在设置页里、要和官网打通）：在官网上登录（account.js 的设备授权）。点"登录"：开官网的确认页
+// （新标签页，按界面语言），每 interval 秒问一次；登录上了：用会员模式、关掉确认页回到原来的标签页，登录前点的是付款就接着开付款页。
+// 界面看 ff_account.login {code 核对码, at, until, error, intent}；设备码只放 storage.session（不落盘、网页里的脚本读不到，后台被停掉再起来还在）。
+// 确认页被关掉、又一直没确认：再问两次（刚确认就关的也能拿到）还没有就算取消
+const SITE_LANGS = ["zh", "en", "ja", "ko", "fr", "pt", "tr"];
+function siteLang() {
+  const l = String(globalThis.FFI18n?.uiLang?.() || chrome.i18n?.getUILanguage?.() || "en").toLowerCase().split("-")[0];
+  return SITE_LANGS.includes(l) ? l : "en";
+}
+let loginTimer = null;
+async function startLogin(intent) {
+  clearTimeout(loginTimer);
+  const r = await account.deviceStart();
+  const [from] = await chrome.tabs.query({ active: true, lastFocusedWindow: true }).catch(() => []);
+  const tab = await chrome.tabs.create({ url: `${account.SITE}/${siteLang()}/activate/?code=${encodeURIComponent(r.userCode)}` }).catch(() => null);
+  await chrome.storage.session.set({ ff_login: { deviceCode: r.deviceCode, interval: r.interval } });
+  const a = await accountState();
+  const { signedOut, ...rest } = a || {}; // 被踢出的提示换成"在网页上登录"
+  await chrome.storage.local.set({ [account.STATE]: { ...rest, login: { code: r.userCode, at: Date.now(), until: Date.now() + r.expiresIn * 1000, tabId: tab?.id ?? null, fromTab: from?.id ?? null, intent: intent || null } } });
+  loginTimer = setTimeout(() => { pollLogin().catch(() => {}); }, r.interval * 1000);
+  return { ok: true, code: r.userCode };
+}
+async function dropLogin(error) {
+  clearTimeout(loginTimer);
+  loginTimer = null;
+  await chrome.storage.session.remove("ff_login");
+  const a = await accountState();
+  if (!a?.login) return;
+  const { login, ...rest } = a;
+  await chrome.storage.local.set({ [account.STATE]: error ? { ...rest, login: { code: login.code, error } } : rest });
+}
+async function pollLogin() {
+  clearTimeout(loginTimer);
+  loginTimer = null;
+  const l = (await accountState())?.login;
+  const { ff_login: s } = await chrome.storage.session.get("ff_login");
+  if (!l || l.error || !s) return;
+  if (Date.now() > l.until) return dropLogin("expired_token");
+  let r;
+  try { r = await account.devicePoll(s.deviceCode); }
+  catch (e) {
+    if (["access_denied", "expired_token", "account_disabled"].includes(e?.code)) return dropLogin(e.code);
+    r = { pending: true }; // 网络问题：下次再问
+  }
+  if (r.pending) {
+    const open = l.tabId == null || await chrome.tabs.get(l.tabId).then(() => true, () => false);
+    const gone = open ? 0 : (l.gone || 0) + 1;
+    if (gone > 2) return dropLogin();
+    if (gone !== (l.gone || 0)) await setAccount({ login: { ...l, gone } });
+    loginTimer = setTimeout(() => { pollLogin().catch(() => {}); }, (s.interval + (r.slow ? 2 : 0)) * 1000);
+    return;
+  }
+  await dropLogin();
+  const { ff_settings = {} } = await chrome.storage.local.get("ff_settings");
+  if (!ff_settings.account) await chrome.storage.local.set({ ff_settings: { ...ff_settings, account: true } }); // 登录了就用会员
+  meAt = Date.now();
+  await cloudChanged();
+  if (l.tabId != null) await chrome.tabs.remove(l.tabId).catch(() => {});
+  if (l.fromTab != null) await chrome.tabs.update(l.fromTab, { active: true }).catch(() => {});
+  if (l.intent?.pay) await startCheckout(l.intent.pay).catch(() => {});
+}
+
+// 开通（草图 2）：开 Waffo 的付款页（新标签页），付款页开着时每 3 秒问一次付了没有，关了改 10 秒，最多 30 分钟；
+// 付了：刷新会员状态、内容脚本接着来、当前网页提示一次。结账记在 ff_account.checkout（界面按它显示"等待付款完成"）
+let checkoutTimer = null;
+const CHECKOUT_MAX = 30 * 60e3;
+async function startCheckout(product) {
+  const lang = globalThis.FFI18n?.uiLang?.() || chrome.i18n?.getUILanguage?.() || "en"; // 付款页的语言跟界面
+  const r = await account.checkout(product, lang);
+  if (r.resumed) { await refreshAccount(true); await cloudChanged(); return { ok: true, resumed: true }; } // 取消了的同一个套餐：服务端直接恢复了自动续费，不开付款页
+  const tab = await chrome.tabs.create({ url: r.checkout_url }).catch(() => null);
+  await setAccount({ checkout: { id: r.id, product, at: Date.now(), status: "pending", tabId: tab?.id ?? null } });
+  pollCheckout().catch(() => {});
+  return { ok: true };
+}
+async function pollCheckout() {
+  clearTimeout(checkoutTimer);
+  checkoutTimer = null;
+  const c = (await accountState())?.checkout;
+  if (!c || c.status !== "pending") return;
+  if (Date.now() - c.at > CHECKOUT_MAX) return setAccount({ checkout: { ...c, status: "timeout" } });
+  let st = null;
+  try { st = await account.checkoutStatus(c.id); } catch { /* 网络问题：下次再问 */ }
+  if (st?.status === "paid") {
+    const a = await refreshAccount(true);
+    await setAccount({ checkout: { ...c, status: "paid", doneAt: Date.now() } }); // 界面顶上显示两分钟"会员已开通"，不用点确认
+    await cloudChanged();
+    await showNotice("paid", a);
+    return;
+  }
+  if (st?.status === "expired") return setAccount({ checkout: { ...c, status: "expired" } });
+  const open = c.tabId != null && await chrome.tabs.get(c.tabId).then(() => true, () => false);
+  checkoutTimer = setTimeout(() => { pollCheckout().catch(() => {}); }, open ? 3000 : 10000);
+}
+// 后台被浏览器停掉又起来：开通中的接着问；会员开着的刷新一下状态
+(async () => {
+  const a = await accountState();
+  if (a?.checkout?.status === "pending") pollCheckout().catch(() => {});
+  if (a?.login && !a.login.error) pollLogin().catch(() => {});
+  if (await cloudOn().catch(() => false)) refreshAccount().catch(() => {});
+})().catch(() => {});
+// 回到浏览器（换窗口）：会员状态隔 5 分钟以上的刷新一次（在别处付了款、取消了订阅）
+chrome.windows?.onFocusChanged?.addListener((id) => {
+  if (id === chrome.windows.WINDOW_ID_NONE) return;
+  (async () => {
+    const a = await accountState();
+    if (a && !a.signedOut && Date.now() - (a.at || 0) > 5 * 60e3 && await cloudOn()) await refreshAccount();
+  })().catch(() => {});
+});
+const OPEN_PAGES = { plans: "options.html#plans", conn: "options.html#conn" }; // "login" 不开设置页，直接去官网登录（startLogin）
+// 设置页、弹窗、引导页的账号操作（只收插件自己的页面发来的）
+async function handleAccount(msg) {
+  const fail = (e) => ({ ok: false, error: e?.code || String(e?.message || e), status: e?.status || 0, retryAfter: e?.extra?.retryAfter || 0 });
+  try {
+    switch (msg.op) {
+      case "loginStart": { // 登录前点的是付款：{intent: {pay: 套餐}}，登录上了接着开付款页
+        const pay = ["monthly", "yearly", "pass30", "pass365"].includes(msg.intent?.pay) ? msg.intent.pay : null;
+        return await startLogin(pay ? { pay } : null);
+      }
+      case "loginCancel":
+        await dropLogin();
+        return { ok: true };
+      case "site": // 官网的账号页（设置页右上角的菜单）；?from=ext：官网上退出过也照样用插件的登录（见下面 onMessageExternal）
+        await chrome.tabs.create({ url: `${account.SITE}/${siteLang()}/account/?from=ext` });
+        return { ok: true };
+      case "logout":
+        await account.logout();
+        await cloudChanged();
+        return { ok: true };
+      case "refresh":
+        return { ok: true, account: await refreshAccount(!!msg.force) };
+      case "checkout":
+        if (!["monthly", "yearly", "pass30", "pass365"].includes(msg.product)) return { ok: false, error: "invalid_product" };
+        return await startCheckout(msg.product);
+      case "checkoutClear": {
+        clearTimeout(checkoutTimer);
+        const a = await accountState();
+        if (a?.checkout) { const { checkout, ...rest } = a; await chrome.storage.local.set({ [account.STATE]: rest }); }
+        return { ok: true };
+      }
+      case "portal": {
+        const r = await account.portal();
+        await chrome.tabs.create({ url: r.url });
+        return { ok: true };
+      }
+      case "refund":
+        await account.refund();
+        await refreshAccount(true);
+        await cloudChanged(); // 发起退款就停用（0.33.0）
+        return { ok: true };
+      case "resume": // 取消了、还没到期：恢复自动续费
+        await account.resume();
+        await refreshAccount(true);
+        await cloudChanged();
+        return { ok: true };
+      case "removeDevice":
+        if (typeof msg.id !== "string") return { ok: false, error: "invalid_device" };
+        await account.removeDevice(msg.id);
+        await refreshAccount(true);
+        return { ok: true };
+      default:
+        return { ok: false, error: "unknown" };
+    }
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+// 官网和插件说话（0.34.0，用户 10-25：在保证安全的情况下少登录几次）：manifest 的 externally_connectable 只放 clearflow.ohmyai.app，别的网站发不进来。
+// cfHandoff：插件登录着、官网没登录——给一个一次性码（服务端发，1 分钟、用一次），官网拿去换登录状态，不用再填验证码；
+// cfPending：官网的登录确认页问"这个核对码是不是你发起的"——是就自动确认，不是（别人发来的链接）照旧要用户自己点
+chrome.runtime.onMessageExternal?.addListener((msg, sender, sendResponse) => {
+  if (sender.origin !== account.SITE) return false;
+  (async () => {
+    if (msg?.type === "cfPending") { const l = (await accountState())?.login; return { code: l && !l.error ? l.code : null }; }
+    if (msg?.type === "cfHandoff") return { code: (await account.signedIn()) ? (await account.webHandoff()).code : null };
+    return { code: null };
+  })().then(sendResponse, () => sendResponse({ code: null }));
+  return true;
+});
+
 // 插件自己的页面（设置页、引导页、弹窗）发来的：网址是 chrome-extension://本插件/…（网站页面里的内容脚本发来的，网址是那个网站的）
 function fromExtension(sender) {
   try { return !!sender && typeof sender.url === "string" && sender.url.startsWith(chrome.runtime.getURL("")); } catch { return false; }
@@ -702,7 +959,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   (async () => {
     switch (msg.type) {
       case "settings":
-        return { settings: await settings(), hasKey: !!(await jevRoute()), hasOrKey: !!(await orKey()) }; // hasKey：判断用得上的密钥（TypeSafe 或 OpenRouter）
+        return { settings: await settings(), hasKey: !!(await jevRoute()), hasOrKey: !!(await txRoute()) }; // hasKey：判断用得上的密钥（TypeSafe 或 OpenRouter）；会员模式登录着两个都算有
       case "jev":
         return await handleJev(msg, site);
       case "jevPost":
@@ -846,6 +1103,14 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           return { ok: false, error: String(e.message || e), code: e.code };
         }
       }
+      case "account": // 清流会员的登录、开通（0.30.0）：只收插件自己的页面
+        if (!fromExtension(sender)) return { ok: false, error: "invalid_request" };
+        return await handleAccount(msg);
+      case "openPage": // 网页里的提示（notice.js）点"开通会员""改用自己的密钥"：开设置页那一块；"登录"直接去官网登录
+        if (msg.page === "login") return await startLogin(null).catch(() => ({ ok: false }));
+        if (!OPEN_PAGES[msg.page]) return { ok: false };
+        await chrome.tabs.create({ url: chrome.runtime.getURL(OPEN_PAGES[msg.page]) });
+        return { ok: true };
       case "txCacheClear":
         await translator.idbCache.clear();
         return { ok: true };

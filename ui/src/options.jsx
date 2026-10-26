@@ -20,12 +20,13 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { ModeSwitch, MemberPanel, SignedOutPanel, AccountMenu, WebLogin, signedIn, loginPending } from "./account.jsx";
 
 I18N.apply();
 // 只管翻译的设置：改了评论区不用重判
 const TX_KEYS = new Set(["translate", "translateFill", "translateThreshold", "translateModel", "translateFallback"]);
 // ff_keys：两个 key 填没填（0.28.12 起 key 本身存在后台的 IndexedDB 里，这边看不到；ff_key、ff_or_key 是旧版本的、后台会挪走）
-const KEYS = ["ff_settings", "ff_keys", "ff_key", "ff_or_key", "ff_health", "ff_stats", "ff_confirmed_slogans"];
+const KEYS = ["ff_settings", "ff_keys", "ff_key", "ff_or_key", "ff_health", "ff_stats", "ff_confirmed_slogans", "ff_account"]; // ff_account：清流会员（0.30.0）
 const hasKey = (d, which) => (d.ff_keys ? !!d.ff_keys[which] : !!String((which === "jev" ? d.ff_key : d.ff_or_key) || "").trim());
 
 async function save(patch) {
@@ -444,15 +445,22 @@ const testOr = async (key) => {
   const think = r.reasoningTokens ? t("opt.orThink", { n: r.reasoningTokens }) : t("opt.orNoThink");
   return t("opt.orOk", { model: r.model, secs: r.secs.toFixed(1), think, text: r.text });
 };
-function Connections({ d }) {
-  const h = d.ff_health || {};
+// 0.30.0：最上面选用哪种——清流会员（登录、不用密钥，草图 3）还是自己的密钥（以前那样）；0.30.1 起会员的账号和开通是同一张（MemberPanel）
+function Connections({ d, s }) {
+  const h = d.ff_health || {}, a = d.ff_account;
   return (
     <Section id="conn" title={t("opt.connTitle")}>
-      <KeyRow id="or" name="OpenRouter" hint="opt.orHint" has={hasKey(d, "or")} code={h.or?.code} placeholder="sk-or-…" test={testOr} link={KEY_URL.or} />
-      <div className={ROW}><p className="text-sm text-muted-foreground" id="costLine">{costLine(d.ff_stats || {})}</p></div>
+      <div className={cn(ROW, "flex")}><ModeSwitch account={s.account} /></div>
+      {s.account ? (
+        <div className={ROW}>{signedIn(a) ? <MemberPanel a={a} /> : <SignedOutPanel a={a} />}</div>
+      ) : <>
+        <KeyRow id="or" name="OpenRouter" hint="opt.orHint" has={hasKey(d, "or")} code={h.or?.code} placeholder="sk-or-…" test={testOr} link={KEY_URL.or} />
+        <div className={ROW}><p className="text-sm text-muted-foreground" id="costLine">{costLine(d.ff_stats || {})}</p></div>
+      </>}
     </Section>
   );
 }
+
 
 // ---------- 数据和隐私 ----------
 function Data({ d }) {
@@ -631,7 +639,7 @@ function Welcome({ d }) {
       <div className="flex items-center gap-2">
         {step > 1 && <Button variant="ghost" size="sm" className="btn" id="welcomeBack" onClick={() => setStep(step - 1)}>{t("welcome.back")}</Button>}
         {/* 第 2 步一个都没填：同一个按钮写"稍后再填"（0.29.10 以前"稍后再填""下一步"两个按钮做同一件事） */}
-        {step < 3 ? <Button size="sm" className="btn" id="welcomeNext" onClick={() => setStep(step + 1)}>{t(step === 2 && !hasKey(d, "or") ? "welcome.later" : "welcome.next")}</Button>
+        {step < 3 ? <Button size="sm" className="btn" id="welcomeNext" onClick={() => setStep(step + 1)}>{t(step === 2 && !(base.account ? signedIn(d.ff_account) : hasKey(d, "or")) ? "welcome.later" : "welcome.next")}</Button>
           : <Button size="sm" className="btn" id="welcomeDone" onClick={finish}>{t("welcome.finish")}</Button>}
       </div>
     </div>
@@ -640,7 +648,7 @@ function Welcome({ d }) {
     <>
       <div className="flex flex-col gap-1 px-1">
         <p className="text-sm text-muted-foreground" id="welcomeStep">{t("welcome.step", { n: step, m: 3 })}</p>
-        <h1 className="text-xl font-semibold" id="welcomeTitle">{t(step === 1 ? "welcome.sitesTitle" : step === 2 ? "welcome.keysTitle" : "welcome.doneTitle")}</h1>
+        <h1 className="text-xl font-semibold" id="welcomeTitle">{t(step === 1 ? "welcome.sitesTitle" : step === 2 ? "welcome.modeTitle" : "welcome.doneTitle")}</h1>
       </div>
       {step === 1 && (
         <Section id="welcomeSites" label={t("welcome.sitesTitle")}>
@@ -665,7 +673,8 @@ function Welcome({ d }) {
           <div className={ROW}><p className="text-xs text-muted-foreground">{t("welcome.sitesNote")}</p></div>
         </Section>
       )}
-      {step === 2 && (
+      {step === 2 && <WelcomeMode d={d} account={base.account} />}
+      {step === 2 && !base.account && (
         <>
           <div className="flex flex-col gap-1.5 px-1 text-sm text-muted-foreground">
             <p id="welcomeKeysIntro">{t("welcome.keysIntro")}</p>
@@ -694,7 +703,7 @@ function Welcome({ d }) {
                 ))}
               </div>
             )}
-            {!hasKey(d, "or") && <p className="text-sm text-amber-800 dark:text-[#ffc46b]" id="welcomeNoKey">{t("welcome.doneNoKey")}</p>}
+            {!(base.account ? signedIn(d.ff_account) : hasKey(d, "or")) && <p className="text-sm text-amber-800 dark:text-[#ffc46b]" id="welcomeNoKey">{t(base.account ? "welcome.doneNoAccount" : "welcome.doneNoKey")}</p>}
             <p className="text-xs text-muted-foreground">{t("welcome.donePopup")}</p>
             <div><Button variant="outline" size="sm" className="btn" id="welcomeOpts" onClick={() => { chrome.storage.local.set({ ff_onboarded: Date.now() }).catch(() => {}); location.hash = ""; }}>{t("welcome.openSettings")}</Button></div>
           </div>
@@ -705,13 +714,45 @@ function Welcome({ d }) {
   );
 }
 
+// 首次设置第 2 步（0.30.0，草图 4）：选清流会员（登录就能用、免费试用 7 天）还是自己的 OpenRouter 密钥；选了会员下面就是登录
+function WelcomeMode({ d, account }) {
+  const set = (v) => writeSettings({ account: v }).catch((e) => toast(failText(e), "err"));
+  const card = (v, title, note) => (
+    <button type="button" id={v ? "welcomeAccount" : "welcomeOwn"} aria-pressed={account === v} onClick={() => set(v)}
+      className={cn("choice-card flex flex-1 flex-col items-start gap-1 rounded-2xl bg-card px-4 py-3 text-start shadow-[inset_0_0_0_1px_var(--border)] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
+        account === v && "shadow-[inset_0_0_0_2px_var(--primary)]")}>
+      <span className="text-sm font-medium">{t(title)}</span>
+      <span className="text-xs text-muted-foreground">{t(note)}</span>
+    </button>
+  );
+  return (
+    <>
+      <div className="flex flex-col gap-2 sm:flex-row" id="welcomeMode">
+        {card(true, "acct.mode.account", "welcome.modeAccountNote")}
+        {card(false, "welcome.modeOwn", "welcome.modeOwnNote")}
+      </div>
+      {account && (
+        <Section id="welcomeLogin" label={t("acct.mode.account")}>
+          <div className={cn(ROW, "flex items-center justify-between gap-3 py-3")}>
+            {signedIn(d.ff_account) ? <p className="text-sm" id="welcomeSignedIn">{t("welcome.signedIn", { email: d.ff_account.email })}</p> : <>
+              {!loginPending(d.ff_account) && <p className="text-sm text-muted-foreground" id="welcomeLoginHint">{t("welcome.webLogin")}</p>}
+              <WebLogin a={d.ff_account} id="welcomeLoginGo" />
+            </>}
+          </div>
+        </Section>
+      )}
+    </>
+  );
+}
+
 // #site=reddit 网站那一页；#welcome 首次设置（0.23）；#feedback 主页、停在"建议与反馈"那张卡片（弹窗上的"反馈"）
 const routeOf = () => {
   if (location.hash === "#welcome") return "welcome";
   const m = /^#site=(\w+)$/.exec(location.hash);
   return m && SETTINGS.SITES.some((x) => x.id === m[1]) ? m[1] : null;
 };
-const toFeedback = () => { if (location.hash === "#feedback") requestAnimationFrame(() => document.getElementById("feedback")?.scrollIntoView({ block: "start" })); };
+// #feedback、#conn、#plans（弹窗、网页提示上的"开通会员""登录""改用自己的密钥"）：主页、停在那张卡片
+const toFeedback = () => { const id = { "#feedback": "feedback", "#conn": "conn", "#plans": "plans", "#renew": "conn" }[location.hash]; if (id) requestAnimationFrame(() => (document.getElementById(id) || document.getElementById("conn"))?.scrollIntoView({ block: "start" })); };
 function Options() {
   const [d] = useStorage(KEYS);
   const [route, setRoute] = React.useState(routeOf);
@@ -729,10 +770,14 @@ function Options() {
   return (
     <main className="mx-auto flex max-w-[640px] flex-col gap-5 px-5 pt-7 pb-20">
       {route === "welcome" ? <Welcome d={d} /> : route ? <SitePage id={route} d={d} /> : <>
-        <h1 className="px-1 text-xl font-semibold">{t("opt.h1")}</h1>
+        {/* 登录态放在最上面（0.32.0，用户 10-25）：登录了右上角是头像 + 邮箱（会员带星），点开是菜单；选了清流会员、没登录是"登录" */}
+        <div className="flex min-h-9 items-center justify-between gap-3 px-1" id="pageHead">
+          <h1 className="text-xl font-semibold">{t("opt.h1")}</h1>
+          {signedIn(d.ff_account) ? <AccountMenu a={d.ff_account} /> : (s.account || loginPending(d.ff_account)) && <WebLogin a={d.ff_account} id="headLogin" />}
+        </div>
         <SiteList raw={d.ff_settings} />
         <Fold s={s} raw={d.ff_settings} />
-        <Connections d={d} />
+        <Connections d={d} s={s} />
         <Data d={d} />
         <Advanced s={s} d={d} />
         <Feedback />

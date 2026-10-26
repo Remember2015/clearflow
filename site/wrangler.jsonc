@@ -10,7 +10,7 @@
     "binding": "ASSETS",
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "404-page",
-    "run_worker_first": ["/", "/keys", "/keys/", "/privacy", "/privacy/"]
+    "run_worker_first": ["/", "/keys", "/keys/", "/privacy", "/privacy/", "/pricing", "/pricing/", "/terms", "/terms/", "/account", "/account/", "/paid", "/paid/", "/activate", "/activate/"]
   },
   "routes": [{ "pattern": "clearflow.ohmyai.app", "custom_domain": true }],
   "workers_dev": false,

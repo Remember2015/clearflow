@@ -29,7 +29,7 @@
   const SCRIPT_OF = { zh: "han", ja: "kana", ko: "hangul", ru: "cyrillic", ar: "arabic", th: "thai", hi: "devanagari" };
   const LANG_OF = { han: "zh", kana: "ja", hangul: "ko", cyrillic: "ru", arabic: "ar", thai: "th", devanagari: "hi" };
   const SPARK = '<path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4z"/>';
-  const STOP = ["disabled", "noorkey", "or_badkey", "or_credit"];
+  const STOP = ["disabled", "noorkey", "or_badkey", "or_credit", "cf_stop"]; // cf_stop：清流会员没套餐、额度用完（0.30.0）
   const DROP = ["id", "title", "aria-describedby", "aria-labelledby", "aria-label", "data-testid", "data-ks-id", "data-ff-tx-hidden", "data-faceplate-tracking-context"];
 
   function start(site) {

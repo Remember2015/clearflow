@@ -6,12 +6,17 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { COPY, LANGS, STORE, REPO, MAIL } from "./copy.mjs";
+import { LABELS, pricingFor } from "./copy.pricing.mjs";
+import { API, accountFor } from "./copy.account.mjs";
 
 const SITE = path.dirname(new URL(import.meta.url).pathname);
 const ROOT = path.resolve(SITE, "..");
 const DIST = path.join(SITE, "dist");
 const ORIGIN = "https://clearflow.ohmyai.app";
+// Waffo（收款）店铺的域名验证（用户 10-24）：首页 <head> 里要有这个标签；每页都放，首页按语言跳转后也看得到。worker.js 里有同一个
+export const WAFFO_VERIFY = '<meta name="waffo-verify" content="91a96e4d9ff50ffca40ac751a9a7fee1">';
 const PRIVACY = [path.join(ROOT, "public/PRIVACY.md"), path.join(ROOT, "PRIVACY.md")].find((f) => fs.existsSync(f));
+const TERMS = [path.join(ROOT, "public/TERMS.md"), path.join(ROOT, "TERMS.md")].find((f) => fs.existsSync(f));
 const ICON_SVG = [path.join(ROOT, "ui/icons/icon.svg")].find((f) => fs.existsSync(f));
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -28,6 +33,10 @@ const js = fs.readFileSync(path.join(SITE, "main.js"), "utf8");
 write("style.css", css);
 write("main.js", js);
 const CSS_URL = `/style.css?v=${hash(css)}`, JS_URL = `/main.js?v=${hash(js)}`;
+// account and payment result pages only (account-page.js): talks to the API, so the CSP allows connecting there
+const acctJs = fs.readFileSync(path.join(SITE, "account-page.js"), "utf8");
+write("account.js", acctJs);
+const ACCT_JS_URL = `/account.js?v=${hash(acctJs)}`;
 // one inline line before first paint: mark that scripts run, so the no-script fallback (cleaned shots, no switches) isn't used
 const BOOT = `document.documentElement.className="js"`;
 const BOOT_HASH = crypto.createHash("sha256").update(BOOT).digest("base64");
@@ -38,7 +47,7 @@ for (const [from, to] of [["icon-32.png", "favicon-32.png"], ["icon-128.png", "i
 const SIZES = Object.fromEntries(Object.values(LANGS).map((l) => [l.assets, JSON.parse(fs.readFileSync(path.join(SITE, "assets", l.assets, "sizes.json"), "utf8"))]));
 
 // headers for everything the worker doesn't answer (worker.js sets its own)
-const CSP = `default-src 'none'; img-src 'self'; style-src 'self'; script-src 'self' 'sha256-${BOOT_HASH}'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`;
+const CSP = `default-src 'none'; img-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; script-src 'self' 'sha256-${BOOT_HASH}'; connect-src ${API}; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`;
 write("_headers", `/*
   Content-Security-Policy: ${CSP}
   X-Content-Type-Options: nosniff
@@ -76,7 +85,9 @@ const I = {
 const icon = (k, cls = "i") => `<svg class="${cls}" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${I[k]}</svg>`;
 
 // ---------- page shell ----------
-function shell({ lang, C, title, description, pathFor, body }) {
+// light (user 10-25: the sign-in page's header, nav and footer were too heavy): account, extension sign-in and payment result pages get
+// just the logo and the language menu on top and one line of small print at the bottom
+function shell({ lang, C, title, description, pathFor, body, head = "", light = false }) {
   const L = LANGS[lang];
   const url = ORIGIN + pathFor(lang);
   const alternates = Object.entries(LANGS).map(([k, v]) => `<link rel="alternate" hreflang="${v.html}" href="${ORIGIN}${pathFor(k)}">`).join("")
@@ -89,6 +100,7 @@ function shell({ lang, C, title, description, pathFor, body }) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+${WAFFO_VERIFY}
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(description)}">
 <link rel="canonical" href="${url}">${alternates}
@@ -107,43 +119,47 @@ function shell({ lang, C, title, description, pathFor, body }) {
 <link rel="apple-touch-icon" href="/icon-128.png">
 <link rel="stylesheet" href="${CSS_URL}">
 <script>${BOOT}</script>
-<script src="${JS_URL}" defer></script>
+<script src="${JS_URL}" defer></script>${head}
 </head>
 <body>
 <a class="skip" href="#main">${esc(C.skip)}</a>
-<header class="top">
+<header class="top${light ? " light" : ""}">
   <div class="wrap bar">
     <a class="logo" href="${home}"><img src="/icon.svg" alt="" width="28" height="28"><span>${esc(C.brand)}</span></a>
-    <nav class="nav" aria-label="${esc(C.brand)}">
+${light ? "" : `    <nav class="nav" aria-label="${esc(C.brand)}">
       <a href="${home}#clean">${esc(C.nav.clean)}</a>
       <a href="${home}#translate">${esc(C.nav.tx)}</a>
       <a href="${home}#cost">${esc(C.nav.cost)}</a>
+      <a href="/${lang}/pricing/">${esc(LABELS[lang].nav)}</a>
       <a href="${home}#privacy">${esc(C.nav.privacy)}</a>
       <a href="${home}#faq">${esc(C.nav.faq)}</a>
       <a href="${REPO}">GitHub</a>
-    </nav>
+    </nav>`}
     <details class="langs">
       <summary aria-label="${esc(C.languageLabel)}: ${esc(L.name)}">${flag(L)}<span lang="${L.html}">${L.shortName || L.name}</span>${icon("chevron", "i language-chevron")}</summary>
       <nav class="language-options" aria-label="${esc(C.languageLabel)}">${langNav}</nav>
     </details>
-    <a class="btn primary sm top-cta" href="${store(lang, "header")}">${icon("plus")}<span>${esc(C.hero.cta)}</span></a>
+${light ? "" : `<a class="nav-acct" id="navAcct" href="/${lang}/account/" data-account="${esc(accountFor(lang).A.account.nav.account)}">${esc(accountFor(lang).A.account.nav.signIn)}</a>`}
   </div>
 </header>
 <main id="main">
 ${body}
 </main>
-<footer class="foot">
+${light ? `<footer class="foot light"><div class="wrap"><p class="fine">© 2026 OhMyAI · <a href="/${lang}/terms/">${esc(LABELS[lang].terms)}</a> · <a href="/${lang}/privacy/">${esc(C.footer.privacy)}</a> · <a href="mailto:${MAIL}">${MAIL}</a></p></div></footer>` : `<footer class="foot">
   <div class="wrap foot-grid">
     <div class="foot-brand"><img src="/icon.svg" alt="" width="24" height="24"><span>${esc(C.brand)}</span><span class="foot-tag">${esc(C.hero.h1)}</span></div>
     <nav class="foot-links">
+      <a href="/${lang}/pricing/">${esc(LABELS[lang].pricing)}</a>
       <a href="/${lang}/keys/">${esc(C.footer.keys)}</a>
       <a href="/${lang}/privacy/">${esc(C.footer.privacy)}</a>
+      <a href="/${lang}/terms/">${esc(LABELS[lang].terms)}</a>
+      <a href="/${lang}/account/">${esc(LABELS[lang].account)}</a>
       <a href="${REPO}">GitHub</a>
       <a href="mailto:${MAIL}">${MAIL}</a>
     </nav>
     <p class="fine">© 2026 OhMyAI · <a href="${REPO}/blob/main/LICENSE">${esc(C.footer.license)}</a> · ${esc(C.footer.disclaimer)}</p>
   </div>
-</footer>
+</footer>`}
 </body>
 </html>
 `;
@@ -349,6 +365,7 @@ function home(lang) {
       <p>${esc(C.cost.body)}</p>
       <ul class="points">${points}</ul>
       <div class="cost-actions">${cta(lang, C, "cost", C.hero.cta)}<a class="link" href="keys/">${esc(C.cost.cta)}${icon("arrow", "i")}</a></div>
+      <p class="cost-member"><a href="pricing/">${esc(LABELS[lang].costLink)}</a></p>
     </div>
     <div class="stat"><span class="stat-n">${esc(C.cost.stat)}</span><p>${esc(C.cost.statLabel)}</p></div>
   </div>
@@ -432,7 +449,7 @@ function keys(lang) {
   return shell({ lang, C, title: K.title, description: K.description, pathFor: (l) => `/${l}/keys/`, body });
 }
 
-// ---------- privacy: PRIVACY.md (English / Chinese), privacy.ja.md (Japanese) ----------
+// ---------- privacy and terms: PRIVACY.md / TERMS.md (English / Chinese), privacy.<lang>.md for the other languages ----------
 function inline(s) {
   return esc(s)
     .replace(/`([^`]+)`/g, "<code>$1</code>")
@@ -462,31 +479,143 @@ function markdown(md) {
   flush();
   return out.join("\n");
 }
-function privacy(lang) {
-  const C = COPY[lang], P = C.privacyPage;
-  const md = fs.readFileSync(PRIVACY, "utf8");
-  const [en, zh] = md.split(/<a id="中文"><\/a>/);
-  const part = (lang === "zh" ? zh : lang === "en" ? en : fs.readFileSync(path.join(SITE, `privacy.${lang}.md`), "utf8")).replace(/\s*·\s*\[中文版本见下方\]\(#中文\)/, "");
+// ---------- account and payment result (copy.account.mjs; the work happens in account-page.js) ----------
+// Not for search engines. The page copy goes in as JSON (CSP: a JSON block isn't run); English where a language isn't translated yet
+// 清流插件的 id：官网页面问插件要一次性码免登录、问登录确认页的核对码是不是它发起的（0.34.0）。商店版写在这里；
+// 开发时直接加载的那份 id 跟目录走（每台机器不一样），放在不进 git 的 site/.dev-ext-ids（一行一个），有就一起放进页面
+const DEV_IDS = path.join(SITE, ".dev-ext-ids");
+const EXT_IDS = ["dfojglbldlneaogknbphkiifmaagjjle",
+  ...(fs.existsSync(DEV_IDS) ? fs.readFileSync(DEV_IDS, "utf8").split(/\s+/).filter((x) => /^[a-p]{32}$/.test(x)) : [])];
+function acctHead(lang, page, A) {
+  const data = JSON.stringify({ page, api: API, lang, html: LANGS[lang].html, brand: COPY[lang].brand, ext: EXT_IDS, A }).replace(/</g, "\\u003c");
+  return `\n<meta name="robots" content="noindex"><script type="application/json" id="ffData">${data}</script><script src="${ACCT_JS_URL}" defer></script>`;
+}
+function paidPage(lang) {
+  const C = COPY[lang], { lang: al, A } = accountFor(lang), P = A.paid;
+  const at = al === lang ? "" : ` lang="${LANGS[al].html}"`;
+  const body = `
+<section class="page-head paid-head"${at}>
+  <div class="wrap narrow">
+    <h1 id="paidTitle">${esc(P.checking)}</h1>
+    <p class="lede" id="paidText" role="status">${esc(P.checkingText)}</p>
+    <div class="ctas" id="paidActions"></div>
+  </div>
+</section>`;
+  return shell({ lang, C, title: P.title, description: P.checkingText, pathFor: (l) => `/${l}/paid/`, body, head: acctHead(lang, "paid", P), light: true });
+}
+// extension sign-in (0.32.0): the extension opens /<lang>/activate/?code=… (account-page.js, page "activate")
+function activatePage(lang) {
+  const C = COPY[lang], { lang: al, A } = accountFor(lang), Ac = A.account;
+  const at = al === lang ? "" : ` lang="${LANGS[al].html}"`;
+  const body = `
+<section class="sec acct-page"${at}>
+  <div class="wrap acct">
+    <p class="acct-msg" id="accountMsg" role="status"></p>
+    <div id="account"><noscript><p class="acct-sub">${esc(Ac.activate.signInSub)}</p></noscript></div>
+  </div>
+</section>`;
+  return shell({ lang, C, title: Ac.activate.title, description: Ac.activate.signInSub, pathFor: (l) => `/${l}/activate/`, body, head: acctHead(lang, "activate", Ac), light: true });
+}
+function accountPage(lang) {
+  const C = COPY[lang], { lang: al, A } = accountFor(lang), Ac = A.account;
+  const at = al === lang ? "" : ` lang="${LANGS[al].html}"`;
+  const body = `
+<section class="sec acct-page"${at}>
+  <div class="wrap acct">
+    <p class="acct-msg" id="accountMsg" role="status"></p>
+    <div id="account"><noscript><p class="acct-sub">${esc(Ac.signInSub)}</p></noscript></div>
+  </div>
+</section>`;
+  return shell({ lang, C, title: Ac.title, description: Ac.description, pathFor: (l) => `/${l}/account/`, body, head: acctHead(lang, "account", Ac), light: true });
+}
+
+// English / Chinese halves of a bilingual policy file (PRIVACY.md, TERMS.md); other languages from site/<name>.<lang>.md when
+// there is a translation. Without one (terms, for now) the English half is shown, marked lang="en".
+function policyPart(file, name, lang) {
+  const [en, zh] = fs.readFileSync(file, "utf8").split(/<a id="中文"><\/a>/);
+  const own = path.join(SITE, `${name}.${lang}.md`);
+  const [text, textLang] = lang === "zh" ? [zh, lang] : lang === "en" ? [en, lang] : fs.existsSync(own) ? [fs.readFileSync(own, "utf8"), lang] : [en, "en"];
+  return { md: text.replace(/\s*·\s*\[中文版本见下方\]\(#中文\)/, ""), html: LANGS[textLang].html };
+}
+function policyPage(lang, { file, name, source, title, description, slug }) {
+  const C = COPY[lang], part = policyPart(file, name, lang);
   const body = `
 <section class="page-head">
-  <div class="wrap narrow"><p class="src">${esc(P.source)} <a href="${REPO}/blob/main/PRIVACY.md">PRIVACY.md</a></p></div>
+  <div class="wrap narrow"><p class="src">${esc(source)} <a href="${REPO}/blob/main/${path.basename(file)}">${path.basename(file)}</a></p></div>
 </section>
 <section class="sec tight">
-  <article class="wrap narrow prose" lang="${LANGS[lang].html}">
-${markdown(part)}
+  <article class="wrap narrow prose" lang="${part.html}">
+${markdown(part.md)}
   </article>
 </section>`;
-  return shell({ lang, C, title: P.title, description: P.description, pathFor: (l) => `/${l}/privacy/`, body });
+  return shell({ lang, C, title, description, pathFor: (l) => `/${l}/${slug}/`, body });
+}
+const privacy = (lang) => { const P = COPY[lang].privacyPage; return policyPage(lang, { file: PRIVACY, name: "privacy", source: P.source, title: P.title, description: P.description, slug: "privacy" }); };
+const terms = (lang) => { const T = LABELS[lang].termsPage; return policyPage(lang, { file: TERMS, name: "terms", source: T.source, title: T.title, description: T.description, slug: "terms" }); };
+
+// ---------- pricing (copy.pricing.mjs; membership is live since extension 0.30, the paid plans have the install button too) ----------
+function pricing(lang) {
+  const C = COPY[lang], { lang: pl, P } = pricingFor(lang), L = LABELS[lang];
+  const at = pl === lang ? "" : ` lang="${LANGS[pl].html}"`;
+  const li = (t) => `<li>${icon("check", "i ok")}<span>${esc(t)}</span></li>`;
+  const price = (p, per) => `<p class="plan-price"><span class="plan-n">${esc(p)}</span>${per ? `<span class="plan-per">${esc(per)}</span>` : ""}</p>`;
+  const free = `<section class="card plan">
+      <h2 class="plan-name">${esc(P.free.name)}</h2>
+      ${price(P.free.price, P.free.per)}
+      <p class="plan-note">${esc(P.free.note)}</p>
+      <ul class="plan-points">${P.free.points.map(li).join("")}</ul>
+      <div class="plan-cta">${cta(lang, C, "pricing", C.hero.cta)}<a class="link" href="/${lang}/keys/">${esc(P.free.keys)}${icon("arrow", "i")}</a></div>
+    </section>`;
+  const plans = P.plans.map((p) => `<section class="card plan member">
+      <div class="plan-head"><h2 class="plan-name">${esc(p.name)}</h2>${p.badge ? `<span class="tag">${esc(p.badge)}</span>` : ""}</div>
+      ${price(p.price, p.per)}
+      <p class="plan-note">${esc(p.note)}</p>
+      <ul class="plan-points">${P.member.map(li).join("")}</ul>
+      <div class="plan-cta">${cta(lang, C, "pricing-member", C.hero.cta)}</div>
+    </section>`).join("\n    ");
+  // 一次性的两项带微信支付标记（用户 10-25；微信支付只能一次性付，图标取自微信支付官网 logo，和插件一样；只在中文页显示）
+  const wxpay = /^zh/.test(lang) ? `<span class="wxpay"><img src="/assets/logos/wechat-pay.svg" width="14" height="14" alt="">${esc(P.passes.wechat)}</span>` : "";
+  const passes = P.passes.items.map(([d, p]) => `<li><span class="pass-d">${esc(d)}</span><span class="pass-p">${esc(p)}</span>${wxpay}</li>`).join("");
+  const faq = P.faq.map(([q, a]) => `<li><h3>${esc(q)}</h3><p>${esc(a)}</p></li>`).join("");
+  const body = `
+<section class="page-head">
+  <div class="wrap"${at}>
+    <h1>${esc(P.h1)}</h1>
+    <p class="lede">${esc(P.lede)}</p>
+  </div>
+</section>
+<section class="sec tight"${at}>
+  <div class="wrap">
+    <div class="plans">
+    ${free}
+    ${plans}
+    </div>
+    <p class="plan-trial">${esc(P.trial)}</p>
+    <section class="card passes">
+      <div><div class="plan-head"><h2>${esc(P.passes.h2)}</h2></div><p>${esc(P.passes.lede)}</p><p class="passes-note">${esc(P.passes.note)}</p></div>
+      <ul class="pass-list">${passes}</ul>
+    </section>
+    <h2 class="pricing-faq-h">${esc(P.faqH2)}</h2>
+    <ul class="key-after pricing-faq">${faq}</ul>
+    <p class="plan-legal">${esc(P.legal)} <a href="/${lang}/terms/">${esc(LABELS[pl].terms)}</a> · <a href="/${lang}/privacy/">${esc(COPY[pl].footer.privacy)}</a></p>
+  </div>
+</section>`;
+  return shell({ lang, C, title: P.title, description: P.description, pathFor: (l) => `/${l}/pricing/`, body });
 }
 
 for (const lang of Object.keys(LANGS)) {
   write(`${lang}/index.html`, home(lang));
   write(`${lang}/keys/index.html`, keys(lang));
   write(`${lang}/privacy/index.html`, privacy(lang));
+  write(`${lang}/terms/index.html`, terms(lang));
+  write(`${lang}/pricing/index.html`, pricing(lang));
+  write(`${lang}/account/index.html`, accountPage(lang));
+  write(`${lang}/paid/index.html`, paidPage(lang));
+  write(`${lang}/activate/index.html`, activatePage(lang));
 }
 
 // 404 (one page for every path) and a plain chooser at / in case the worker doesn't answer it
-const chooser = (h1, p, auto = false, recovery = false) => `<!doctype html><html lang="en" class="no-js"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+const chooser = (h1, p, auto = false, recovery = false) => `<!doctype html><html lang="en" class="no-js"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">${WAFFO_VERIFY}
 <title>${esc(h1)}</title><link rel="icon" href="/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="${CSS_URL}"></head>
 <body><main class="chooser"${auto ? ' data-language-entry' : ""}><img src="/icon.svg" alt="" width="56" height="56"><h1>${h1}</h1><p>${p}</p>
 <p class="choose">${recovery ? Object.entries(COPY).map(([k, C]) => `<a class="btn primary" data-not-found-copy="${k}" href="/${k}/" lang="${LANGS[k].html}"${k === "en" ? "" : " hidden"}>${esc(C.notFound.home)}</a>`).join("") : Object.entries(LANGS).map(([k, v]) => `<a class="btn ghost" href="/${k}/" hreflang="${v.html}" lang="${v.html}">${v.name}</a>`).join("")}</p></main><script src="${JS_URL}" defer></script></body></html>
@@ -494,7 +623,7 @@ const chooser = (h1, p, auto = false, recovery = false) => `<!doctype html><html
 write("404.html", chooser("404", Object.entries(COPY).map(([lang, C]) => `<span data-not-found-copy="${lang}" lang="${LANGS[lang].html}"${lang === "en" ? "" : " hidden"}>${esc(C.notFound.body)}</span>`).join(""), false, true));
 write("index.html", chooser("ClearFlow · 清流", "Choose a language · 选择语言 · 言語を選択", true));
 write("robots.txt", `User-agent: *\nAllow: /\nSitemap: ${ORIGIN}/sitemap.xml\n`);
-const pagesFor = ["/", "/keys/", "/privacy/"];
+const pagesFor = ["/", "/pricing/", "/keys/", "/privacy/", "/terms/"];
 write("sitemap.xml", `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
 ${pagesFor.flatMap((p) => Object.keys(LANGS).map((l) => `<url><loc>${ORIGIN}/${l}${p}</loc>${Object.entries(LANGS).map(([k, v]) => `<xhtml:link rel="alternate" hreflang="${v.html}" href="${ORIGIN}/${k}${p}"/>`).join("")}</url>`)).join("\n")}

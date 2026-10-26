@@ -1,60 +1,92 @@
 # ClearFlow Gizlilik Politikası
 
-Yürürlük tarihi: 23 Ekim 2026
+Yürürlük tarihi: 26 Ekim 2026
 
-ClearFlow; X, Reddit, YouTube, Xiaohongshu (RedNote) ve Hacker News'te yorum bölümlerini temizleyen ve gönderileri çeviren bir tarayıcı uzantısıdır. OhMyAI tarafından yayımlanır. Bu politika, uzantının hangi bilgileri okuduğunu, neleri kime gönderdiğini ve cihazınızda neleri sakladığını açıklar.
+ClearFlow, X, Reddit, YouTube, Xiaohongshu (RedNote) ve Hacker News’teki yorum bölümlerini düzenleyen ve gönderileri çeviren bir tarayıcı uzantısıdır. OhMyAI tarafından yayımlanır. Bu politika, uzantının neleri okuduğunu, neleri kime gönderdiğini ve cihazınızda neleri sakladığını açıklar.
 
-**Kısaca:** ClearFlow, baktığınız yorumları ve gönderileri, kendi girdiğiniz API anahtarını kullanarak seçtiğiniz ve ücretini ödediğiniz OpenRouter'a gönderir; OpenRouter bunları değerlendirme için TypeSafe'in Jev modeline, çeviri içinse bir çeviri modeline iletir. İsteğe bağlı bir TypeSafe anahtarı da eklerseniz değerlendirme istekleri doğrudan TypeSafe'e gider. Geliştiricileri olan bize hiçbir şey göndermez. Kullanım istatistiklerini yüklemez, gezinme davranışınızı izlemez ve uzaktan kod çalıştırmaz. Diğer kayıtlı veriler tarayıcınızda kalır.
+**Kısaca:** ClearFlow, görüntülediğiniz yorum ve gönderileri seçtiğiniz ve ücretini ödediğiniz OpenRouter hizmetine, kendiniz girdiğiniz bir API anahtarıyla gönderir. OpenRouter bunları değerlendirmesi için TypeSafe'in Jev modeline, çevirmesi içinse bir çeviri modeline iletir. İsteğe bağlı olarak bir TypeSafe anahtarı da eklerseniz değerlendirme istekleri doğrudan TypeSafe'e gönderilir. Bu kullanımda geliştiriciler olarak bize hiçbir şey gönderilmez. Bunun yerine isteğe bağlı ve ücretli ClearFlow Üyeliği'ni seçerseniz (aşağıdaki ilgili bölüme bakın), aynı içerikler sunucumuz üzerinden işlenir; sunucumuz yalnızca o bölümde belirtilen verileri saklar. Kullanım istatistikleri yüklenmez, gezinme davranışınız izlenmez ve uzaktan kod çalıştırılmaz. Diğer kayıtlı veriler tarayıcınızda kalır.
 
-## Nerede çalışır?
+## Nerede çalışır
 
-Uzantının betikleri yalnızca şu sitelerde çalışır: `x.com`, `twitter.com`, `www.reddit.com`, `www.youtube.com`, `www.xiaohongshu.com`, `www.rednote.com` ve `news.ycombinator.com`. Tarama geçmişinizi veya başka siteleri okumaz. Bu sitelerde, kendi gönderilerinizi değerlendirmemek için yalnızca kendi kullanıcı adınızı cihazınızda okur; bunu hiçbir yere göndermez.
+Uzantının komut dosyaları yalnızca şu sitelerde çalışır: `x.com`, `twitter.com`, `www.reddit.com`, `www.youtube.com`, `www.xiaohongshu.com`, `www.rednote.com` ve `news.ycombinator.com`. Gezinme geçmişinizi veya başka siteleri okumaz. Bu sitelerde yalnızca kendi kullanıcı adınızı yerel olarak okur; böylece kendi gönderilerinizi değerlendirmez. Bu bilgiyi hiçbir yere göndermez.
 
-## Ne, kime gönderilir?
+## Neler, kime gönderilir
 
 ### TypeSafe'in Jev modeli — yorumları değerlendirme
 
-Spamı, hakaretleri, cinsel içeriği ve ‘güzel’ veya ‘+1’ gibi kısa yanıtları ayıklamak; X'in kendi çevirilerinin ve YouTube'un otomatik çevrilmiş altyazılarının kalitesini değerlendirmek için kullanılır. Varsayılan olarak bu istekler OpenRouter (`openrouter.ai`) üzerinden, OpenRouter anahtarınızla gönderilir ve OpenRouter bunları TypeSafe'e iletir. TypeSafe anahtarı girdiyseniz (isteğe bağlı, Ayarlar → Gelişmiş bölümünde), istekler bunun yerine doğrudan TypeSafe'e (`api.typesafe.ai`) gider. İki anahtardan hiçbirini girmediyseniz hiçbir şey gönderilmez.
+Temizleme (spam, kötüye kullanım, cinsel içerik ve "güzel" ya da "+1" gibi yanıtlardan arındırma) için; ayrıca X'in kendi çevirilerinin ve YouTube'un otomatik çevrilmiş altyazılarının kalitesini değerlendirmek için kullanılır. Varsayılan olarak bu istekler OpenRouter (`openrouter.ai`) üzerinden, OpenRouter anahtarınızla gönderilir ve OpenRouter bunları TypeSafe'e iletir. Bir TypeSafe anahtarı girdiyseniz (isteğe bağlı, Ayarlar → Gelişmiş bölümünde), istekler doğrudan TypeSafe'e (`api.typesafe.ai`) gönderilir. Hiçbir anahtar girmediyseniz hiçbir şey gönderilmez.
 
-- Yerel kuralların karar veremediği her yorum için yorum metni (en fazla 600 karakter), yorumcunun görünen adı ve kullanıcı adı, yorumun bağlı olduğu gönderinin metni (en fazla 400 karakter) ile gönderi yazarının görünen adı ve kullanıcı adı gönderilir. Bir istekte en fazla 10 yorum bulunur.
-- X'teki profil ve arama sayfalarında ve Reddit'teki liste sayfalarında yorumlar yerine listedeki gönderiler gönderilir; gönderi metni alanına sabit, tek satırlık bir açıklama konur.
-- X'in otomatik çevirdiği gönderilerde, çevirinin yeterince iyi olup olmadığını değerlendirmek için özgün metin ve X'in (Grok'un) çevirisi gönderilir. ClearFlow'un kendi yeniden çevirisi gönderilmez.
-- Yalnızca TypeSafe anahtarı girdiyseniz ve ‘Yanıtlardaki görselleri kontrol et’ seçeneğini açarsanız (varsayılan olarak kapalıdır), bu yorumlara eklenmiş görseller küçültülerek metinle birlikte doğrudan TypeSafe'e gönderilir (OpenRouter görselleri iletmediğinden TypeSafe anahtarı olmadan hiçbir görsel gönderilmez). Bunun için uzantı `pbs.twimg.com`, `i.redd.it`, `preview.redd.it` ve `*.xhscdn.com` adreslerindeki görselleri okuma izni ister; seçeneği kapattığınızda izni bırakır.
-- Yalnızca o sitede bir yanıtı kendiniz spam olarak işaretlediyseniz (‘Bu yanıtı gizle’ veya bildirim çubuğundaki huni simgesi), o sitede en son işaretlediğiniz en fazla 10 yanıt, değerlendirilen yorumlarla birlikte örnek olarak gönderilir. Her örnekte en fazla 240 karakterlik metin ve hesap bilgisi bulunur. TypeSafe bunları yorumun aynı tür spam olup olmadığını anlamak için kullanır. Bir yanıtı işaretler işaretlemez, o sayfada henüz temizlenmemiş yorumlar örneklere göre bir kez daha kontrol edilir (istek başına en fazla 25 yorum).
-- Yalnızca YouTube'un otomatik çevrilmiş altyazılarını seçtiğinizde, ‘Otomatik çevrilmiş altyazıları iyileştir’ açık olduğunda ve bunun yerine kullanılabilecek insan çevirisi Çince altyazı bulunmadığında, çeviri kalitesini değerlendirmek için özgün altyazının ilk satırları (en fazla 40 satır) ve YouTube'un çevirisi gönderilir.
-- Aynı bağlamdaki aynı yorum için yinelenen istekleri azaltmak amacıyla değerlendirme sonuçları cihazda en fazla 7 gün önbelleğe alınır. Önbellek temizlenirse, bir kayıt silinirse veya yeniden değerlendirme gerekirse yorum tekrar gönderilebilir.
+- Sayfadaki yerel kuralların karar veremediği her yorum için: yorum metni (en fazla 600 karakter), yorum yapan kişinin görünen adı ve kullanıcı adı, yorumun yanıtlandığı gönderinin metni (en fazla 400 karakter) ve gönderi sahibinin adı ve kullanıcı adı. İstek başına en fazla 10 yorum gönderilir.
+- X'teki profil ve arama sayfalarında, Reddit'teki liste sayfalarında yorumlar yerine listedeki gönderiler gönderilir. Gönderi metninin yerine sabit, tek satırlık bir açıklama kullanılır.
+- X'in otomatik çevirdiği gönderilerde, çevirinin yeterli olup olmadığını değerlendirmek için özgün metin ve X'in (Grok'un) çevirisi gönderilir. ClearFlow'un kendi yeniden çevirisi gönderilmez.
+- Yalnızca bir TypeSafe anahtarı girdiyseniz ve "Yanıtlardaki görselleri kontrol et" seçeneğini açtıysanız (varsayılan olarak kapalıdır): bu yorumlara eklenmiş görseller küçültülerek metinle birlikte doğrudan TypeSafe'e gönderilir. OpenRouter görselleri iletmediği için TypeSafe anahtarı olmadan görsel gönderilmez. Bunun için uzantı, `pbs.twimg.com`, `i.redd.it`, `preview.redd.it` ve `*.xhscdn.com` adreslerindeki görselleri okuma izni ister; seçeneği kapattığınızda izni geri verir.
+- Yalnızca ilgili sitede kendiniz spam olarak işaretlediyseniz ("Bu yanıtı gizle" seçeneğiyle veya bildirim çubuğundaki huni simgesiyle): TypeSafe'in bir yorumun aynı tür spam olup olmadığını anlaması için o sitede en son işaretlediğiniz 10 yanıt (en fazla 240 karakterlik metin ve hesap bilgisi), örnek olarak yorumlarla birlikte gönderilir. Bir yanıtı işaretledikten hemen sonra, o sayfada temizlenmemiş yorumlar örneklere göre bir kez daha kontrol edilir (istek başına en fazla 25 yorum).
+- YouTube'da yalnızca YouTube'un otomatik çevrilmiş altyazılarını seçtiğinizde, "Otomatik çevrilmiş altyazıları iyileştir" seçeneği açıksa ve kullanılabilecek insan çevirisi Çince altyazı yoksa, YouTube'un çevirisinin kalitesini değerlendirmek için özgün altyazıların ilk satırları (en fazla 40 satır) ve YouTube çevirisi gönderilir.
+- Aynı bağlamdaki aynı yorum için yinelenen istekleri azaltmak üzere sonuçlar yerel olarak en fazla 7 gün önbelleğe alınır. Önbellek temizlenirse, bir kayıt kaldırılırsa veya yeniden değerlendirme gerekirse yorum tekrar gönderilebilir.
 
 ### OpenRouter (`openrouter.ai`) — çeviri ve varsayılan değerlendirme
 
-Çeviri istekleri yalnızca bir OpenRouter anahtarı girdiyseniz ve ilgili sitede çeviri açıksa gönderilir. TypeSafe anahtarı olmadan OpenRouter, yukarıda açıklanan değerlendirme isteklerini de iletir.
+Çeviri istekleri yalnızca OpenRouter anahtarı girdiyseniz ve o site için çeviriyi açtıysanız gönderilir. TypeSafe anahtarınız yoksa yukarıda açıklanan değerlendirme istekleri de OpenRouter üzerinden iletilir.
 
-- Çevrilmesi gereken ya da X'in çevirisinden daha iyi bir çeviri gerektiren gönderi ve yorumların metni gönderilir. Yazar, gönderi kimliği veya sayfadaki başka hiçbir bilgi gönderilmez.
-- Yalnızca TypeSafe, YouTube'un otomatik çevrilmiş altyazılarını yetersiz bulursa (yukarıda açıklandığı gibi), yeniden çevirmek için videonun izlediğiniz bölümündeki özgün altyazılar bir seferde yaklaşık 40 satır halinde gönderilir. Geleneksel Çince altyazıların Basitleştirilmiş Çinceye dönüştürülmesi bilgisayarınızda yapılır ve hiçbir şey gönderilmez.
-- OpenRouter, metni Ayarlar'da seçtiğiniz çeviri modeline iletir. Varsayılan olarak bir OpenAI modeli, yedek olarak bir DeepSeek modeli kullanılır. Bu sağlayıcıların her birinin kendi veri politikası vardır.
+- Çevrilmesi gereken (veya X'in çevirisinden daha iyi çevrilmesi gereken) gönderi ve yorum metinleri gönderilir. Gönderinin yazarı, gönderi kimliği veya sayfadaki başka hiçbir bilgi gönderilmez.
+- YouTube'da yalnızca TypeSafe YouTube'un otomatik çevrilmiş altyazılarını yetersiz bulduğunda (yukarıya bakın), izlediğiniz bölümün özgün altyazıları yeniden çevrilmek üzere gönderilir; seferde yaklaşık 40 satır. Geleneksel Çince altyazıları Basitleştirilmiş Çinceye dönüştürme işlemi bilgisayarınızda yapılır ve hiçbir şey gönderilmez.
+- OpenRouter, metni Ayarlar'da seçtiğiniz çeviri modeline iletir (varsayılan olarak bir OpenAI modeli, yedek olarak bir DeepSeek modeli kullanılır). Bu sağlayıcıların her birinin kendi veri politikası vardır.
 
-### Başka kimseye gönderilmez
+### Başka hiç kimseye
 
-ClearFlow, yukarıdaki iki hizmet dışında OhMyAI'a veya başka hiç kimseye hiçbir şey göndermez. Kullanım ve maliyet istatistikleri cihazınızda kalır. Analiz veya çökme raporlaması, reklam ya da izleme kodu yoktur. Tüm kod uzantı paketinin içindedir; daha sonra indirilip çalıştırılan bir kod yoktur.
+Kendi anahtarınızı kullandığınızda ClearFlow, yukarıda belirtilen iki hizmet dışında OhMyAI'ye veya başka birine hiçbir şey göndermez (ClearFlow Üyeliği için aşağıya bakın). Kullanım ve maliyet istatistikleri cihazınızda kalır. Analiz, hata raporlama, reklam veya izleme kodu yoktur. Tüm kod uzantı paketinin içindedir; sonradan indirilip çalıştırılan bir kod yoktur.
 
-Ayarlar'da ‘Bağlantıyı test et’e tıkladığınızda, test edilen hizmete kısa ve sabit bir örnek metin gönderilir.
+Ayarlar'da "Bağlantıyı test et"e tıkladığınızda, test edilen hizmete sabit ve kısa bir örnek metin gönderilir.
 
-## Cihazınızda neler saklanır?
+## Cihazınızda neler saklanır
 
-Aşağıdaki veriler, tarayıcınızın uzantı depolama alanında (`chrome.storage.local` ve IndexedDB) saklanır. API anahtarları ilgili hizmetlere yapılan istekleri doğrulamak için kullanılır; işaretlediğiniz spam, yukarıda açıklandığı gibi TypeSafe'e örnek olarak gönderilebilir. Saklanan diğer veriler yüklenmez.
+Aşağıdaki veriler tarayıcınızın uzantı depolama alanında (`chrome.storage.local` ve IndexedDB) saklanır. API anahtarları ilgili hizmetlere yapılan isteklerde kimlik doğrulamak için kullanılır. İşaretlediğiniz spam de yukarıda açıklandığı gibi örnek olarak TypeSafe'e gönderilebilir. Saklanan diğer veriler yüklenmez:
 
-- Ayarlarınız ve API anahtarlarınız (OpenRouter'ın ve eklediyseniz TypeSafe'in). Anahtarlar bu tarayıcıdaki, yalnızca uzantıya ait veritabanında tutulur. Ziyaret ettiğiniz siteler ve uzantının bu sitelerde çalışan betikleri anahtarları okuyamaz; yalnızca uzantının arka plan işlemi kullanır. Anahtarlar şifrelenmez.
+- Ayarlarınız ve API anahtarlarınız (OpenRouter anahtarı ve eklediyseniz TypeSafe anahtarı). Anahtarlar, bu tarayıcıdaki uzantının kendi veritabanında saklanır; ziyaret ettiğiniz siteler ve bu sitelerde çalışan uzantı komut dosyaları bunları okuyamaz. Yalnızca uzantının arka plan işlemi kullanabilir. Anahtarlar şifrelenmez.
 - Günlük sayaçlar (temizlenen veya çevrilen öğe sayısı ve tahmini maliyet).
-- Yaptığınız düzeltmeler (‘spam değil’, ‘bu yanıtı gizle’) ve işaretlediğiniz spam, yorum metniyle birlikte saklanır (metin en fazla 300 karakter; son 3.000 düzeltme ve son 500 işaretlenmiş yanıt).
-- TypeSafe sonuçlarının önbelleği (yalnızca parmak izi ve puan, metin içermez; değerlendirmeden 7 gün sonra silinir) ve çeviri önbelleği (çevrilmiş metin; 30 gün kullanılmazsa silinir). Her önbelleğin varsayılan üst sınırı 50 MB'tır; dolduğunda önce en eski kayıtlar silinir.
+- Düzeltmeleriniz ("spam değil", "bu yanıtı gizle") ve işaretlediğiniz spam; yorum metniyle birlikte (en fazla 300 karakter; son 3,000 düzeltme ve son 500 işaretlenmiş yanıt).
+- TypeSafe sonuçlarının önbelleği (yalnızca parmak izleri ve puanlar, metin yok; yorum değerlendirildikten 7 gün sonra silinir) ve çevirilerin önbelleği (çevrilmiş metin; 30 gün kullanılmadığında silinir). Her önbelleğin varsayılan boyut sınırı 50 MB'tır; dolduğunda en eski kayıtlar silinir.
 
-X ve YouTube'da iki küçük betik (`pagedata.js`, `ytdata.js`) sayfa içinde çalışarak sitenin, sayfanın zaten almış olduğu API yanıtlarını okur. Böylece gönderinin özgün (çevrilmemiş) metni ve yorumu kimin yazdığı belirlenir. Bu betikler yalnızca okur; istek göndermez veya sitenin aldığı bilgileri değiştirmez.
+X ve YouTube'da iki küçük komut dosyası (`pagedata.js`, `ytdata.js`) sayfanın içinde çalışır ve sayfanın zaten aldığı sitenin kendi API yanıtlarını okuyarak gönderinin özgün (çevrilmemiş) metnini ve yorumu kimin yazdığını öğrenir. Yalnızca okuma yaparlar; istek göndermez veya sitenin aldığı yanıtları değiştirmezler.
 
 ## Seçenekleriniz
 
-- Açılır pencereden veya Ayarlar'dan ClearFlow'u herhangi bir sitede tamamen kapatabilir ya da yorum temizliğini ve çeviriyi ayrı ayrı kapatabilirsiniz.
-- Ayarlar → Veri ve gizlilik bölümünden verilerinizi (ayarlar, istatistikler, düzeltmeleriniz ve işaretlediğiniz spam) dışa aktarabilir, önbellekleri temizleyebilir veya düzeltmeleriniz dahil istatistikleri ve kayıtları silebilirsiniz. İşaretlediğiniz spam, Ayarlar'da listelenir; kayıtları tek tek veya topluca silebilirsiniz.
+- Açılır pencereden veya Ayarlar'dan ClearFlow'u herhangi bir site için kapatabilir ya da temizleme ve çeviriyi ayrı ayrı devre dışı bırakabilirsiniz.
+- Ayarlar → Veri ve gizlilik: Verilerinizi dışa aktarabilir (ayarlar, istatistikler, düzeltmeleriniz ve işaretlediğiniz spam), önbellekleri temizleyebilir veya düzeltmeleriniz dâhil istatistikleri ve kayıtları silebilirsiniz. İşaretlediğiniz spam Ayarlar'da listelenir; kayıtları tek tek veya topluca silebilirsiniz.
 - Uzantıyı kaldırmak, sakladığı her şeyi siler.
-- API anahtarlarınızı TypeSafe veya OpenRouter üzerinden istediğiniz zaman iptal edebilir ya da yenileyebilirsiniz.
+- TypeSafe veya OpenRouter üzerinden API anahtarlarınızı istediğiniz zaman iptal edebilir ya da yenileyebilirsiniz.
+
+## ClearFlow Üyeliği (isteğe bağlı, ücretli)
+
+ClearFlow Üyeliği, kendi anahtarınızı kullanmaya bir alternatiftir: e-postanızla giriş yapar, ClearFlow'un yapay zekâ özelliklerini sunucumuz üzerinden kullanırsınız. Üyelik hakkında [Hizmet Koşullarımız](https://clearflow.ohmyai.app/tr/terms/) geçerlidir. Üyeliği kullanıyorsanız, bu politikanın geri kalanına ek olarak aşağıdakiler de geçerlidir.
+
+### İçerik nereye gider
+
+Uzantı, "Neler, kime gönderilir" bölümünde açıklanan aynı içeriği doğrudan OpenRouter'a göndermek yerine sunucumuza, `api.clearflow.ohmyai.app` adresine gönderir (Cloudflare üzerinde çalışır). Sunucumuz içeriği aynı şekilde OpenRouter ve TypeSafe'e iletir, ardından sonuçları geri gönderir. Üyelik kullanılırken görseller kontrol edilmez.
+
+### Sunucumuz neleri saklar
+
+- **Hesabınız:** e-posta adresiniz, günlük sınırların gece yarınızda sıfırlanması için saat diliminiz ve ücretsiz denemenizin başlangıç tarihi.
+- **Cihazlarınız:** uzantının oluşturduğu rastgele kimlik, cihazın adı (tarayıcı ve işletim sistemi), uzantı sürümü, cihazın giriş yaptığı ve en son görüldüğü zaman.
+- **Giriş:** giriş kodları ve belirteçler yalnızca karma değerleriyle saklanır; süresi dolanlar her gün silinir.
+- **Kullanım:** her gün için kullanım hakkınızın ne kadarını kullandığınız ve kaç istek yaptığınız. Sınırlar ve faturalandırma soruları için 13 ay saklanır.
+- **Ödemeler:** ödeme işlemcimiz ve kayıtlı satıcımız Waffo'dan alınan sipariş ve ödeme kimlikleri, plan, tutar ve para birimi, tarihler ve iade durumu. Kart bilgilerinizi hiçbir zaman almayız. Waffo, ödeme bilgilerinizi kendi gizlilik politikası kapsamında saklar.
+- **Paylaşılan sonuç önbelleği:** aynı işlem için iki kez ödeme yapılmasını önlemek amacıyla değerlendirmeler 7 gün, çeviriler 30 gün boyunca girdinin karmasıyla önbelleğe alınır. Değerlendirmeler yalnızca puan olarak; çeviriler ise çevrilmiş metin olarak saklanır. Önbellek kayıtları hesabınızla ilişkilendirilmez.
+- **İstek ölçümleri:** her istek için hangi özelliğin kullanıldığı, planınız, maliyeti, önbellek isabetleri ve işlem süresi hesap kimliğinizle birlikte kaydedilir; maliyetleri ve hataları takip etmek için yaklaşık 3 ay saklanır.
+
+Önbellek dışında sunucumuz işlediği yorumları, gönderileri veya altyazıları saklamaz ve bunları modelleri eğitmek için kullanmayız.
+
+### E-postalar
+
+Giriş kodları Cloudflare'ın e-posta hizmetiyle gönderilir. Pazarlama e-postası göndermeyiz.
+
+### Hesabınızı silme
+
+Hesap sayfanızdan hesabınızı silebilirsiniz. Bu işlem e-posta adresinizi, cihazlarınızı, giriş oturumlarınızı ve kullanım kayıtlarınızı siler. Muhasebe ve iadeler için e-posta adresiniz olmadan ödeme kayıtlarını, ücretsiz deneme süresinin yeniden kullanılmasını önlemek için de denemeyi kullanan cihazın kimliğini saklarız.
+
+### Hizmet sağlayıcılar
+
+Cloudflare (barındırma, veritabanı ve e-posta), Waffo (ödemeler), OpenRouter, TypeSafe ve çeviri modeli sağlayıcıları (içeriğin işlenmesi).
 
 ## Çocuklar
 
@@ -62,7 +94,7 @@ ClearFlow çocuklara yönelik değildir ve hiç kimseden bilerek bilgi toplamaz.
 
 ## Değişiklikler
 
-Bu politika değişirse yeni sürüm, yeni yürürlük tarihiyle https://github.com/remember2015/clearflow/blob/main/PRIVACY.md adresinde yayımlanır ve değişiklik günlüğünde belirtilir.
+Bu politikada değişiklik yapılırsa yeni sürüm, yeni bir yürürlük tarihiyle https://github.com/remember2015/clearflow/blob/main/PRIVACY.md adresinde yayımlanır ve değişiklik günlüğünde belirtilir.
 
 ## İletişim
 

@@ -18,18 +18,23 @@ The interface is available in 19 languages.
 
 Cheap local rules run first (referral links, hidden contact info, the same line posted by several accounts, invisible characters…). Everything they can't decide is sent, with the post it belongs to, through [OpenRouter](https://openrouter.ai) to [TypeSafe](https://typesafe.ai)'s "Jev" classifier, which answers a few yes/no questions per reply. Translation also goes through OpenRouter, to a model of your choice. Thresholds were tuned on each site's own data; the design rule is that local rules only look at *structure*, never at keyword lists, so the extension works the same across topics and languages.
 
-## You need one API key
+## ClearFlow Membership, or your own key
+
+The AI features (cleaning beyond the local rules, and translation) need one of these:
+
+- **ClearFlow Membership:** sign in with your email (on the website, in a tab the extension opens) and it works, no API keys. A 7-day free trial without a card, then $2.90 a month or $24 a year, or a one-time 30-day ($3.90) or 1-year ($39) pass. Requests go through ClearFlow's server, which isn't part of this repository. Prices and terms: [clearflow.ohmyai.app/en/pricing](https://clearflow.ohmyai.app/en/pricing/).
+- **Your own key**, as below.
 
 | Service | Used for | Get a key |
 |---|---|---|
 | OpenRouter | cleaning (it passes replies to TypeSafe's Jev) and translation | https://openrouter.ai/keys |
 | TypeSafe (optional) | judging replies directly: a little faster, and needed for checking images in replies (OpenRouter doesn't pass images on) | https://typesafe.ai |
 
-It bills by usage, to you directly. Settings shows what you've spent this month and a monthly estimate. Without a key only the local rules run and nothing is translated. A first-run setup page walks you through choosing sites and entering keys.
+It bills by usage, to you directly. Settings shows what you've spent this month and a monthly estimate. With neither membership nor a key, only the local rules run and nothing is translated. A first-run setup page walks you through choosing sites and signing in or entering keys.
 
 ## Privacy
 
-Comments and posts you're looking at are sent to OpenRouter (which passes judging requests on to TypeSafe) using your key, or straight to TypeSafe if you added the optional TypeSafe key. Nothing is sent to the developers; there's no analytics or tracking. Keys and history stay in your browser. Details: [PRIVACY.md](PRIVACY.md).
+With your own key, comments and posts you're looking at are sent to OpenRouter (which passes judging requests on to TypeSafe), or straight to TypeSafe if you added the optional TypeSafe key, and nothing is sent to the developers. With ClearFlow Membership they go through ClearFlow's server, which passes them on the same way and keeps only a cache of results; your account holds your email and usage counts. There's no analytics or tracking either way. Keys and history stay in your browser. Details: [PRIVACY.md](PRIVACY.md).
 
 ## Install
 

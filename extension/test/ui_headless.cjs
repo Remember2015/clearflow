@@ -193,7 +193,7 @@ SEED["ff_reply_override:" + SEED.ff_recent_folds[2].id] = { label: "missed", upd
     await page.goto(`chrome-extension://${id}/options.html`, { waitUntil: "load" });
     await wait(700);
     const o = await page.evaluate(() => ({
-      segs: [...document.querySelectorAll(".seg")].map((s) => [...s.querySelectorAll(".seg-item")].map((b) => (b.getAttribute("aria-checked") === "true" ? `[${b.textContent}]` : b.textContent)).join(" ")),
+      segs: [...document.querySelectorAll(".seg:not(#mode)")].map((s) => [...s.querySelectorAll(".seg-item")].map((b) => (b.getAttribute("aria-checked") === "true" ? `[${b.textContent}]` : b.textContent)).join(" ")),
       jev: document.getElementById("jevState")?.textContent ?? null, or: document.getElementById("orState").textContent, cost: document.getElementById("costLine").textContent,
       conn: [...document.querySelectorAll("#conn .row-name")].map((e) => e.textContent),
       adv: document.getElementById("advTrigger").getAttribute("aria-expanded") === "true" || !!document.getElementById("threshold"), h2: [...document.querySelectorAll("h2")].map((h) => h.textContent),
@@ -222,13 +222,13 @@ SEED["ff_reply_override:" + SEED.ff_recent_folds[2].id] = { label: "missed", upd
       const visible = [...document.querySelectorAll("body *")].filter((e) => { const c = getComputedStyle(e);
         return ["Top", "Right", "Bottom", "Left"].some((k) => parseFloat(c["border" + k + "Width"]) >= 1 && c["border" + k + "Color"] !== "rgba(0, 0, 0, 0)" && c["border" + k + "Style"] !== "none"); })
         .map((e) => e.id || e.className.slice(0, 40));
-      // 0.29.11 起"连接和费用"里是 OpenRouter 一行加花费一行（TypeSafe 挪进高级）
+      // 0.29.11 起"连接和费用"里是 OpenRouter 一行加花费一行（TypeSafe 挪进高级）；0.30.0 起最上面一行是"清流会员 / 自己的密钥"
       const costRow = getComputedStyle(document.getElementById("costLine").parentElement);
-      return { first: cs("row-or").boxShadow, second: costRow.boxShadow, secondColor: costRow.borderTopColor, ring: cs("fold").boxShadow,
-        changeBtn: cs("orChange").boxShadow, visible };
+      return { first: getComputedStyle(document.getElementById("mode").parentElement).boxShadow, second: costRow.boxShadow, secondColor: costRow.borderTopColor,
+        orLine: cs("row-or").boxShadow, ring: cs("fold").boxShadow, changeBtn: cs("orChange").boxShadow, visible };
     });
     ok("分隔线 0.5px、每张卡片第一行上面没有线、卡片和描边按钮都是 0.5px、没有看得见的 1px 边框",
-      lines.first === "none" && /inset 0px 0\.5px 0px 0px|0px 0\.5px 0px 0px .*inset/.test(lines.second) && lines.secondColor === "rgba(0, 0, 0, 0)" &&
+      lines.first === "none" && /inset 0px 0\.5px 0px 0px|0px 0\.5px 0px 0px .*inset/.test(lines.second) && /0\.5px/.test(lines.orLine) && lines.secondColor === "rgba(0, 0, 0, 0)" &&
       /0px 0px 0px 0\.5px/.test(lines.ring) && /0\.5px/.test(lines.changeBtn) && lines.visible.length === 0, JSON.stringify(lines));
     // 悬停在问号上：说明弹出来（Popover，openOnHover）；移开就收起
     const helpText = async (sel) => {

@@ -35,7 +35,7 @@ ok("没有照抄中文的（0.29.4）：日文里没有一长串汉字、一个�
 });
 ok("内容脚本那份只带 X 页面要用的键，语言一样多", () => {
   assert.deepEqual(Object.keys(page).sort(), Object.keys(all).sort());
-  for (const k of Object.keys(page.en)) assert.ok(/^(tx|reason|kind|cat|cs|bar|banner|err|filler|group|mark|heavy|app)\.|^c\.notDone$/.test(k), k);
+  for (const k of Object.keys(page.en)) assert.ok(/^(tx|reason|kind|cat|cs|bar|banner|err|filler|group|mark|heavy|app|notice)\.|^c\.notDone$/.test(k), k);
   for (const k of ["tx.improved", "cat.spam.tag", "bar.ask", "banner.bait", "err.timeout", "c.notDone", "filler.line", "filler.tag"]) assert.ok(page.ja[k], k);
 });
 ok("语言代码对得上：X 的 ar-x-fm / en-gb / zh-cn / zh-tw，浏览器的 zh-Hant / pt-BR / es-419，老代码 in；不做的语言和认不得的用英文", () => {

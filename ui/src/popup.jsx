@@ -10,6 +10,7 @@
 // 0.19 起用 shadcn/ui 的 maia 组件（Item、Badge、Button、Switch）。Chrome 的弹窗最高 600px，超了出滚动条：间距按这个收紧过。
 import * as React from "react";
 import { createRoot } from "react-dom/client";
+import { accountAlert, AlertCard, popupLine, signedIn } from "./account.jsx";
 import { DirectionProvider } from "@base-ui/react/direction-provider";
 import { t, I18N, SETTINGS, PRICE, DAY, day, usd, joinSentences, failText, useStorage, writeSite, siteName, txLabel, SiteLogo, cn,
   Toggle, TipProvider, CAT_TONE, WARN_TONE, BAD_TONE, MUTED_TONE } from "./lib.jsx";
@@ -28,11 +29,13 @@ const catOf = (kind) => (kind === "abuse" ? "abuse" : kind === "sexual" ? "sexua
 const catText = (c) => CATS.filter((k) => c[k]).map((k) => `${t(`pop.cat.${k}`)} ${c[k]}`).join(" · ");
 const toSettings = (e) => { e?.preventDefault(); chrome.runtime.openOptionsPage(); };
 // ff_keys：两个 key 填没填（0.28.12 起 key 本身在后台的 IndexedDB 里）；ff_key、ff_or_key 是旧版本的、后台会挪走
-const KEYS = ["ff_stats", "ff_settings", "ff_keys", "ff_key", "ff_or_key", "ff_health"];
+const KEYS = ["ff_stats", "ff_settings", "ff_keys", "ff_key", "ff_or_key", "ff_health", "ff_account"]; // ff_account：清流会员（0.30.0）
 const hasKey = (d, which) => (d.ff_keys ? !!d.ff_keys[which] : !!String((which === "jev" ? d.ff_key : d.ff_or_key) || "").trim());
 
 // ---------- 要你处理的事（只在出问题时出现；Jev key 的事只在这个网站开着清理时说） ----------
 function Alerts({ d, st }) {
+  // 清流会员（0.30.0，草图 1）：不提密钥的事，只在要你处理时出一张卡（试用剩几天、到期、额度用完、扣款失败、没登录）
+  if (st.account) return <AlertCard alert={accountAlert(d.ff_account)} />;
   const list = [];
   const h = d.ff_health || {};
   // 高级设置里关了 Jev 的不提 Jev key 的事（0.28.8，review）。0.29.11 起判断默认走 OpenRouter：TypeSafe 和 OpenRouter 的密钥有一个就能判；
@@ -149,7 +152,7 @@ function SiteRow({ id, name, checked, note, onChange, disabled }) {
 }
 // 0.29.11 起判断也走 OpenRouter：有它就什么都能做（以前没填 Jev 时 X 上只能补翻）
 function txNote(d, st) {
-  return st.translate && !hasKey(d, "or") ? t("pop.txNeedKey") : "";
+  return st.translate && !st.account && !hasKey(d, "or") ? t("pop.txNeedKey") : ""; // 清流会员不要密钥（没登录的事在提示卡里说）
 }
 function cost(stats) {
   const month = day(new Date()).slice(0, 7);
@@ -191,6 +194,8 @@ function Popup() {
   const [place, setPlace] = React.useState(null);
   const [status, setStatus] = React.useState("");
   React.useEffect(() => { whereAmI().then(setPlace, () => setPlace({ site: null })); }, []);
+  // 打开弹窗：会员状态刷新一下（后台隔一分钟最多一次），在别处付了款、取消了的这里看得到
+  React.useEffect(() => { chrome.runtime.sendMessage({ type: "account", op: "refresh" }).catch(() => {}); }, []);
   if (!d || !place) return null;
   if (!place.site) return <Unsupported />;
   const site = place.site, st = SETTINGS.forSite(d.ff_settings, site);
@@ -201,8 +206,13 @@ function Popup() {
     try { await writeSite(site, { [key]: value }); await reload(); } catch (e) { onError(e); }
   };
   const c = cost(d.ff_stats || {});
+  const member = SETTINGS.normalize(d.ff_settings).account; // 清流会员：底部那句换成套餐和用量占比（不说美元）
+  // 选了清流会员又没登录（用户 10-25）：只说"请先登录"，开关、当前页、统计都置灰不能点；登录的引导在首次设置里
+  const locked = member && !signedIn(d.ff_account);
   return (
     <div className="flex flex-col gap-3 px-4 py-3.5">
+      {locked && <Alerts d={d} st={st} />}
+      <div className={cn("flex flex-col gap-3", locked && "pointer-events-none opacity-45 select-none")} aria-disabled={locked || undefined} inert={locked || undefined} id="popMain">
       <div className="flex flex-col gap-2.5">
         <header className="pop-head flex items-center justify-between gap-3" id="row-on">
           <div className="flex min-w-0 items-center gap-2.5">
@@ -216,12 +226,14 @@ function Popup() {
           <SiteRow id="translate" name={txLabel(site)} checked={o.translate !== false} disabled={!on} note={on ? txNote(d, st, site) : ""} onChange={(v) => onToggle("translate", v)} />
         </section>
       </div>
-      <Alerts d={d} st={st} />
+      {!locked && <Alerts d={d} st={st} />}
       <Here text={place.text} />
       <Today stats={d.ff_stats || {}} />
+      </div>
       {/* 花费那一句不折行（0.24：加了"反馈"以后英文、德文等 10 种语言把"约 $0.05"折到第二行）；放不下时右边两个控件整体换到下一行、靠右 */}
       <footer className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-t pt-2.5">
-        <span id="cost" className="text-sm whitespace-nowrap text-muted-foreground" title={c.title}>{c.text}</span>
+        {member ? <span id="cost" className="min-w-0 truncate text-sm text-muted-foreground">{popupLine(d.ff_account)}</span>
+          : <span id="cost" className="text-sm whitespace-nowrap text-muted-foreground" title={c.title}>{c.text}</span>}
         <span className="ms-auto flex items-center gap-3">
           {/* 建议与反馈（0.23）：打开设置页、停在那张卡片（邮箱写在那里、能复制；直接点 mailto 在没配邮件程序的电脑上没反应） */}
           <a href="#" id="feedback" className="text-sm text-muted-foreground no-underline hover:text-foreground"

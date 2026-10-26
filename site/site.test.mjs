@@ -3,6 +3,8 @@ import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import { COPY, LANGS } from "./copy.mjs";
+import { pricingFor } from "./copy.pricing.mjs";
+import { API } from "./copy.account.mjs";
 
 const DIST = path.resolve("dist");
 const read = (...parts) => fs.readFileSync(path.join(DIST, ...parts), "utf8");
@@ -66,6 +68,53 @@ for (const lang of Object.keys(LANGS)) {
     assert.ok(!html.includes("undefined"));
   });
 }
+
+// Waffo's store review: pricing, terms and privacy reachable without signing in and linked from every page's footer
+for (const lang of Object.keys(LANGS)) {
+  test(`${lang}: pricing and terms pages exist and are linked from the footer`, () => {
+    const { P } = pricingFor(lang);
+    const pricing = read(lang, "pricing", "index.html"), terms = read(lang, "terms", "index.html");
+    for (const price of ["$2.90", "$24"]) assert.ok(pricing.includes(price));
+    assert.ok(!/class="soon"/.test(pricing), "membership is live: no coming-soon badge"); // 10-26
+    assert.equal((pricing.match(/class="plan-cta"/g) || []).length, 3, "free and both paid plans have the install button");
+    assert.ok(pricing.includes(`href="/${lang}/terms/"`) && pricing.includes(`href="/${lang}/privacy/"`));
+    assert.ok(terms.includes("developer@ohmyai.app") && /7/.test(terms));
+    // every site language has its own pricing, terms, privacy, account and payment pages now (10-24): no English fallback blocks
+    assert.ok(terms.includes(`<article class="wrap narrow prose" lang="${LANGS[lang].html}">`), "terms in its own language");
+    assert.ok(read(lang, "privacy", "index.html").includes(`<article class="wrap narrow prose" lang="${LANGS[lang].html}">`), "privacy in its own language");
+    for (const page of [pricing, read(lang, "account", "index.html"), read(lang, "paid", "index.html")]) assert.ok(!/<(section|div) class="[^"]*" lang="en"/.test(page), "no English fallback");
+    if (lang !== "en") assert.ok(!/Membership/.test(pricing + terms + read(lang, "account", "index.html")), "membership translated");
+    for (const page of [read(lang, "index.html"), pricing, terms, read(lang, "privacy", "index.html")]) {
+      const foot = page.slice(page.indexOf('<footer'));
+      for (const href of [`/${lang}/pricing/`, `/${lang}/terms/`, `/${lang}/privacy/`]) assert.ok(foot.includes(`href="${href}"`), href);
+      assert.ok(foot.includes("mailto:developer@ohmyai.app"));
+      assert.ok(!page.includes("undefined"));
+    }
+  });
+}
+
+// account and payment result pages (account-page.js does the work): not indexed, data for the script parses, the API is allowed by the CSP
+for (const lang of Object.keys(LANGS)) {
+  test(`${lang}: account and payment result pages`, () => {
+    for (const [page, slug] of [["account", "account"], ["paid", "paid"]]) {
+      const html = read(lang, slug, "index.html");
+      assert.ok(html.includes('<meta name="robots" content="noindex">'), slug);
+      const data = JSON.parse(html.match(/<script type="application\/json" id="ffData">([^<]*)<\/script>/)[1]);
+      assert.equal(data.page, page);
+      assert.equal(data.api, API);
+      assert.ok(/<script src="\/account\.js\?v=[0-9a-f]{10}" defer><\/script>/.test(html));
+      assert.ok(!html.includes("undefined"));
+    }
+    assert.ok(read(lang, "paid", "index.html").includes('id="paidTitle"'));
+    assert.ok(read(lang, "account", "index.html").includes('id="account"'));
+    assert.ok(read(lang, "index.html").includes(`href="/${lang}/account/"`), "footer links the account page");
+  });
+}
+test("CSP lets only the account script talk to the API", () => {
+  const headers = fs.readFileSync(path.join(DIST, "_headers"), "utf8");
+  assert.ok(headers.includes(`connect-src ${API};`));
+  assert.ok(fs.existsSync(path.join(DIST, "account.js")));
+});
 
 test("404 offers a localized home action instead of a language picker", () => {
   const html = read("404.html");

@@ -1,10 +1,10 @@
 # ClearFlow (清流) Privacy Policy
 
-Effective date: October 23, 2026 · [中文版本见下方](#中文)
+Effective date: October 26, 2026 · [中文版本见下方](#中文)
 
 ClearFlow is a browser extension that cleans up comment sections and translates posts on X, Reddit, YouTube, Xiaohongshu (RedNote) and Hacker News. It is published by OhMyAI. This policy explains what the extension reads, what it sends and to whom, and what it keeps on your device.
 
-**The short version:** ClearFlow sends the comments and posts you are looking at to OpenRouter, a service you choose and pay for, using an API key you enter yourself; OpenRouter passes them to TypeSafe's Jev model (to judge them) and to a translation model (to translate them). If you also add an optional TypeSafe key, judging requests go straight to TypeSafe instead. It sends nothing to us, the developers. It does not upload usage statistics or track browsing behavior, and it runs no remote code. Other stored data stays in your browser.
+**The short version:** ClearFlow sends the comments and posts you are looking at to OpenRouter, a service you choose and pay for, using an API key you enter yourself; OpenRouter passes them to TypeSafe's Jev model (to judge them) and to a translation model (to translate them). If you also add an optional TypeSafe key, judging requests go straight to TypeSafe instead. Used this way, it sends nothing to us, the developers. If you choose ClearFlow Membership instead (optional and paid, see the section on it below), the same content goes through our server, which keeps only what that section lists. It does not upload usage statistics or track browsing behavior, and it runs no remote code. Other stored data stays in your browser.
 
 ## Where it runs
 
@@ -34,7 +34,7 @@ Translation requests are only sent if you entered an OpenRouter key and translat
 
 ### Nobody else
 
-ClearFlow sends nothing to OhMyAI or anyone other than the two services above. Usage and cost statistics stay on your device. There is no analytics reporting, crash reporting, advertising or tracking code. All code is in the extension package; nothing is downloaded and run later.
+With your own key, ClearFlow sends nothing to OhMyAI or anyone other than the two services above (for ClearFlow Membership, see below). Usage and cost statistics stay on your device. There is no analytics reporting, crash reporting, advertising or tracking code. All code is in the extension package; nothing is downloaded and run later.
 
 When you click "Test connection" in Settings, a short fixed sample text is sent to the service being tested.
 
@@ -56,6 +56,38 @@ On X and YouTube, two small scripts (`pagedata.js`, `ytdata.js`) run inside the 
 - Uninstalling the extension deletes everything it stored.
 - You can revoke or rotate your API keys with TypeSafe or OpenRouter at any time.
 
+## ClearFlow Membership (optional, paid)
+
+ClearFlow Membership is an alternative to using your own key: you sign in with your email, and ClearFlow's AI features run through our server. Our [Terms of Service](https://clearflow.ohmyai.app/en/terms/) cover the membership. If you use the membership, the following applies in addition to the rest of this policy.
+
+### Where content goes
+
+The extension sends the same content described under "What is sent, and to whom" to our server, `api.clearflow.ohmyai.app` (run on Cloudflare), instead of to OpenRouter directly. Our server passes it on to OpenRouter and TypeSafe in the same way and sends back the results. Images are not checked in membership mode.
+
+### What our server keeps
+
+- **Your account:** your email address, your time zone (so daily limits reset at your midnight) and when your free trial started.
+- **Your devices:** a random ID the extension creates, the name of the device (browser and operating system), the extension version, and when the device signed in and was last seen.
+- **Sign-in:** sign-in codes and tokens are stored only as hashes, and expired ones are deleted every day.
+- **Usage:** for each day, how much of your allowance you used and how many requests you made. Kept for 13 months, for limits and billing questions.
+- **Payments:** from Waffo, our payment processor and merchant of record: order and payment IDs, the plan, the amount and currency, dates and refund status. We never receive your card details. Waffo keeps your payment information under its own privacy policy.
+- **A shared result cache:** so the same work isn't paid for twice, judgments are cached for 7 days and translations for 30 days, under a hash of the input. Judgments are stored as scores only; translations are stored as the translated text. Cache entries aren't linked to your account.
+- **Request metrics:** for each request, which feature it was, your plan, its cost, cache hits and how long it took, with your account ID, to watch costs and errors. Kept for about 3 months.
+
+Apart from the cache, our server does not store the comments, posts or captions it processes, and we don't use them to train models.
+
+### Emails
+
+Sign-in codes are sent with Cloudflare's email service. We don't send marketing emails.
+
+### Deleting your account
+
+You can delete your account on your account page. That deletes your email address, devices, sign-in sessions and usage records. We keep payment records without your email address, because they're needed for accounting and refunds, and the device ID that used a free trial, so the trial can't be used again.
+
+### Service providers
+
+Cloudflare (hosting, database and email), Waffo (payments), and OpenRouter, TypeSafe and the translation model providers (processing content).
+
 ## Children
 
 ClearFlow is not directed at children and does not knowingly collect information from anyone.
@@ -74,11 +106,11 @@ developer@ohmyai.app
 
 # 清流（ClearFlow）隐私政策
 
-生效日期：2026 年 10 月 23 日
+生效日期：2026 年 10 月 26 日
 
 清流是一个浏览器插件，在 X、Reddit、YouTube、小红书和 Hacker News 上清理评论区、翻译帖子，由 OhMyAI 发布。这份政策说明插件读什么、发什么给谁、在你的设备上存什么。
 
-**一句话：** 清流用你自己填的密钥，把你正在看的评论和帖子发给你选的付费服务 OpenRouter，由它转给 TypeSafe 的 Jev 模型判断、转给翻译模型翻译；另外填了可选的 TypeSafe 密钥的话，判断请求直接发给 TypeSafe。它不发任何东西给我们（开发者），不上传使用统计、不追踪浏览行为，也不运行远程代码。其他存储的数据留在你的浏览器里。
+**一句话：** 清流用你自己填的密钥，把你正在看的评论和帖子发给你选的付费服务 OpenRouter，由它转给 TypeSafe 的 Jev 模型判断、转给翻译模型翻译；另外填了可选的 TypeSafe 密钥的话，判断请求直接发给 TypeSafe。这样用时，它不发任何东西给我们（开发者）。如果改用清流会员（可选、付费，见下面「清流会员」一节），同样的内容会经过我们的服务器，服务器只保存那一节列出的东西。插件不上传使用统计、不追踪浏览行为，也不运行远程代码。其他存储的数据留在你的浏览器里。
 
 ## 在哪里运行
 
@@ -108,7 +140,7 @@ developer@ohmyai.app
 
 ### 不发给别人
 
-清流除了上面两个服务，不发任何东西给 OhMyAI 或其他任何人。使用次数和费用统计只保存在本机，没有统计上报、崩溃上报、广告或追踪代码。所有代码都在插件包里，不会事后下载代码来运行。
+用自己的密钥时，清流除了上面两个服务，不发任何东西给 OhMyAI 或其他任何人（清流会员见下文）。使用次数和费用统计只保存在本机，没有统计上报、崩溃上报、广告或追踪代码。所有代码都在插件包里，不会事后下载代码来运行。
 
 在设置里点「测试连接」时，会把一小段固定的示例文字发给被测试的那个服务。
 
@@ -129,6 +161,38 @@ developer@ohmyai.app
 - 设置 → 数据和隐私：导出你的数据（设置、统计、你的纠错和标记的垃圾）、清空缓存、清空统计和记录（连你的纠错一起）。你标记的垃圾在设置里有一份列表，可以一条条删，也可以全部删掉。
 - 卸载插件会删掉它存的所有东西。
 - 你随时可以在 TypeSafe、OpenRouter 那边作废或更换密钥。
+
+## 清流会员（可选、付费）
+
+清流会员是自带密钥之外的另一种用法：用邮箱登录，清流的 AI 功能经我们的服务器提供。会员服务适用我们的[服务条款](https://clearflow.ohmyai.app/zh/terms/)。使用会员时，除了这份政策的其他部分，还适用下面这些。
+
+### 内容发到哪里
+
+插件把「发什么、发给谁」里说的同样内容发给我们的服务器 `api.clearflow.ohmyai.app`（运行在 Cloudflare 上），而不是直接发给 OpenRouter。服务器照样转给 OpenRouter 和 TypeSafe，再把结果传回来。会员模式下不检查回复里的图片。
+
+### 服务器保存什么
+
+- **账号**：邮箱、时区（每天的额度按你那里的 0 点换日）、免费试用的开始时间。
+- **设备**：插件生成的随机 ID、设备名称（浏览器和操作系统）、插件版本、登录和最近使用的时间。
+- **登录**：验证码和令牌只存哈希，过期的每天删除。
+- **用量**：每天用了多少额度、发了多少次请求。保存 13 个月，用于额度和账单问题。
+- **付款**：来自付款处理方和名义卖方 Waffo 的订单号、付款号、套餐、金额和币种、日期、退款状态。我们拿不到你的卡号等支付信息，Waffo 按它自己的隐私政策保存你的付款信息。
+- **共用的结果缓存**：为了同样的活不花两次钱，判断结果缓存 7 天、译文缓存 30 天，用输入内容的哈希作为索引。判断只存分数，译文存译好的文字。缓存不和你的账号关联。
+- **请求统计**：每次请求是哪个功能、你的套餐、花费、缓存命中和耗时，带你的账号 ID，用来盯成本和错误。保存约 3 个月。
+
+除了上面的缓存，服务器不保存它处理的评论、帖子和字幕，我们也不用它们训练模型。
+
+### 邮件
+
+登录验证码用 Cloudflare 的邮件服务发送。我们不发营销邮件。
+
+### 删除账号
+
+在账号页可以删除账号。删除时会删掉你的邮箱、设备、登录状态和用量记录。付款记录会去掉邮箱后保留，因为记账和退款要用；用过免费试用的设备 ID 也会保留，防止重复试用。
+
+### 服务商
+
+Cloudflare（托管、数据库、邮件）、Waffo（收款），以及 OpenRouter、TypeSafe 和翻译模型的提供方（处理内容）。
 
 ## 儿童
 

@@ -2,7 +2,7 @@
   "brand": "ClearFlow",
   "languageLabel": "Escolher idioma",
   "title": "ClearFlow · Menos distrações, traduções mais claras",
-  "description": "Extensão de código aberto para Chrome que filtra respostas indesejadas no X, YouTube, Reddit, RedNote e Hacker News e aprimora traduções: traduz publicações, títulos de vídeos e comentários que os sites deixam sem tradução e melhora as traduções dos próprios sites. Toda resposta ocultada tem uma explicação. Usa suas próprias chaves de API e não envia dados ao desenvolvedor.",
+  "description": "Extensão de código aberto para Chrome que filtra respostas indesejadas no X, YouTube, Reddit, RedNote e Hacker News e aprimora traduções: traduz publicações, títulos de vídeos e comentários que os sites deixam sem tradução e melhora as traduções dos próprios sites. Toda resposta ocultada tem uma explicação. Funciona com a assinatura ClearFlow ou com suas próprias chaves de API.",
   "nav": {
     "clean": "Filtragem",
     "tx": "Tradução",
@@ -20,9 +20,9 @@
     ],
     "trust": [
       "Código aberto · licença MIT",
-      "Nenhum dado enviado ao desenvolvedor",
+      "Sem rastreamento nem análises",
       "Interface em 19 idiomas",
-      "Pague pelo que usar"
+      "Assinatura ou sua própria chave"
     ],
     "lede": "Filtre respostas indesejadas e tenha traduções melhores: o que os sites deixam sem traduzir é traduzido, e as traduções deles são aprimoradas. Leia publicações, títulos de vídeos e comentários com mais facilidade.",
     "cta": "Adicionar ao Chrome",
@@ -191,8 +191,8 @@
     ]
   },
   "cost": {
-    "h2": "Pague apenas pelo que usar",
-    "body": "Use sua própria conta do OpenRouter e pague diretamente ao serviço. As solicitações nunca passam pelos servidores do ClearFlow.",
+    "h2": "Assinatura, ou pague pelo uso com sua chave",
+    "body": "A assinatura ClearFlow funciona assim que você entra: 7 dias de teste grátis e depois a partir de US$ 2,90 por mês. Você também pode usar sua própria conta da OpenRouter e pagar diretamente a ela; essas solicitações não passam pelos servidores da ClearFlow.",
     "stat": "≈ $0.10",
     "statLabel": "Custo estimado para navegar por cerca de 5.000 respostas no X, incluindo filtragem e tradução quando necessária. O custo real varia conforme o conteúdo e o modelo.",
     "points": [
@@ -203,15 +203,15 @@
     "cta": "Obter suas chaves de API"
   },
   "privacy": {
-    "h2": "Nenhum dado enviado ao desenvolvedor",
+    "h2": "Sem rastreamento, sem guardar seu histórico de navegação",
     "items": [
       [
         "Sem rastreamento nem envio de estatísticas",
         "As estatísticas de uso e custo ficam no seu dispositivo. Não há análise de uso, relatórios de falhas nem código de anúncios."
       ],
       [
-        "Conexão direta com seus provedores",
-        "Os recursos de IA enviam publicações e comentários relevantes diretamente ao OpenRouter, usando sua chave; ele os encaminha ao modelo Jev da TypeSafe para filtragem e a um modelo de tradução para traduzir."
+        "Só é enviado o que precisa ser processado",
+        "Os recursos de IA enviam os posts e comentários relevantes à OpenRouter, que os repassa ao Jev da TypeSafe para filtragem e a um modelo de tradução. Com sua chave, vão diretamente; com a assinatura, passam pelo servidor da ClearFlow, que guarda apenas um cache dos resultados."
       ],
       [
         "Chaves e histórico no seu dispositivo",
@@ -228,12 +228,12 @@
     "h2": "Dúvidas frequentes",
     "items": [
       [
-        "Por que preciso das minhas próprias chaves de API?",
-        "Seu conteúdo vai diretamente aos provedores de serviço, sem exigir uma assinatura do ClearFlow. Para começar, crie suas contas e chaves de API. <a href=\"keys/\">Como configurar as chaves de API</a>"
+        "Preciso da minha própria chave de API?",
+        "Não. Com a assinatura ClearFlow, basta entrar com seu e-mail, sem chave. Se preferir pagar pelo uso, use suas próprias chaves: o conteúdo vai direto aos provedores, sem passar pela ClearFlow, e sem assinatura. <a href=\"keys/\">Como configurar as chaves de API</a>"
       ],
       [
         "Funciona sem chaves?",
-        "Sim. As regras locais ainda ocultam respostas com links de indicação ou dados de contato disfarçados, além do mesmo texto publicado por várias contas. Uma chave do OpenRouter é necessária para a tradução e para detectar ofensas, conteúdo sexual e respostas como “legal”."
+        "Sim. As regras locais continuam ocultando respostas com links de indicação ou contatos escondidos e a mesma frase publicada por várias contas. A tradução e a detecção de ofensas, conteúdo sexual e respostas como “nice” exigem a assinatura ClearFlow ou uma chave da OpenRouter."
       ],
       [
         "Pode ocultar comentários úteis?",

@@ -357,7 +357,7 @@ async function sha256(text) {
 }
 
 // 补翻（X 帖子页的补翻、Reddit 上的翻译）的缓存键：原文、截没截断、目标语言、模型、带不带标记（原文语言不在里面：同一段字认成哪种语言都一样）
-const fillKey = (item, settings) => sha256(JSON.stringify([FILL_VERSION, item.id, item.source, !!item.truncated, item.target || "zh", settings.translateModel, ...(item.markup ? ["markup"] : [])]));
+export const fillKey = (item, settings) => sha256(JSON.stringify([FILL_VERSION, item.id, item.source, !!item.truncated, item.target || "zh", settings.translateModel, ...(item.markup ? ["markup"] : [])]));
 // 只查缓存、不翻：有就返回（带 cached: true），没有返回 null
 export async function fillCached({ settings, item, cache = idbCache }) {
   try {
@@ -438,8 +438,12 @@ export async function fillInBatch({ orKey, settings, items, cache = idbCache, si
 // onLine(k, 译文)：流式（0.29.5，用户 10-20 要字幕跟得上）——第 k 行（从 0 数）的 </cN> 一到就先给，页面先换上这一行。GPT-6 Luna 40 行
 // 整段 6.6–6.9 秒，第一行 1.4–1.6 秒就到（10-20 量的）；换后备模型重翻时那个模型的每一行重新给一遍
 export const CAPTION_VERSION = "cap1";
+// 缓存键（清流会员模式 cloud.js 也用，服务器翻的照同一把键存进本地缓存，0.30.0）
+export const captionKey = ({ settings, lines, srcLang, target = "zh" }) => sha256(JSON.stringify([CAPTION_VERSION, settings.translateModel, settings.translateFallback || "", target, srcLang || "", lines]));
+export const captionJudgeKey = (item) => sha256(JSON.stringify([CAPTION_VERSION, "judge", item.source, item.translation, item.srcLang || "", item.target || "zh"]));
+export const improveKey = (item, settings) => sha256(JSON.stringify([TRANSLATOR_VERSION, item.id, item.source, item.xText, item.target || "zh", settings.translateModel, settings.translateThreshold]));
 export async function translateCaptions({ orKey, settings, lines, srcLang, target = "zh", cache = idbCache, signal, fetchImpl, flex = false, onLine }) {
-  const key = await sha256(JSON.stringify([CAPTION_VERSION, settings.translateModel, settings.translateFallback || "", target, srcLang || "", lines]));
+  const key = await captionKey({ settings, lines, srcLang, target });
   try { const hit = await cache.get(key); if (hit && Array.isArray(hit.lines) && hit.lines.length === lines.length) return { ...hit, cached: true }; } catch { /* 当没命中 */ }
   const source = lines.map((l, k) => `<c${k + 1}>${String(l).replace(/\s*\n\s*/g, " ").trim()}</c${k + 1}>`).join("\n");
   const parse = (text) => {
@@ -482,7 +486,7 @@ export async function translateCaptions({ orKey, settings, lines, srcLang, targe
 }
 // 判 YouTube 自动翻译的字幕好不好（0.29.0）：前面一段原文和 YouTube 的译文整段交给 Jev 判（和判 X 的 Grok 译文同一套问题），结果缓存
 export async function judgeCaptions({ jevKey, settings, item, cache = idbCache, signal, fetchImpl }) {
-  const key = await sha256(JSON.stringify([CAPTION_VERSION, "judge", item.source, item.translation, item.srcLang || "", item.target || "zh"]));
+  const key = await captionJudgeKey(item);
   try { const hit = await cache.get(key); if (hit && Number.isFinite(hit.min)) return { ...hit, tokens: 0, cached: true }; } catch { /* 当没命中 */ }
   const g = await judge(jevKey, item, { signal, fetchImpl });
   const result = { min: g.min, scores: g.scores };
@@ -529,8 +533,7 @@ export function badOutput(text, { source, xText, target = "zh" }) {
 // flex：这条不在屏幕上（页面那头提前做的）才走 flex 半价通道；屏幕上的走标准（0.29.9，用户 10-23："可视区域内不走半价通道"，0.28.4 定的，
 // 补翻、字幕都照做了，这里以前写死 flex: true——flex 忙时眼前这条要白等 FLEX_WAIT_MS 10 秒才换标准通道，实测一条帖子 3 次都是 10 秒超时 + 标准 2.5–3 秒）
 export async function improve({ jevKey, orKey, settings, item, cache = idbCache, signal, fetchImpl, flex = false }) {
-  const key = await sha256(JSON.stringify([TRANSLATOR_VERSION, item.id, item.source, item.xText, item.target || "zh", settings.translateModel,
-    settings.translateThreshold]));
+  const key = await improveKey(item, settings);
   try {
     const hit = await cache.get(key);
     if (hit) return { ...hit, cached: true };

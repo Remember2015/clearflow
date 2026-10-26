@@ -7,6 +7,15 @@
 @import "./styles/shadcn.css";
 @source "./**/*.{js,jsx,ts,tsx}";
 
+/* 字号（用户 10-25：说明、标签这类小字最小 13px，以前 text-xs 在设置页 12px、弹窗 11.25px）：text-xs 13、text-sm 14 用 px 定死，
+   弹窗（根字号 15px）和设置页（16px）一样；正文 text-base 跟根字号（弹窗 15、设置页 16），大字照旧 */
+@theme {
+  --text-xs: 13px;
+  --text-xs--line-height: calc(18 / 13);
+  --text-sm: 14px;
+  --text-sm--line-height: calc(20 / 14);
+}
+
 @theme inline {
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans", "Microsoft YaHei", "Noto Sans", sans-serif;
   --font-heading: var(--font-sans);
@@ -30,6 +39,8 @@
   --color-ring: var(--ring);
   --color-page: var(--page);
   --color-tonal: var(--tonal);
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
   --color-tonal-foreground: var(--tonal-foreground);
   --color-on: var(--on);
   --color-seg-track: var(--seg-track);
@@ -54,6 +65,9 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
   --primary: #0b57d0;
+  /* 成功绿（用户 10-25：照 Chrome / Google 常见的那种，不用 Tailwind 的薄荷绿） */
+  --success: #188038;
+  --success-bg: #e6f4ea;
   --primary-foreground: #ffffff;
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
@@ -84,6 +98,8 @@
     --popover: #27282a;
     --popover-foreground: oklch(0.985 0 0);
     --primary: #a8c7fa;
+    --success: #81c995;
+    --success-bg: rgb(129 201 149 / 0.16);
     --primary-foreground: #062e6f;
     --secondary: oklch(0.269 0 0);
     --secondary-foreground: oklch(0.985 0 0);
@@ -135,6 +151,10 @@
   .seg { corner-shape: squircle; border-radius: 12px; }
   .seg-item { corner-shape: squircle; border-radius: 10px; }
   .feat-group { corner-shape: squircle; border-radius: 22px; }
+  /* 清流会员（0.31.1，用户 10-25：新加的元素没跟着苹果化）：会员面板、四行套餐、引导页的两张选择卡和设置页的行一样 22px；
+     面板里的两格（用量、设备）照同心算是 22 − 留白 14 = 8，但连续圆角看着比普通圆角小一圈，8 几乎是方的，取 12 */
+  .acct-panel, .plan-row, .choice-card { corner-shape: squircle; border-radius: 22px; }
+  .acct-tile { corner-shape: squircle; border-radius: 12px; }
 }
 
 @layer base {
