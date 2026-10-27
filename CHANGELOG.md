@@ -1,7 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.35.1 — 2026-10-27
 
+- Preserve known translation costs when a request fails, retries or is cancelled.
 - Protect saved corrections and marked content from page-generated clicks while keeping normal mouse and keyboard controls working.
 - Privacy policy updated (effective October 27, 2026): a keyed email digest and trial start date are retained after account deletion to prevent repeat free trials.
 
