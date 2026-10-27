@@ -131,6 +131,7 @@ export async function translateOnce(orKey, model, { source, srcLang, truncated, 
   const wantStream = !!onText;
   if (onText && slow) { const f = onText; onText = (...a) => { started(); return f(...a); }; }
   const t0 = Date.now();
+  let paid = 0;
   try {
     const resp = await fetchImpl(OR_API, {
       method: "POST",
@@ -162,6 +163,7 @@ export async function translateOnce(orKey, model, { source, srcLang, truncated, 
     const streamed = wantStream && resp.body && /event-stream/i.test(resp.headers.get("content-type") || "");
     if (!streamed) started(); // 不流式的：回复头到了就是整个回复好了
     const data = streamed ? await readStream(resp, onText) : await resp.json();
+    paid = Number.isFinite(data?.usage?.cost) ? Math.max(0, data.usage.cost) : 0;
     const text = cleanOutput(data?.choices?.[0]?.message?.content);
     if (!text) throw fail("模型没有返回译文", "or_empty", true);
     // 输出到了上限被截断：这份译文不全，不能用（再试一次，还不行换后备模型）
@@ -170,9 +172,11 @@ export async function translateOnce(orKey, model, { source, srcLang, truncated, 
     return { text, model: data.model || model, cost: Number.isFinite(u.cost) ? u.cost : 0,
       reasoningTokens: u.completion_tokens_details?.reasoning_tokens || 0, secs: (Date.now() - t0) / 1000 };
   } catch (e) {
-    if (signal?.aborted) throw signal.reason;
-    if (control.signal.aborted && ["timeout", "flex_slow"].includes(control.signal.reason?.code)) throw control.signal.reason;
-    throw e;
+    const error = signal?.aborted ? signal.reason
+      : control.signal.aborted && ["timeout", "flex_slow"].includes(control.signal.reason?.code) ? control.signal.reason : e;
+    const known = Math.max(paid, Number(e?.spent?.cost) || 0);
+    if (known && error && typeof error === "object") error.spent = { ...error.spent, cost: known };
+    throw error;
   } finally {
     clearTimeout(timer); started(); // started()：清掉 flex 的计时
 
@@ -191,9 +195,9 @@ async function readStream(resp, onText) {
     if (!p || p === "[DONE]") return;
     let j;
     try { j = JSON.parse(p); } catch { return; }
-    if (j.error) throw fail(`OpenRouter 出错：${String(j.error.message || j.error).slice(0, 200)}`, "or_http", true);
     if (j.model) model = j.model;
-    if (j.usage) usage = j.usage;
+    if (j.usage) usage = { ...usage, ...j.usage };
+    if (j.error) throw fail(`OpenRouter 出错：${String(j.error.message || j.error).slice(0, 200)}`, "or_http", true);
     const ch = j.choices?.[0];
     if (ch?.finish_reason) finish = ch.finish_reason;
     if (ch?.delta?.content) {
@@ -211,6 +215,7 @@ async function readStream(resp, onText) {
     line((buf + dec.decode()).trim());
   } catch (e) {
     reader.cancel().catch(() => {}); // 不再读了：连接放掉
+    if (Number.isFinite(usage?.cost) && usage.cost > 0 && e && typeof e === "object") e.spent = { ...e.spent, cost: usage.cost };
     throw e;
   }
   return { model, usage, choices: [{ message: { content }, finish_reason: finish }] };
@@ -225,21 +230,24 @@ const laneIssue = (e) => !e.code || e.code === "timeout" || e.code === "flex_slo
 export async function translate(orKey, settings, item, opts = {}) {
   const models = [settings.translateModel, settings.translateFallback].filter((m, i, a) => m && a.indexOf(m) === i);
   const tried = [];
-  let last;
+  let last, spent = 0;
   for (const model of models) {
     tried.push(model);
     let flex = !!opts.flex && FLEX_OK.test(model);
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
         const r = await translateOnce(orKey, model, item, { ...opts, flex, ...(opts.onText ? { onText: (text) => opts.onText(text, model) } : {}) });
-        return { ...r, slug: model, tried: [...tried] };
+        return { ...r, cost: r.cost + spent, slug: model, tried: [...tried] };
       } catch (e) {
+        spent += Number(e?.spent?.cost) || 0;
+        if (spent && e && typeof e === "object") e.spent = { ...e.spent, cost: spent };
         if (opts.signal?.aborted) throw e;
         last = e;
         if (e.code === "or_badkey" || e.code === "or_credit") throw e;
         if (flex && laneIssue(e)) { flex = false; attempt--; continue; }
         if (!e.retryable) break; // 比如这个模型的思考关不掉（400）：直接换后备
-        await sleep(600 * (attempt + 1), opts.signal);
+        try { await sleep(600 * (attempt + 1), opts.signal); }
+        catch (stop) { if (spent && stop && typeof stop === "object") stop.spent = { ...stop.spent, cost: spent }; throw stop; }
       }
     }
   }
@@ -385,7 +393,8 @@ export async function fillIn({ orKey, settings, item, cache = idbCache, signal, 
 // 纯文字的条目（标题）不该带标记，模型要是加了就去掉。
 // onItem(k, 结果)：流式，第 k 条（从 0 数）的 </uN> 一到就先给（4 个标题一批，第一条 1.3 秒、整批 2 秒左右才完）；先给了的就定了，
 // 后面同一个标记再出现（模型重复了）也不改。整批出错时先给了的照样进缓存。花费最后才知道：先给的不带，返回的带
-export async function fillInBatch({ orKey, settings, items, cache = idbCache, signal, fetchImpl, onItem, flex = false }) {
+// onCost 收到整批成本（即使一个标记也拆不出来），服务端结算用。
+export async function fillInBatch({ orKey, settings, items, cache = idbCache, signal, fetchImpl, onItem, onCost, flex = false }) {
   const source = items.map((it, k) => `<u${k + 1}>${it.source}</u${k + 1}>`).join("\n");
   const langs = new Set(items.map((it) => it.srcLang || ""));
   const unit = (it, text) => { // 一条的译文：纯文字的去掉标记、去掉多余的引号和前缀
@@ -412,6 +421,7 @@ export async function fillInBatch({ orKey, settings, items, cache = idbCache, si
     await Promise.all([...early].map(([k, x]) => put(items[k], { action: "fill", ...x, cost: 0 })));
     throw e;
   }
+  onCost?.(r.cost);
   const got = new Map();
   let odd = false;
   for (const m of r.text.matchAll(/<u(\d+)>([\s\S]*?)<\/u\1>/g)) {
@@ -471,7 +481,11 @@ export async function translateCaptions({ orKey, settings, lines, srcLang, targe
     });
     let r;
     try { r = await translate(orKey, { ...settings, translateModel: model, translateFallback: "" }, { source, srcLang, captions: true, target }, { signal, fetchImpl, flex, ...(onText ? { onText } : {}) }); }
-    catch (e) { if (signal?.aborted || e.code === "or_badkey" || e.code === "or_credit") throw e; err = e; continue; } // 这个模型出错：换后备模型
+    catch (e) {
+      cost += Number(e?.spent?.cost) || 0;
+      if (signal?.aborted || e.code === "or_badkey" || e.code === "or_credit") { e.spent = { ...e.spent, cost }; throw e; }
+      err = e; continue;
+    } // 这个模型出错：换后备模型；已知付过的成本留到最终结算
     cost += r.cost || 0;
     const out = parse(r.text);
     if (out) {
@@ -481,7 +495,7 @@ export async function translateCaptions({ orKey, settings, lines, srcLang, targe
     }
     last = r.model;
   }
-  if (err && !last) throw err;
+  if (err && !last) { err.spent = { ...err.spent, cost }; throw err; }
   throw Object.assign(new Error(`字幕译文的标记对不上（${last || "?"}）`), { code: "or_captions", retryable: false, spent: { cost } });
 }
 // 判 YouTube 自动翻译的字幕好不好（0.29.0）：前面一段原文和 YouTube 的译文整段交给 Jev 判（和判 X 的 Grok 译文同一套问题），结果缓存
@@ -567,14 +581,19 @@ export async function improve({ jevKey, orKey, settings, item, cache = idbCache,
           cost += again.cost || 0; spent.cost += again.cost || 0; retried = true;
           const bad2 = badOutput(again.text, item);
           if (!bad2) { pick = again; bad = null; }
-        } catch (e) { if (signal?.aborted) throw e; }
+        } catch (e) { if (signal?.aborted) throw e; const paid = Number(e?.spent?.cost) || 0; cost += paid; spent.cost += paid; }
       }
       const weakest = Object.entries(grok.scores).sort((a, b) => a[1] - b[1])[0][0];
       result = {
         action: bad ? "keep" : "replace", tried: true, retried, text: bad ? undefined : pick.text, model: pick.model,
         weak: weakest, grok: grok.scores, grokMin: grok.min, ...(bad ? { bad } : {}), cost, jevTokens: grok.tokens,
       };
-    } catch (e) { if (e && typeof e === "object" && (spent.cost || spent.jevTokens)) e.spent = spent; throw e; } // 付过的费跟着错误回去记账
+    } catch (e) {
+      if (e && typeof e === "object" && (spent.cost || spent.jevTokens || e.spent)) e.spent = {
+        cost: spent.cost + (Number(e.spent?.cost) || 0), jevTokens: spent.jevTokens + (Number(e.spent?.jevTokens) || 0),
+      };
+      throw e;
+    } // 付过的费跟着错误回去记账
   }
   try { await cache.put(key, result, capOf(settings)); } catch { /* 写不进缓存也照样返回 */ }
   return { ...result, cached: false };

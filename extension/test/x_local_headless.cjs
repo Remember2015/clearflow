@@ -37,7 +37,7 @@ const openGroups = async (pg) => { await pg.evaluate(() => document.querySelecto
     // 第二条不是组里的代表句（代表是第一条）：点它的"判错了"，整组都放出来
     await page.evaluate(() => [...document.querySelectorAll(".ff-bar")].find((b) => b.dataset.ffId === "7202").click());
     await wait(250);
-    await page.evaluate(() => [...document.querySelectorAll(".ff-bar")].find((b) => b.dataset.ffId === "7202").querySelector('button[aria-label^="判错了"]').click());
+    await page.click('.ff-bar[data-ff-id="7202"] button[aria-label^="判错了"]');
     await wait(900);
     s = await st();
     ok("模板组里点一条判错了：整组三条都放出来", ["7201", "7202", "7203"].every((id) => !s[id].reason && !s[id].hidden), JSON.stringify([s["7201"], s["7202"], s["7203"]]));

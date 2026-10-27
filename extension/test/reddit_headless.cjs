@@ -77,7 +77,7 @@ const summary = () => new Promise((res) => {
     await wait(200);
     s = await st();
     ok("点折叠条展开：正文和操作栏露出来", !s.t1_r02.bodyHidden && !s.t1_r02.rowHidden && !!s.t1_r02.bar, JSON.stringify(s.t1_r02));
-    await page.evaluate(() => [...document.querySelectorAll(".ff-bar")].find((b) => b.dataset.ffId === "t1_r02").querySelector('button[aria-label^="判错了"]').click());
+    await page.click('.ff-bar[data-ff-id="t1_r02"] button[aria-label^="判错了"]');
     await wait(600);
     s = await st();
     const ov = await page.evaluate(() => chrome.storage.local._d["ff_reply_override:t1_r02"]);

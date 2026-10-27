@@ -31,13 +31,16 @@
       '<path d="M6.7 6.7C4 8.4 2.5 12 2.5 12S6 18.5 12 18.5c1.6 0 3.06-.46 4.35-1.15"/><path d="M9.9 9.9a2.75 2.75 0 0 0 3.9 3.9"/>',
   };
   // 只有图标的按钮：aria-label 给读屏、title 给鼠标悬停
-  function iconBtn(icon, label, hint, onClick, on = false) {
+  function iconBtn(icon, label, hint, onClick, on = false, trustedOnly = false) {
     const b = el("button", "ff-icon" + (on ? " ff-on" : ""));
     b.type = "button";
     b.setAttribute("aria-label", label);
     b.title = hint;
     b.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">${ICONS[icon]}</svg>`; // 固定的图形，不含页面内容
-    b.addEventListener("click", (ev) => { ev.preventDefault(); ev.stopPropagation(); onClick(); }, true);
+    b.addEventListener("click", (ev) => {
+      ev.preventDefault(); ev.stopPropagation();
+      if (!trustedOnly || ev.isTrusted) onClick();
+    }, true);
     return b;
   }
   // 一条新的折叠条：整条都能点（展开 / 收起；按钮自己处理；拖选文字时不切换）
@@ -80,11 +83,11 @@
     const mine = !!it.userLabel;
     const controls = it.expanded ? [
       el("span", "ff-ask", t("bar.ask")),
-      iconBtn("up", t("bar.right", { what: CATS[c].confirm }), t("bar.right", { what: CATS[c].confirm }), () => { if (!mine) h.onConfirm(id); }, mine),
-      iconBtn("down", t("bar.wrong", { what: CATS[c].not }), t("bar.wrongTitle", { what: CATS[c].not }), () => h.onFalsePositive(id)),
+      iconBtn("up", t("bar.right", { what: CATS[c].confirm }), t("bar.right", { what: CATS[c].confirm }), () => { if (!mine) h.onConfirm(id); }, mine, true),
+      iconBtn("down", t("bar.wrong", { what: CATS[c].not }), t("bar.wrongTitle", { what: CATS[c].not }), () => h.onFalsePositive(id), false, true),
       ...(c === "spam" && /\p{L}/u.test(it.text || "") ? [remembered
-        ? iconBtn("filter", t("bar.forget"), t("bar.forgetTitle"), () => h.onRemember(id), true)
-        : iconBtn("filter", t("bar.remember"), t("bar.rememberTitle"), () => h.onRemember(id))] : []),
+        ? iconBtn("filter", t("bar.forget"), t("bar.forgetTitle"), () => h.onRemember(id), true, true)
+        : iconBtn("filter", t("bar.remember"), t("bar.rememberTitle"), () => h.onRemember(id), false, true)] : []),
       iconBtn("hide", t("bar.collapse"), t("bar.collapse"), () => h.onToggle(id)),
     ] : [iconBtn("show", t("bar.expand"), t("bar.expand"), () => h.onToggle(id))];
     bar.replaceChildren(el("span", "ff-tag" + CATS[c].cls, CATS[c].tag), text, el("span", "ff-sp"), ...controls);
@@ -165,7 +168,7 @@
   }
   // 评论上的"清理掉这条"漏斗（0.26，Reddit、YouTube、小红书、HN；X 用它自己的"…"菜单）：放在作者那一行末尾，鼠标移到这条评论上才看得见
   function markButton(id, onMark) {
-    const b = iconBtn("filter", t("mark.this"), t("mark.thisTitle"), () => onMark(id));
+    const b = iconBtn("filter", t("mark.this"), t("mark.thisTitle"), () => onMark(id), false, true);
     b.classList.add("ff-mark", "ff-own"); // ff-own：FFDom.OWN，读页面的地方跳过
     b.dataset.ffId = id;
     return b;
@@ -183,7 +186,10 @@
     if (action && onAction) {
       const b = el("button", "ff-toast-act", action);
       b.type = "button";
-      b.addEventListener("click", (ev) => { ev.preventDefault(); ev.stopPropagation(); hideToast(); onAction(); }, true);
+      b.addEventListener("click", (ev) => {
+        ev.preventDefault(); ev.stopPropagation();
+        if (ev.isTrusted) { hideToast(); onAction(); }
+      }, true);
       kids.push(b);
     }
     toastEl.replaceChildren(...kids);

@@ -1,6 +1,6 @@
 # ClearFlow Gizlilik Politikası
 
-Yürürlük tarihi: 26 Ekim 2026
+Yürürlük tarihi: 27 Ekim 2026
 
 ClearFlow, X, Reddit, YouTube, Xiaohongshu (RedNote) ve Hacker News’teki yorum bölümlerini düzenleyen ve gönderileri çeviren bir tarayıcı uzantısıdır. OhMyAI tarafından yayımlanır. Bu politika, uzantının neleri okuduğunu, neleri kime gönderdiğini ve cihazınızda neleri sakladığını açıklar.
 
@@ -83,6 +83,8 @@ Giriş kodları Cloudflare'ın e-posta hizmetiyle gönderilir. Pazarlama e-posta
 ### Hesabınızı silme
 
 Hesap sayfanızdan hesabınızı silebilirsiniz. Bu işlem e-posta adresinizi, cihazlarınızı, giriş oturumlarınızı ve kullanım kayıtlarınızı siler. Muhasebe ve iadeler için e-posta adresiniz olmadan ödeme kayıtlarını, ücretsiz deneme süresinin yeniden kullanılmasını önlemek için de denemeyi kullanan cihazın kimliğini saklarız.
+
+Tekrarlanan ücretsiz denemeleri önlemek için hesap silindikten sonra da gizli bir anahtarla oluşturulmuş e-posta adresi özetini ve deneme başlangıç tarihini saklarız. Bu uygunluk kaydı düz metin e-posta adresini içermez. Ücretsiz deneme sunduğumuz sürece, yalnızca denemenin daha önce kullanılıp kullanılmadığını kontrol etmek için saklanır.
 
 ### Hizmet sağlayıcılar
 

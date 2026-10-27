@@ -2,7 +2,7 @@
 // node test/translator_test.mjs
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { improve, fillIn, fillInBatch, fillCached, translate, translateCaptions, cleanOutput, badOutput, OR_API, SYSTEM_PROMPT, systemPromptFor, BATCH_ZH } from "../translator.js";
+import { improve, fillIn, fillInBatch, fillCached, translate, translateOnce, translateCaptions, cleanOutput, badOutput, OR_API, SYSTEM_PROMPT, systemPromptFor, BATCH_ZH } from "../translator.js";
 
 const S = { translateThreshold: 0.7, translateModel: "openai/gpt-6-luna", translateFallback: "deepseek/deepseek-v4.1-flash" };
 const item = { id: "1900000000000000101", source: "Why is it so hard to hire good people? Because the good ones are not for hire!", xText: "为什么雇佣好人这么难？因为好人不是雇佣兵！", srcLang: "en" }; // 合成的
@@ -162,6 +162,7 @@ await ok("flex 输出被截断（or_truncated）：不换通道（换了也一�
   const r = await translate("o", S, { source: "hello" }, { fetchImpl: net.fetchImpl, flex: true });
   assert.equal(r.text, "后备的");
   assert.deepEqual(net.calls.or.map((b) => [b.model, !!b.provider]), [[S.translateModel, true], [S.translateModel, true], [S.translateFallback, false]]);
+  assert.ok(Math.abs(r.cost - 0.00012) < 1e-12, "两次截断的已知花费也计入成功结果");
 });
 await ok("换另一个模型：按设置里的模型名认（OpenRouter 回报的 model 带日期也不会再跑同一个）", async () => {
   const luna = "Sorry, I can't translate this.", ds = "后备模型翻得好的译文";
@@ -345,6 +346,45 @@ const delta = (t, model = "openai/gpt-6-luna") => ev({ model, choices: [{ index:
 const endEv = (cost, model = "openai/gpt-6-luna", finish = "stop") => ev({ model, choices: [{ index: 0, delta: {}, finish_reason: finish }], usage: { cost } }) + "data: [DONE]\n\n";
 const three = [1, 2, 3].map((k) => ({ id: `hn-s${k}`, source: `Streaming title number ${k}`, srcLang: "en" }));
 
+await ok("流式：先收到 usage 再断流，已知费用附在读取错误上", async () => {
+  let n = 0;
+  const enc = new TextEncoder();
+  const fetchImpl = async () => new Response(new ReadableStream({ pull(c) {
+    if (n++ === 0) c.enqueue(enc.encode(ev({ usage: { cost: 0.0001 } })));
+    else c.error(new Error("test stream disconnected"));
+  } }, { highWaterMark: 0 }), { headers: { "content-type": "text/event-stream" } });
+  await assert.rejects(translateOnce("o", S.translateModel, { source: "hello" }, { fetchImpl, onText: () => {} }), (e) => {
+    assert.equal(e.message, "test stream disconnected");
+    assert.equal(e.spent.cost, 0.0001);
+    return true;
+  });
+});
+
+await ok("流式：同一帧 usage 和 error 仍保留已知费用", async () => {
+  const fetchImpl = async () => sseResp([ev({ usage: { cost: 0.0001 }, error: { message: "test paid stream error" } })]);
+  await assert.rejects(translateOnce("o", S.translateModel, { source: "hello" }, { fetchImpl, onText: () => {} }), (e) => {
+    assert.equal(e.code, "or_http");
+    assert.equal(e.spent.cost, 0.0001);
+    return true;
+  });
+});
+
+await ok("重试等待时取消：AbortError 保留此前已知花费，不再发请求", async () => {
+  const control = new AbortController();
+  let calls = 0;
+  const fetchImpl = async () => {
+    calls++;
+    setTimeout(() => control.abort(new DOMException("test cancel during retry delay", "AbortError")), 20);
+    return json({ choices: [{ message: { content: "半截" }, finish_reason: "length" }], usage: { cost: 0.00005 } });
+  };
+  await assert.rejects(translate("o", S, { source: "hello" }, { fetchImpl, signal: control.signal }), (e) => {
+    assert.equal(e.name, "AbortError");
+    assert.equal(e.spent.cost, 0.00005);
+    return true;
+  });
+  assert.equal(calls, 1);
+});
+
 await ok("流式：几条一起翻时请求带 stream，哪条的 </uN> 到了就先给哪条，不等整批；最后返回的带花费、都进缓存", async () => {
   const log = [], bodies = [];
   const fetchImpl = async (url, init) => { bodies.push(JSON.parse(init.body));
@@ -404,9 +444,12 @@ await ok("流式：同一个标记出现两次（可能是别的条目里的字�
   assert.equal(r[0].cost, 0.00003, "花费摊给回来了的那一条");
 });
 await ok("批里冒出不该有的标记（<u9>）：整批都不认，交给页面单独再翻", async () => {
+  const paid = [];
   const r = await fillInBatch({ orKey: "o", settings: S, items: three, cache: memCache(), onItem: () => {},
+    onCost: (cost) => paid.push(cost),
     fetchImpl: async () => sseResp([delta("<u1>一</u1><u2>二</u2><u3>三</u3><u9>多出来的</u9>"), endEv(0.00003)]) });
   assert.deepEqual(r, [null, null, null]);
+  assert.deepEqual(paid, [0.00003], "全 null 仍把实际花费交给服务端结算；数组遍历保持兼容");
 });
 
 await ok("流式：输出到上限被截断（finish_reason length）：这份不算，重试", async () => {
@@ -415,6 +458,40 @@ await ok("流式：输出到上限被截断（finish_reason length）：这份�
     : sseResp([delta("<u1>一</u1><u2>二</u2><u3>三</u3>"), endEv(0.00003)]));
   const r = await fillInBatch({ orKey: "o", settings: S, items: three, cache: memCache(), fetchImpl, onItem: () => {} });
   assert.equal(n, 2); assert.deepEqual(r.map((x) => x.text), ["一", "二", "三"]);
+  assert.ok(Math.abs(r.reduce((cost, x) => cost + x.cost, 0) - 0.00005) < 1e-12, "流式截断的费用跟着重试结果返回");
+});
+
+await ok("重译失败：已付翻译尝试和 Grok 判分的费用一起附在错误上", async () => {
+  const net = fakeNet({ judgeScores: () => bad, orPlan: (body, n) => n === 1
+    ? json({ model: body.model, choices: [{ message: { content: "半截译文" }, finish_reason: "length" }], usage: { cost: 0.00005 } })
+    : json({ error: "bad key" }, 401) });
+  await assert.rejects(improve({ jevKey: "j", orKey: "o", settings: S, item, cache: memCache(), fetchImpl: net.fetchImpl }), (e) => {
+    assert.equal(e.code, "or_badkey");
+    assert.ok(Math.abs(e.spent.cost - 0.00005) < 1e-12);
+    assert.equal(e.spent.jevTokens, 500);
+    return true;
+  });
+  assert.equal(net.calls.or.length, 2);
+});
+
+await ok("保留 Grok：备用重译失败时，已知付过的尝试也计入结果", async () => {
+  const net = fakeNet({ judgeScores: () => bad, orPlan: (body, n) => n === 1 ? "Sorry, I cannot translate this."
+    : n === 2 ? json({ model: body.model, choices: [{ message: { content: "半截译文" }, finish_reason: "length" }], usage: { cost: 0.00005 } })
+    : json({ error: "bad key" }, 401) });
+  const r = await improve({ jevKey: "j", orKey: "o", settings: S, item, cache: memCache(), fetchImpl: net.fetchImpl });
+  assert.equal(r.action, "keep");
+  assert.equal(net.calls.or.length, 3);
+  assert.ok(Math.abs(r.cost - 0.00009) < 1e-12);
+});
+
+await ok("字幕：已付费但标记坏了，备用模型报错也保留先前花费", async () => {
+  const net = fakeNet({ judgeScores: () => ({}), orPlan: (body, n) => n === 1 ? "没有字幕标记的译文" : json({ error: "bad key" }, 401) });
+  await assert.rejects(translateCaptions({ orKey: "o", settings: S, lines: ["hello"], cache: memCache(), fetchImpl: net.fetchImpl }), (e) => {
+    assert.equal(e.code, "or_badkey");
+    assert.ok(Math.abs(e.spent.cost - 0.00004) < 1e-12);
+    return true;
+  });
+  assert.equal(net.calls.or.length, 2);
 });
 
 await ok("字幕流式（0.29.5）：带 onLine 时请求带 stream，每一行的 </cN> 一到就先给那一行（不等整段）；整段照旧返回、进缓存；不带 onLine 不流式", async () => {

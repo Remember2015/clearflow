@@ -1,6 +1,6 @@
 # Política de Privacidade do ClearFlow (清流)
 
-Data de vigência: 26 de outubro de 2026
+Data de vigência: 27 de outubro de 2026
 
 ClearFlow é uma extensão de navegador que organiza seções de comentários e traduz publicações no X, Reddit, YouTube, Xiaohongshu (RedNote) e Hacker News. É publicada pela OhMyAI. Esta política explica o que a extensão lê, o que envia, para quem e o que mantém no seu dispositivo.
 
@@ -83,6 +83,8 @@ Os códigos de acesso são enviados pelo serviço de e-mail da Cloudflare. Não 
 ### Exclusão da conta
 
 Você pode excluir sua conta na página da sua conta. Isso exclui seu endereço de e-mail, dispositivos, sessões de acesso e registros de uso. Mantemos os registros de pagamento sem seu endereço de e-mail, pois são necessários para a contabilidade e os reembolsos, e mantemos o ID do dispositivo que usou um período de avaliação gratuita, para impedir que ele seja usado novamente.
+
+Para impedir avaliações gratuitas repetidas, também mantemos, após a exclusão da conta, um resumo criptográfico do endereço de e-mail gerado com uma chave secreta e a data de início da avaliação. Esse registro de elegibilidade não contém o e-mail em texto simples. Ele é mantido enquanto oferecermos avaliações gratuitas, apenas para verificar se uma avaliação já foi usada.
 
 ### Provedores de serviços
 

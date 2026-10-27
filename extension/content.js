@@ -873,6 +873,7 @@
     const act = (ev) => {
       ev.preventDefault();
       ev.stopPropagation();
+      if (!ev.isTrusted) return;
       fn();
       menuFor = null;
       closeMenu(dd);

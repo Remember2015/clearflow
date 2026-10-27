@@ -1,6 +1,6 @@
 # ClearFlow (清流) Privacy Policy
 
-Effective date: October 26, 2026 · [中文版本见下方](#中文)
+Effective date: October 27, 2026 · [中文版本见下方](#中文)
 
 ClearFlow is a browser extension that cleans up comment sections and translates posts on X, Reddit, YouTube, Xiaohongshu (RedNote) and Hacker News. It is published by OhMyAI. This policy explains what the extension reads, what it sends and to whom, and what it keeps on your device.
 
@@ -84,6 +84,8 @@ Sign-in codes are sent with Cloudflare's email service. We don't send marketing 
 
 You can delete your account on your account page. That deletes your email address, devices, sign-in sessions and usage records. We keep payment records without your email address, because they're needed for accounting and refunds, and the device ID that used a free trial, so the trial can't be used again.
 
+To prevent repeat free trials, we also retain a keyed digest of the email address that used the trial and its trial start date after account deletion. This eligibility record contains no plain-text email address and is kept while free trials are offered, solely to check whether a trial has already been used.
+
 ### Service providers
 
 Cloudflare (hosting, database and email), Waffo (payments), and OpenRouter, TypeSafe and the translation model providers (processing content).
@@ -106,7 +108,7 @@ developer@ohmyai.app
 
 # 清流（ClearFlow）隐私政策
 
-生效日期：2026 年 10 月 26 日
+生效日期：2026 年 10 月 27 日
 
 清流是一个浏览器插件，在 X、Reddit、YouTube、小红书和 Hacker News 上清理评论区、翻译帖子，由 OhMyAI 发布。这份政策说明插件读什么、发什么给谁、在你的设备上存什么。
 
@@ -189,6 +191,8 @@ developer@ohmyai.app
 ### 删除账号
 
 在账号页可以删除账号。删除时会删掉你的邮箱、设备、登录状态和用量记录。付款记录会去掉邮箱后保留，因为记账和退款要用；用过免费试用的设备 ID 也会保留，防止重复试用。
+
+为防止重复领取免费试用，删除账号后还会保留用过试用的邮箱资格摘要（使用服务端密钥生成）和试用开始日期。这份记录不含明文邮箱，在提供免费试用期间保留，仅用于判断是否已经用过试用。
 
 ### 服务商
 

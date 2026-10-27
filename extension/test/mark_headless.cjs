@@ -73,16 +73,18 @@ const JEV = encodeURIComponent(JSON.stringify({ "Does anyone know if this works"
     await wait(1200);
     s = await st();
     ok("再标一次：t1_e3 又折了", s.c.t1_e3.reason === "和你标记过的垃圾是同一类" && s.checks.length === 2, JSON.stringify([s.c.t1_e3, s.checks.length]));
+    await page.evaluate(() => document.querySelectorAll('.ff-group[aria-expanded="false"]').forEach((g) => g.click()));
+    await wait(300);
     await page.evaluate(() => { const b = document.querySelector('shreddit-comment[thingid="t1_e3"] .ff-bar'); b.click(); });
     await wait(300);
     const barBtn = () => page.evaluate(() => { const b = [...document.querySelectorAll('shreddit-comment[thingid="t1_e3"] .ff-bar .ff-icon')].find((x) => /类似/.test(x.getAttribute("aria-label") || "")); return b ? { label: b.getAttribute("aria-label"), on: b.classList.contains("ff-on") } : null; });
     let fb = await barBtn();
     ok("展开的提示条上有漏斗\"以后类似的也清理\"，还没选", !!fb && fb.label === "以后类似的也清理" && !fb.on, JSON.stringify(fb));
-    await page.evaluate(() => [...document.querySelectorAll('shreddit-comment[thingid="t1_e3"] .ff-bar .ff-icon')].find((x) => /类似/.test(x.getAttribute("aria-label") || "")).click());
+    await page.click('shreddit-comment[thingid="t1_e3"] .ff-bar .ff-icon:has(.ff-plus)');
     await wait(1000);
     s = await st(); fb = await barBtn();
     ok("点了：t1_e3 也存进去、漏斗变实心、提示没有撤销", s.saved.some((x) => x[0] === "t1_e3") && fb && fb.on && fb.label === "不再清理类似的" && /已清理/.test(s.toast || "") && !s.undo, JSON.stringify([s.saved, fb, s.toast, s.undo]));
-    await page.evaluate(() => [...document.querySelectorAll('shreddit-comment[thingid="t1_e3"] .ff-bar .ff-icon')].find((x) => /类似/.test(x.getAttribute("aria-label") || "")).click());
+    await page.click('shreddit-comment[thingid="t1_e3"] .ff-bar .ff-icon:has(.ff-plus)');
     await wait(800);
     s = await st();
     ok("再点：t1_e3 从你标记的里去掉，按\"同一类\"折的放出来", !s.saved.some((x) => x[0] === "t1_e3") && !s.c.t1_e3.reason, JSON.stringify([s.saved, s.c.t1_e3]));
@@ -102,7 +104,7 @@ const JEV = encodeURIComponent(JSON.stringify({ "Does anyone know if this works"
         return pick;
       }, pick);
       await wait(400);
-      await x.evaluate(() => { const m = [...document.querySelectorAll(".ff-menuitem")].find((e) => /清理掉这条/.test(e.textContent)); m && m.click(); });
+      await x.click(".ff-menuitem");
       await wait(1200);
       await x.evaluate(() => document.querySelectorAll(".ff-bar.ff-group").forEach((g) => g.click())); // 连着两条以上会合成一条：点开看每条
       await wait(500);
@@ -147,7 +149,8 @@ const JEV = encodeURIComponent(JSON.stringify({ "Does anyone know if this works"
       await wait(250);
       const bg = await x.evaluate(() => getComputedStyle(document.querySelector(".ff-menuitem")).backgroundColor);
       ok("X 菜单里\"清理掉这条\"：鼠标移上去有底色（X 自己的悬停是脚本加的，克隆过来没有）", bg === "rgba(15, 20, 25, 0.04)", bg);
-      await x.evaluate(() => { window.__ffNoMarkedInJev = true; [...document.querySelectorAll(".ff-menuitem")].find((e) => /清理掉这条/.test(e.textContent)).click(); });
+      await x.evaluate(() => { window.__ffNoMarkedInJev = true; });
+      await x.click(".ff-menuitem");
       await wait(1500);
       const group = await x.evaluate(() => { const g = document.querySelector(".ff-bar.ff-group"); const t = g?.textContent || null; g?.click(); return t; }); // 连着三条合成了一条：点开看每条
       await wait(600);

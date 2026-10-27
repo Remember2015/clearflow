@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Protect saved corrections and marked content from page-generated clicks while keeping normal mouse and keyboard controls working.
+- Privacy policy updated (effective October 27, 2026): a keyed email digest and trial start date are retained after account deletion to prevent repeat free trials.
+
 ## 0.35.0 — 2026-10-27
 
 - On X post pages, a reply whose display name is itself an ad (a rebate or referral offer, a promo channel, a way to contact them) is hidden even when the text of the reply looks normal; the bar says “The display name is an ad”.
